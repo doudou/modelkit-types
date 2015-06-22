@@ -11,13 +11,17 @@ module TypeStore
             ALLOWED_OVERLOADINGS = allowed_overloadings.to_set
 
 	    # The TypeStore::Registry this type belongs to
-            attr_reader :registry
+            attr_accessor :registry
 
             # Whether this is a null type, i.e. a type that cannot be actually used
             # to store values
             attr_predicate :null?, true
 
-            # Whether this type is an opaque type
+            # True if this is an opaque type
+            #
+            # Values from opaque types cannot be manipulated by TypeStore. They
+            # are usually used to refer to fields that will be converted first
+            # (by some unspecified means) to a value that TypeStore can manipulate
             attr_predicate :opaque?, true
 
             # Whether this type depends on an opaque type, or is an opaque type
@@ -159,9 +163,10 @@ module TypeStore
             end
 
             # Called by TypeStore when a subclass is created.
-            def setup_submodel(submodel, typename: nil, size: 0, null: false, opaque: false, &block)
+            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, null: false, opaque: false, &block)
                 super(submodel, &block)
 
+                submodel.registry = registry
                 submodel.name = typename
                 submodel.size = size
                 submodel.null = null
@@ -255,8 +260,8 @@ module TypeStore
             # Returns the elements of this type name
             #
             # @return [Array<String>]
-            def split_typename
-                TypeStore.split_typename(name)
+            def split_typename(separator = TypeStore::NAMESPACE_SEPARATOR)
+                TypeStore.split_typename(name, separator)
             end
 
             # Returns the complete name for the type (both namespace and
@@ -275,16 +280,6 @@ module TypeStore
 
 	    def to_s; "#<#{superclass.name}: #{name}>" end
             def inspect; to_s end
-
-	    # Tests if this is a null type
-	    attr_predicate :null?
-
-            # True if this is an opaque type
-            #
-            # Values from opaque types cannot be manipulated by TypeStore. They
-            # are usually used to refer to fields that will be converted first
-            # (by some unspecified means) to a value that TypeStore can manipulate
-            attr_predicate :opaque?
 
 	    # Returns the pointer-to-self type
             def to_ptr; registry.build(name + "*") end
