@@ -47,6 +47,26 @@ module TypeStore
                     assert_equal ret, TypeStore::Type.new_submodel(typename: "/NS1/Bla/Test").split_typename
                 end
             end
+            describe "#metadata" do
+                it "always returns the same MetaData object" do
+                    t = TypeStore::Type.new_submodel
+                    assert_same t.metadata, t.metadata
+                end
+                it "returns a MetaData object" do
+                    assert_kind_of MetaData, TypeStore::Type.new_submodel.metadata
+                end
+                it "returns the type's own MetaData object" do
+                    refute_same TypeStore::Type.metadata, TypeStore::Type.new_submodel.metadata
+                end
+            end
+            describe "XML marshalling" do
+                it "marshals and unmarshals metadata" do
+                    t = TypeStore::Type.new_submodel
+                    t.metadata.set('k', 'v0', 'v1')
+                    t = TypeStore::Registry.from_xml(t.to_xml).get(t.name)
+                    assert_equal [['k', ['v0', 'v1'].to_set]], t.metadata.each.to_a
+                end
+            end
         end
     end
 end

@@ -20,17 +20,21 @@ module TypeStore
                 v1 | v2
             end
         end
-        def add(key, value)
-            (data[key.to_str] ||= Set.new) << value
+        def add(key, *values)
+            (data[key.to_str] ||= Set.new).merge(values)
         end
-        def set(key, value)
-            data[key.to_str] = [value].to_set
+        def set(key, *values)
+            data[key.to_str] = values.to_set
         end
         def get(key)
             data[key] || Set.new
         end
-        def clear(key)
-            data.delete(key)
+        def clear(key = nil)
+            if key
+                data.delete(key)
+            else
+                data.clear
+            end
         end
         def [](key)
             get(key)

@@ -217,6 +217,7 @@ end
 require 'metaruby'
 require 'typestore/exceptions'
 require 'typestore/specializations'
+require 'typestore/metadata'
 
 require 'typestore/models/path'
 require 'typestore/models/accessor'
@@ -239,8 +240,6 @@ require 'typestore/models/enum_type'
 require 'typestore/enum_type'
 require 'typestore/models/container_type'
 require 'typestore/container_type'
-
-require 'typestore/metadata'
 
 require 'typestore/registry'
 require 'typestore/registry_export'
