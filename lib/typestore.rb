@@ -77,11 +77,7 @@ module TypeStore
     #
     # See also Type.basename
     def self.basename(name, separator = NAMESPACE_SEPARATOR)
-        name = do_basename(name)
-        if separator && separator != NAMESPACE_SEPARATOR
-            name.gsub!(NAMESPACE_SEPARATOR, separator)
-        end
-        name
+        split_typename(name, separator).last
     end
 
     # Returns the namespace part of +name+.  If +separator+ is
@@ -89,14 +85,72 @@ module TypeStore
     # the default of TypeStore::NAMESPACE_SEPARATOR is used. If nil is
     # used as new separator, no change is made either.
     def self.namespace(name, separator = NAMESPACE_SEPARATOR, remove_leading = false)
-        ns = do_namespace(name)
-        if remove_leading
-            ns = ns[1..-1]
+        parts = split_typename(name, separator)
+        ns = parts[0, parts.size - 1].join(separator)
+        if !remove_leading
+            "#{separator}#{ns}#{separator}"
+        else "#{ns}#{separator}"
         end
-        if separator && separator != NAMESPACE_SEPARATOR
-            ns.gsub!(NAMESPACE_SEPARATOR, separator)
+    end
+
+    # Splits a typename into its consistuent
+    #
+    # @return [Array<String>] each string is a namespace leading to the
+    #   basename. The last element is the basename itself
+    def self.split_typename(name, separator = NAMESPACE_SEPARATOR)
+        tokens = typename_tokenizer(name)
+        build_typename_parts(tokens, namespace_separator: separator)
+    end
+
+    def self.build_typename_parts(tokens, namespace_separator: NAMESPACE_SEPARATOR)
+        level = 0
+        parts = []
+        current = []
+        while !tokens.empty?
+            case tk = tokens.shift
+            when "/"
+                if level == 0
+                    if !current.empty?
+                        parts << current
+                        current = []
+                    end
+                else
+                    current << namespace_separator
+                end
+            when "<"
+                level += 1
+                current << "<"
+            when ">"
+                level -= 1
+                current << ">"
+            else
+                current << tk
+            end
         end
-        ns
+        if !current.empty?
+            parts << current
+        end
+
+        return parts.map { |p| p.join("") }
+    end
+
+    def self.typename_tokenizer(name)
+        suffix = name
+        result = []
+        while !suffix.empty?
+            suffix =~ /^([^<\/,>]*)/
+            match = $1.strip
+            if !match.empty?
+                result << match
+            end
+            char   = $'[0, 1]
+            suffix = $'[1..-1]
+
+            break if !suffix
+
+            result << char
+        end
+        result
     end
 
     def self.can_overload_method?(defined_on, reference, name,
