@@ -8,7 +8,18 @@ module TypeStore
             # Whether this represents a signed or unsigned integer
             attr_predicate :unsigned?, true
 
-            def setup_submodel(submodel, typename: nil, size: 0, integer: true, unsigned: false, &block)
+            DEFAULT_TYPENAMES =
+                Hash[[true, true] => '/uint',
+                     [true, false] => '/int',
+                     [false, true] => '/float',
+                     [false, false] => '/float']
+
+            def default_numeric_typename(size, integer, unsigned)
+                "#{DEFAULT_TYPENAMES[[integer,unsigned]]}#{size * 8}"
+            end
+
+            def setup_submodel(submodel,  size: 0, integer: true, unsigned: false,
+                typename: default_numeric_typename(size, integer, unsigned), &block)
                 super(submodel, typename: typename, size: size, &block)
 
                 submodel.integer = integer
@@ -86,6 +97,11 @@ module TypeStore
                 else
                     FLOAT_PACK_CODES[[size, TypeStore.big_endian?]]
                 end
+            end
+
+            def initialize_base_class
+                super
+                self.name = "TypeStore::NumericType"
             end
         end
     end
