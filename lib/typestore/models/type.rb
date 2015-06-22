@@ -121,21 +121,32 @@ module TypeStore
                     recursive_dependencies.include?(type) || recursive_dependencies.any? { |t| t <= type }
             end
 
-            # @return [Set<Type>] Returns the types that are directly referenced by +self+
+            # @return [Set<Type>] returns the types that are directly referenced by self,
+            #   excluding self
             #
             # @see recursive_dependencies
             def direct_dependencies
-                Set.new
+                @direct_dependencies ||= Set.new
             end
 
-            # Returns the set of all types that are needed to define +self+
+            # Returns the set of all types that are needed to define self,
+            # excluding self
             #
             # @param [Set<Type>] set if given, the new types will be added to
             #   this set. Otherwise, a new set is created. In both cases, the set is
             #   returned
             # @return [Set<Type>]
-            def recursive_dependencies(set = Set.new)
-                set
+            def recursive_dependencies
+                if !@recursive_dependencies
+                    @recursive_dependencies = Set.new
+                    direct_dependencies.each do |t|
+                        if !@recursive_dependencies.include?(t)
+                            @recursive_dependencies << t
+                            @recursive_dependencies.merge(t.recursive_dependencies)
+                        end
+                    end
+                end
+                @recursive_dependencies
             end
 
             # Extends this type class so that values get automatically converted
