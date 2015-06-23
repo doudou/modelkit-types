@@ -25,6 +25,18 @@ module TypeStore
                     t  = TypeStore::IndirectType.new_submodel(deference: t0)
                     assert t.contains_opaques?
                 end
+                it "sets contains_converted_types? to true if the deference'd type contains converted types itself" do
+                    t0 = TypeStore::Type.new_submodel
+                    t0.contains_converted_types = true
+                    t  = TypeStore::IndirectType.new_submodel(deference: t0)
+                    assert t.contains_converted_types?
+                end
+                it "sets contains_converted_types? to true if the deference'd type needs convertions" do
+                    t0 = TypeStore::Type.new_submodel
+                    t0.convert_to_ruby(Array) { Array.new }
+                    t  = TypeStore::IndirectType.new_submodel(deference: t0)
+                    assert t.contains_converted_types?
+                end
             end
         end
     end
