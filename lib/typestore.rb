@@ -216,6 +216,8 @@ end
 # Type models
 require 'metaruby'
 require 'typestore/exceptions'
+require 'typestore/ruby_mapping_specialization'
+require 'typestore/type_specialization_module'
 require 'typestore/specializations'
 require 'typestore/metadata'
 
