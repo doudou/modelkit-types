@@ -107,7 +107,7 @@ module TypeStore
             #
             # @return [Hash]
             def to_h_minimal(options = Hash.new)
-                result = Hash[name: name, class: superclass.name]
+                result = Hash[name: name, class: superclass.name.gsub(/^TypeStore::/, '')]
                 if options[:layout_info]
                     result[:size] = size
                 end

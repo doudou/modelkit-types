@@ -11,7 +11,7 @@ module TypeStore
                 end
 
                 it "should be able to describe the type" do
-                    expected = Hash[class: 'TypeStore::ArrayType',
+                    expected = Hash[class: 'ArrayType',
                                     name: array_t.name,
                                     element: element_t.to_h_minimal(layout_info: false),
                                     length: 10]
@@ -19,7 +19,7 @@ module TypeStore
                 end
 
                 it "should describe the sub-type fully if recursive is true" do
-                    expected = Hash[class: 'TypeStore::ArrayType',
+                    expected = Hash[class: 'ArrayType',
                                     name: array_t.name,
                                     element: element_t.to_h(layout_info: false),
                                     length: 10]

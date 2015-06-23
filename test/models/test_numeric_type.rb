@@ -37,7 +37,7 @@ module TypeStore
                         size: 4, integer: false)
                 end
                 it "should report a class of 'NumericType'" do
-                    assert_equal 'TypeStore::NumericType', int_t.to_h[:class]
+                    assert_equal 'NumericType', int_t.to_h[:class]
                 end
                 it "should always have a size field" do
                     info = int_t.to_h(layout_info: false)
@@ -52,7 +52,7 @@ module TypeStore
                 end
                 it "should convert an integer type description" do
                     expected = Hash[name: int_t.name,
-                                    class: 'TypeStore::NumericType',
+                                    class: 'NumericType',
                                     size: 4,
                                     integer: true,
                                     unsigned: false]
@@ -60,7 +60,7 @@ module TypeStore
                 end
                 it "should convert a float type description" do
                     expected = Hash[name: float_t.name,
-                                    class: 'TypeStore::NumericType',
+                                    class: 'NumericType',
                                     size: 4,
                                     integer: false]
                     assert_equal expected, float_t.to_h

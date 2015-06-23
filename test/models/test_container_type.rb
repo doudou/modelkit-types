@@ -13,7 +13,7 @@ module TypeStore
                 end
 
                 it "should be able to describe the type" do
-                    expected = Hash[class: 'TypeStore::ContainerType',
+                    expected = Hash[class: 'ContainerType',
                                     kind: container_t.container_kind.name,
                                     name: container_t.name,
                                     element: element_t.to_h_minimal(layout_info: false)]
@@ -21,7 +21,7 @@ module TypeStore
                 end
 
                 it "should describe the sub-type fully if recursive is true" do
-                    expected = Hash[class: 'TypeStore::ContainerType',
+                    expected = Hash[class: 'ContainerType',
                                     kind: container_t.container_kind.name,
                                     name: container_t.name,
                                     element: element_t.to_h(layout_info: false)]

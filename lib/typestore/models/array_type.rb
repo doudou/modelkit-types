@@ -6,6 +6,11 @@ module TypeStore
             # Length of the array, in the number of elements
             attr_accessor :length
 
+            def initialize_base_class
+                super
+                self.name = "TypeStore::ArrayType"
+            end
+
             def setup_submodel(submodel, deference: nil, length: 0, registry: self.registry, typename: nil,
                                size: deference.size * length)
                 super(submodel, deference: deference, registry: registry, typename: typename, size: size)
@@ -57,11 +62,6 @@ module TypeStore
             # specialization blocks apply to self
             def ruby_convertion_candidates_on(ruby_mappings)
                 super + (ruby_mappings.from_array_basename[deference.name] || Array.new)
-            end
-
-            def initialize_base_class
-                super
-                self.name = "TypeStore::ArrayType"
             end
         end
     end

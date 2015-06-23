@@ -3,6 +3,11 @@ module TypeStore
         module ContainerType
             include IndirectType
 
+            def initialize_base_class
+                super
+                self.name = "TypeStore::ContainerType"
+            end
+
             # The type of container
             #
             # The container hierarchy is different from the other types, as
@@ -52,7 +57,7 @@ module TypeStore
             def to_h(options = Hash.new)
                 info = super
                 info[:kind] = info[:class]
-                info[:class] = "TypeStore::ContainerType"
+                info[:class] = "ContainerType"
                 if deference
                     info[:element] =
                         if options[:recursive]
