@@ -4,6 +4,8 @@ module TypeStore
     # See the TypeStore module documentation for an overview about how types are
     # values are represented.
     class CompoundType < Type
+        extend Models::CompoundType
+
         module CustomConvertionsHandling
             def invalidate_changes_from_converted_types
                 super()

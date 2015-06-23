@@ -80,11 +80,6 @@ module TypeStore
         it "can be accessed for fields" do
             assert_kind_of Typelib::MetaData, type.field_metadata['field']
         end
-        it "is marshalled and unmarshalled" do
-            type.field_metadata['field'].set('k0', 'v0')
-            new_registry = Typelib::Registry.from_xml(registry.to_xml)
-            assert_equal [['k0', ['v0']]].to_set, new_registry.get('/Test').field_metadata['field'].each.to_a
-        end
     end
 end
 

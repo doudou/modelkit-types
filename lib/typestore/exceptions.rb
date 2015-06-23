@@ -1,4 +1,7 @@
 module TypeStore
+    class NotFound < ArgumentError
+    end
+
     class DuplicateType < ArgumentError
     end
 
@@ -29,5 +32,8 @@ module TypeStore
         end
     end
 
+    class DuplicateFieldError < RuntimeError; end
 
+    class FieldNotFound < NotFound
+    end
 end

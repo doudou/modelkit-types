@@ -6,16 +6,18 @@ module TypeStore
             class Field
                 attr_reader :name
                 attr_reader :type
+                attr_accessor :offset
 
                 def metadata; @metadata ||= MetaData.new end
 
-                def initialize(name, type)
-                    @name, @type = name, type
+                def initialize(name, type, offset: nil)
+                    @name, @type, @offset = name, type, offset
                 end
+            end
 
-                def offset
-                    metadata.get('offset').first
-                end
+            def initialize_base_class
+                super
+                self.name = "TypeStore::CompoundType"
             end
 
             # @return [Hash<String,Field>] the set of fields composing this
@@ -31,10 +33,6 @@ module TypeStore
                 super || (!fields.empty? && fields.each_value.find { |f| f.offset == 0 && f.type.is_a?(type) })
 	    end
 
-            # The set of fields that are converted to a different type when
-            # accessed from Ruby, as a set of names
-            attr_reader :converted_fields
-
             # Controls whether {#can_overload_method} should warn if some
             # overloading are not allowed, or be silent about it
             #
@@ -47,11 +45,11 @@ module TypeStore
                                      message: "instances of #{self.name}",
                                      allowed_overloadings: Models::Type::ALLOWED_OVERLOADINGS,
                                      with_raw: true,
-                                     silent: !CompoundType.warn_about_helper_method_clashes?)
+                                     silent: !warn_about_helper_method_clashes?)
 
-                candidates = [n, "#{n}="]
+                candidates = [name, "#{name}="]
                 if with_raw
-                    candidates.concat(["raw_#{n}", "raw_#{n}="])
+                    candidates.concat(["raw_#{name}", "raw_#{name}="])
                 end
                 candidates.all? do |method_name|
                     if !reference.method_defined?(method_name) || allowed_overloadings.include?(method_name)
@@ -64,14 +62,14 @@ module TypeStore
             end
 
             # Adds a field to this type
-            def add_field(name, type)
+            def add(name, type, offset: nil)
                 if fields[name]
-                    raise DuplicateFieldError.new(self, name), "#{self} already has a field called #{name}"
+                    raise DuplicateFieldError, "#{self} already has a field called #{name}"
                 end
-                field = Field.new(name, type)
+                field = Field.new(name, type, offset: offset)
                 fields[name] = field
-                self.contains_opaques = self.contains_opaques? || type.contains_opaques?
-                self.contains_converted_types = self.contains_converted_types? || type.contains_converted_types?
+                self.contains_opaques = self.contains_opaques? || type.contains_opaques? || type.opaque?
+                self.contains_converted_types = self.contains_converted_types? || type.contains_converted_types? || type.needs_convertion_to_ruby?
                 if can_define_field_accessor_methods?(CompoundType, name)
                     define_raw_field_accessor_methods(name)
                     if type.contains_converted_types?
@@ -115,115 +113,14 @@ module TypeStore
                 end
             end
 
-            @@custom_convertion_modules = Hash.new
-            def custom_convertion_module(converted_fields)
-                @@custom_convertion_modules[converted_fields] ||=
-                    Module.new do
-                        include CustomConvertionsHandling
-
-                        converted_fields.each do |field_name|
-                            attr_name = "@#{field_name}"
-                            define_method("#{field_name}=") do |value|
-                                instance_variable_set(attr_name, value)
-                            end
-                            define_method(field_name) do
-                                v = instance_variable_get(attr_name)
-                                if !v.nil?
-                                    v
-                                else
-                                    v = get(field_name)
-                                    instance_variable_set(attr_name, v)
-                                end
-                            end
-                        end
-                    end
-            end
-
-            # Creates a module that can be used to extend a certain Type class to
-            # take into account the convertions.
-            #
-            # I.e. if a convertion is declared as
-            #
-            #   convert_to_ruby '/base/Time', :to => Time
-            # 
-            # and the type T is a structure with a field of type /base/Time, then
-            # if
-            #
-            #   type = registry.get('T')
-            #   type.extend_for_custom_convertions
-            #
-            # then
-            #   t = type.new
-            #   t.time => Time instance
-            #   t.time => the same Time instance
-            def extend_for_custom_convertions
-                super if defined? super
-
-                if !converted_fields.empty?
-                    self.contains_converted_types = true
-                    converted_fields = TypeStore.filter_methods_that_should_not_be_defined(
-                        self, self, self.converted_fields, Type::ALLOWED_OVERLOADINGS, nil, false)
-
-                    m = custom_convertion_module(converted_fields)
-                    include(m)
-                end
-            end
-
-            @@access_method_modules = Hash.new
-            def access_method_module(full_fields_names, converted_field_names)
-                @@access_method_modules[[full_fields_names, converted_field_names]] ||=
-                    Module.new do
-                        full_fields_names.each do |name|
-                            define_method(name) { get(name) }
-                            define_method("#{name}=") { |value| set(name, value) }
-                            define_method("raw_#{name}") { raw_get(name) }
-                            define_method("raw_#{name}=") { |value| raw_set(name, value) }
-                        end
-                        converted_field_names.each do |name|
-                            define_method("raw_#{name}") { raw_get(name) }
-                            define_method("raw_#{name}=") { |value| raw_set(name, value) }
-                        end
-                    end
-            end
-
 	    # Called by the extension to initialize the subclass
 	    # For each field, it creates getters and setters on 
 	    # the object, and a getter in the singleton class 
 	    # which returns the field type
-            def setup_submodel(submodel, options = Hash.new)
-                submodel.instance_variable_set(:@field_types, Hash.new)
-                submodel.instance_variable_set(:@fields, Array.new)
-                submodel.instance_variable_set(:@field_metadata, Hash.new)
-                submodel.get_fields.each do |name, offset, type, metadata|
-                    if name.respond_to?(:force_encoding)
-                        name.force_encoding('ASCII')
-                    end
-                    submodel.field_types[name] = type
-                    submodel.field_types[name.to_sym] = type
-                    submodel.fields << [name, type]
-                    submodel.field_metadata[name] = metadata
-                end
+            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, &block)
+                super
 
-                converted_fields = []
-                full_fields = []
-                each_field do |name, type|
-                    if type.contains_converted_types?
-                        converted_fields << name
-                    else
-                        full_fields << name
-                    end
-                end
-                converted_fields = converted_fields.sort
-                full_fields = full_fields.sort
-
-                submodel.instance_variable_set(:@converted_fields, converted_fields)
-                overloaded_converted_fields = submodel.
-                    filter_methods_that_should_not_be_defined(converted_fields, false)
-                overloaded_full_fields = submodel.
-                    filter_methods_that_should_not_be_defined(full_fields, true)
-                m = access_method_module(overloaded_full_fields, overloaded_converted_fields)
-                submodel.include(m)
-
+                submodel.instance_variable_set(:@fields, Hash.new)
                 super
 
                 if !submodel.convertions_from_ruby.has_key?(Hash)
@@ -249,39 +146,52 @@ module TypeStore
             end
 
             # Returns the offset, in bytes, of the given field
+            #
+            # @param (see #get)
+            # @raise (see #get)
+            # @return [Integer]
             def offset_of(fieldname)
-                fieldname = fieldname.to_str
-                get_fields.each do |name, offset, _|
-                    return offset if name == fieldname
-                end
-                raise "no such field #{fieldname} in #{self}"
+                get(fieldname).offset
             end
 
-	    # The list of fields
-            attr_reader :fields
-            # A name => type map of the types of each fiel
-            attr_reader :field_types
-            # A name => object mapping of the field metadata objects
-            attr_reader :field_metadata
-	    # Returns the type of +name+
-            def [](name)
-                if result = field_types[name]
+            # Alias for {get}
+            def [](name); get(name) end
+
+            # Accesses a field by name
+            #
+            # @param [#to_str] name the field name
+            # @return [Field]
+            # @raise [FieldNotFound] if there are no fields with this name
+            def get(name)
+                name = name.to_str
+                if result = fields[name]
                     result
                 else
-                    raise ArgumentError, "#{name} is not a field of #{self.name}"
+                    raise FieldNotFound, "#{name} is not a field of #{self}"
                 end
             end
+
             # True if the given field is defined
             def has_field?(name)
-                field_types.has_key?(name)
+                fields.has_key?(name.to_str)
             end
-	    # Iterates on all fields
+
+            # Enumerates the compound's fields
+            #
+            # @yieldparam [Field] field
+            def each(&block)
+                fields.each_value(&block)
+            end
+
+	    # @deprecated use {#each} instead
+            #
+            # Iterates on all fields
             #
             # @yield [name,type] the fields of this compound
             # @return [void]
             def each_field
                 return enum_for(__method__) if !block_given?
-		fields.each { |field| yield(*field) } 
+                fields.each_value { |field| yield(field.name, field.type) } 
 	    end
 
             # Returns the description of a type using only simple ruby objects
@@ -306,19 +216,17 @@ module TypeStore
             def to_h(options = Hash.new)
                 fields = Array.new
                 if options[:recursive]
-                    each_field.map do |name, type|
-                        fields << Hash[name: name, type: type.to_h(options)]
+                    each.map do |field|
+                        fields << Hash[name: field.name, type: field.type.to_h(options), offset: field.offset]
                     end
                 else
-                    each_field.map do |name, type|
-                        fields << Hash[name: name, type: type.to_h_minimal(options)]
+                    each.map do |field|
+                        fields << Hash[name: field.name, type: field.type.to_h_minimal(options), offset: field.offset]
                     end
                 end
 
-                if options[:layout_info]
-                    fields.each do |field|
-                        field[:offset] = offset_of(field[:name])
-                    end
+                if !options[:layout_info]
+                    fields.each { |f| f.delete(:offset) }
                 end
                 super.merge(fields: fields)
             end
@@ -326,9 +234,8 @@ module TypeStore
 	    def pretty_print_common(pp) # :nodoc:
                 pp.group(2, '{', '}') do
 		    pp.breakable
-                    all_fields = get_fields.to_a
                     
-                    pp.seplist(all_fields) do |field|
+                    pp.seplist(each.to_a) do |field|
 			yield(*field)
                     end
                 end
@@ -337,30 +244,23 @@ module TypeStore
             def pretty_print(pp, verbose = false) # :nodoc:
 		super(pp)
 		pp.text ' '
-		pretty_print_common(pp) do |name, offset, type, metadata|
-                    if doc = metadata.get('doc').first
+		pretty_print_common(pp) do |field|
+                    if doc = field.metadata.get('doc').first
                         if pp_doc(pp, doc)
                             pp.breakable
                         end
                     end
-		    pp.text name
+                    pp.text field.name
                     if verbose
-                        pp.text "[#{offset}] <"
+                        pp.text "[#{field.offset}] <"
                     else
                         pp.text " <"
                     end
 		    pp.nest(2) do
-                        type.pretty_print(pp, false)
+                        field.type.pretty_print(pp, false)
 		    end
 		    pp.text '>'
 		end
-            end
-
-            def initialize_base_class
-                super
-                @fields = []
-                @field_types = Hash.new
-                @field_metadata = Hash.new
             end
         end
     end
