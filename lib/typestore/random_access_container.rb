@@ -2,6 +2,10 @@ module TypeStore
     # Module included in container types that offer random access
     # functionality
     module RandomAccessContainer
+        def random_access?
+            true
+        end
+
         # Private version of the getters, to bypass the index boundary
         # checks
         def raw_get_no_boundary_check(index)

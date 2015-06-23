@@ -20,16 +20,6 @@ module TypeStore
             do_clear
         end
 
-        class DeepCopyArray < Array
-            def dup
-                result = DeepCopyArray.new
-                for v in self
-                    result << v
-                end
-                result
-            end
-        end
-
         # DEPRECATED. Use #push instead
         def insert(value) # :nodoc:
             TypeStore.warn "TypeStore::ContainerType#insert(value) is deprecated, use #push(value) instead"
