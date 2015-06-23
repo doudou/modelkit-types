@@ -3,10 +3,64 @@ module TypeStore
         module EnumType
             include Type
 
-            def from_ruby(value)
-                v = new
-                v.typelib_from_ruby(value)
-                v
+            # Mapping from a numerical value to the symbol it represents
+            attr_reader :value_to_symbol
+
+            # Mapping from a symbol to the numerical value it represents
+            attr_reader :symbol_to_value
+
+            def initialize_base_class
+                super
+                self.name = "TypeStore::EnumType"
+            end
+
+            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, opaque: false, &block)
+                super
+                submodel.instance_variable_set(:@value_to_symbol, Hash.new)
+                submodel.instance_variable_set(:@symbol_to_value, Hash.new)
+            end
+
+            # Add a new symbol to self
+            def add(symbol, value)
+                symbol, value = symbol.to_sym, Integer(value)
+                value_to_symbol[value] = symbol
+                symbol_to_value[symbol] = value
+            end
+
+            # Returns the value of a symbol
+            #
+            # @param [#to_sym] symbol
+            # @return [Integer] the value of symbol
+            # @raise [ArgumentError] if symbol is not part of this enumeration
+            def value_of(symbol)
+                if value = symbol_to_value[symbol.to_sym]
+                    value
+                else
+                    raise ArgumentError, "#{self} has not value for #{symbol}"
+                end
+            end
+
+            # Returns the symbol that has this value
+            #
+            # If there is more than one symbol, one from all of them is picked
+            #
+            # @param [Integer] value
+            # @return [Symbol] the symbol for value
+            # @raise [ArgumentError] if there is no symbol with this value
+            def name_of(value)
+                if symbol = value_to_symbol[Integer(value)]
+                    symbol
+                else
+                    raise ArgumentError, "#{self} has no symbol with value #{value}"
+                end
+            end
+
+            # Enumerate the symbol/value pairs
+            #
+            # @yieldparam [Symbol] symbol
+            # @yieldparam [Integer] value
+            def each(&block)
+                symbol_to_value.each(&block)
             end
 
             # Returns the description of a type using only simple ruby objects
@@ -25,8 +79,8 @@ module TypeStore
             # @return (see Type#to_h)
             def to_h(options = Hash.new)
                 info = super
-                info[:values] = keys.map do |n, v|
-                    Hash[name: n, value: v]
+                info[:values] = symbol_to_value.map do |n, v|
+                    Hash[name: n.to_s, value: v]
                 end
                 info
             end
@@ -37,7 +91,7 @@ module TypeStore
                 pp.nest(2) do
                     keys = self.keys.sort_by(&:last)
 		    pp.breakable
-                    pp.seplist(keys) do |keydef|
+                    pp.seplist(symbol_to_value) do |keydef|
                         if verbose
                             pp.text keydef.join(" = ")
                         else
