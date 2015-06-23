@@ -183,6 +183,7 @@ module TypeStore
                 submodel.null = null
                 submodel.opaque = opaque
                 submodel.instance_variable_set(:@metadata, MetaData.new)
+                submodel.instance_variable_set(:@convertions_from_ruby, Hash.new)
 
                 TypeStore.type_specializations.find_all(submodel).each do |m|
                     extend m

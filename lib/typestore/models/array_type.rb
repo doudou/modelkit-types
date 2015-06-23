@@ -3,15 +3,14 @@ module TypeStore
         module ArrayType
             include Models::IndirectType
 
-            def find_custom_convertions(conversion_set)
-                generic_array_id = deference.name + '[]'
-                super(conversion_set) +
-                    super(conversion_set, generic_array_id)
-            end
+            # Length of the array, in the number of elements
+            attr_accessor :length
 
-            def subclass_initialize
-                super
+            def setup_submodel(submodel, deference: nil, length: 0, registry: self.registry, typename: nil,
+                               size: deference.size * length)
+                super(submodel, deference: deference, registry: registry, typename: typename, size: size)
 
+                submodel.length = length
                 convert_from_ruby Array do |value, expected_type|
                     if value.size != expected_type.length
                         raise ArgumentError, "expected an array of size #{expected_type.length}, got #{value.size}"
@@ -23,32 +22,6 @@ module TypeStore
                     end
                     t
                 end
-            end
-
-            def extend_for_custom_convertions
-                if deference.contains_converted_types?
-                    self.contains_converted_types = true
-
-                    # There is a custom convertion on the elements of this array. We
-                    # have to convert to a Ruby array once and for all
-                    #
-                    # This can be *very* costly for big arrays
-                    #
-                    # Note that it is overriden by convertions that are explicitely
-                    # defined for this type (i.e. that reference this type by name)
-                    convert_to_ruby Array do |value|
-                        # Convertion is done by value#each directly
-                        converted = value.map { |v| v }
-                        def converted.dup
-                            map(&:dup)
-                        end
-                        converted
-                    end
-                end
-
-                # This is done last so that convertions to ruby that refer to this
-                # type by name can override the default convertion above
-                super
             end
 
             # Returns the pointed-to type (defined for consistency reasons)
@@ -80,8 +53,15 @@ module TypeStore
                 info
             end
 
+            # Used by {RubyMappingCustomization} to find out which
+            # specialization blocks apply to self
             def ruby_convertion_candidates_on(ruby_mappings)
                 super + (ruby_mappings.from_array_basename[deference.name] || Array.new)
+            end
+
+            def initialize_base_class
+                super
+                self.name = "TypeStore::ArrayType"
             end
         end
     end

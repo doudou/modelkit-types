@@ -7,8 +7,8 @@ module TypeStore
             attr_accessor :deference
 
             def setup_submodel(submodel, deference: nil, registry: self.registry, typename: nil, size: 0)
-                super(submodel, registry: registry, typename: typename, size: size)
                 submodel.deference = deference
+                super(submodel, registry: registry, typename: typename, size: size)
                 if deference
                     submodel.direct_dependencies << deference
                     submodel.contains_opaques = deference.contains_opaques? || deference.opaque?
