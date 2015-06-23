@@ -231,10 +231,6 @@ require 'typestore/models/numeric_type'
 require 'typestore/numeric_type'
 require 'typestore/models/indirect_type'
 require 'typestore/indirect_type'
-require 'typestore/models/opaque_type'
-require 'typestore/opaque_type'
-require 'typestore/models/pointer_type'
-require 'typestore/pointer_type'
 require 'typestore/models/array_type'
 require 'typestore/array_type'
 require 'typestore/models/compound_type'
@@ -351,12 +347,6 @@ module TypeStore
         initialize_base_class
     end
     class IndirectType
-        initialize_base_class
-    end
-    class OpaqueType
-        initialize_base_class
-    end
-    class PointerType
         initialize_base_class
     end
 end
