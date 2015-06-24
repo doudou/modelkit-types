@@ -90,4 +90,35 @@ describe TypeStore do
                 TypeStore.basename("/std/vector</wrappers/Matrix</double,3,1>>", '::')
         end
     end
+
+    describe ".validate_typename" do
+        it "raises if alphabetic characters are found as array subscripts" do
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("/int[e]") }
+        end
+        it "raises if negative numbers are found as array subscripts" do
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("/int[-10]") }
+        end
+        it "raises on known cases" do
+            TypeStore.validate_typename "/std/string</double>"
+            TypeStore.validate_typename "/std/string</double>"
+            TypeStore.validate_typename "/std/string</double,9,/std/string>"
+            TypeStore.validate_typename "/std/string<3>"
+            TypeStore.validate_typename "/double[3]"
+            TypeStore.validate_typename "/std/string</double[3]>"
+            TypeStore.validate_typename "/wrappers/Matrix</double,3,1>/Scalar"
+            TypeStore.validate_typename "/std/vector</wrappers/Matrix</double,3,1>>"
+            TypeStore.validate_typename "/std/vector</wrappers/Matrix</double,3,1>>[4]"
+            TypeStore.validate_typename "/std/map</std/string,/trigger/behaviour/Description,/std/less</std/string>,/std/allocator</std/pair</const std/basic_string</char,/std/char_traits</char>,/std/allocator</char>>,/trigger/behaviour/Description>>>"
+        end
+        it "raises on known cases" do
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("std::string") }
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("std::string") }
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("/std/string<double>") }
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("std/string<double>") }
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("std/string</double>") }
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename("s") }
+            assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename(":blabla") }
+        end
+    end
 end
+

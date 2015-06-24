@@ -102,6 +102,60 @@ module TypeStore
         build_typename_parts(tokens, namespace_separator: separator)
     end
 
+    # Validates that the given name is a canonical TypeStore type name
+    def self.validate_typename(name, absolute: true)
+        tokens = typename_tokenizer(name)
+        if absolute && (tokens.first != NAMESPACE_SEPARATOR)
+            raise InvalidTypeNameError, "expected #{name} to have a leading #{NAMESPACE_SEPARATOR}"
+        end
+
+        in_array = false
+        template_level = 0
+        while !tokens.empty?
+            if in_array
+                case tk = tokens.shift
+                when /^\d+$/
+                when "]"
+                    in_array = false
+                else
+                    raise InvalidTypeNameError, "found #{tk} in array definition"
+                end
+            else
+                case tk = tokens.shift
+                when NAMESPACE_SEPARATOR
+                    if (tk = tokens.first) && tk !~ /[a-zA-Z]/
+                        raise InvalidTypeNameError, "found #{tk} after /, expected a letter"
+                    end
+                when "["
+                    in_array = true
+                when "<"
+                    template_level += 1
+                    if (tk = tokens.first) && tk !~ /[\-0-9\/]/
+                        raise InvalidTypeNameError, "found #{tk} after <, expected a type name or a number"
+                    end
+                when ","
+                    if (tk = tokens.first) && tk !~ /[\-0-9\/]/
+                        raise InvalidTypeNameError, "found #{tk} after ,, expected a type name or a number"
+                    end
+                when ">"
+                    if template_level == 0
+                        raise InvalidTypeNameError, "found > without matching opening <"
+                    end
+                    template_level -= 1
+                    if (tk = tokens.first) && tk !~ /[>,\/\[]/
+                        raise InvalidTypeNameError, "found #{tk} after >"
+                    end
+                when /^[\w ]+$/
+                else
+                    raise InvalidTypeNameError, "found #{tk}, expected alphanumeric characters or _"
+                end
+            end
+        end
+        if template_level != 0
+            raise InvalidTypeNameError, "missing closing >"
+        end
+    end
+
     def self.build_typename_parts(tokens, namespace_separator: NAMESPACE_SEPARATOR)
         level = 0
         parts = []
@@ -138,7 +192,7 @@ module TypeStore
         suffix = name
         result = []
         while !suffix.empty?
-            suffix =~ /^([^<\/,>]*)/
+            suffix =~ /^([^<\/,>\[\]]*)/
             match = $1.strip
             if !match.empty?
                 result << match

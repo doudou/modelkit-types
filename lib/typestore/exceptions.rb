@@ -2,6 +2,8 @@ module TypeStore
     class NotFound < ArgumentError
     end
 
+    class InvalidTypeNameError < ArgumentError; end
+
     class DuplicateType < ArgumentError
     end
 
