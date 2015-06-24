@@ -62,6 +62,34 @@ module TypeStore
                     assert_raises(ArgumentError) { enum_t.name_of(20) }
                 end
             end
+
+            describe "#merge" do
+                it "merges the symbol_to_value and value_to_symbol mappings" do
+                    enum_t.add :TEST, 10
+                    enum_t.add :TEST1, 20
+                    other_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                    other_t.add :TEST, 10
+                    other_t.add :TEST2, 20
+                    assert_equal Hash[TEST: 10, TEST1: 20, TEST2: 20],
+                        other_t.merge(enum_t).symbol_to_value
+                end
+            end
+            describe "#validate_merge" do
+                it "passes if the two enums do not have colliding symbol-to-value mappings" do
+                    enum_t.add :TEST, 10
+                    enum_t.add :TEST1, 20
+                    other_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                    other_t.add :TEST, 10
+                    other_t.add :TEST2, 20
+                    other_t.validate_merge(enum_t)
+                end
+                it "raises if the two enums have different values for the same symbol" do
+                    enum_t.add :TEST, 10
+                    other_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                    other_t.add :TEST, 20
+                    assert_raises(MismatchingEnumSymbolsError) { enum_t.validate_merge(other_t) }
+                end
+            end
         end
     end
 end

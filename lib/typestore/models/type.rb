@@ -124,6 +124,35 @@ module TypeStore
                     recursive_dependencies.include?(type) || recursive_dependencies.any? { |t| t <= type }
             end
 
+            # Validates that a certain type can be merged in self
+            #
+            # Note that this method does NOT check for global consistency. For
+            # instance, it will happily merge two arrays of different types.
+            # Global consistency is guaranteed by {Registry#merge}. Use this
+            # method at your own risk
+            #
+            # @param [Model<Type>] type the compound to merge
+            # @raise [InvalidMerge] if the merge is not possible
+            def validate_merge(type)
+                if type.name != name
+                    raise MismatchingTypeNameError, "attempting to merge #{name} and #{type.name}, two types with different names"
+                elsif type.supermodel != supermodel
+                    raise MismatchingTypeModelError, "attempting to merge #{name} of class #{supermodel} with a type with the same name but of class #{type.supermodel}"
+                elsif type.size != size
+                    raise MismatchingTypeSizeError, "attempting to merge #{name} from #{registry} with the same type from #{type.registry}, but their sizes differ"
+                elsif type.opaque? ^ opaque?
+                    raise MismatchingTypeOpaqueFlagError, "attempting to merge #{name} from #{registry} with the same type from #{type.registry}, but their opaque flag differ"
+                elsif type.null? ^ null?
+                    raise MismatchingTypeNullFlagError, "attempting to merge #{name} from #{registry} with the same type from #{type.registry}, but their null flag differ"
+                end
+            end
+
+            # Merge the information in type that is not in self
+            def merge(type)
+                metadata.merge(type.metadata)
+                self
+            end
+
             # @return [Set<Type>] returns the types that are directly referenced by self,
             #   excluding self
             #

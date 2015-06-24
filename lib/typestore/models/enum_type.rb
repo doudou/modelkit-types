@@ -27,6 +27,23 @@ module TypeStore
                 symbol_to_value[symbol] = value
             end
 
+            def validate_merge(type)
+                super
+                symbol_to_value = self.symbol_to_value.dup
+                type.symbol_to_value.merge(symbol_to_value) do |sym, type_v, v|
+                    if type_v != v
+                        raise MismatchingEnumSymbolsError, "symbol #{sym} has value #{type_v} in #{type} and #{v} in #{self}"
+                    end
+                end
+            end
+
+            def merge(type)
+                super
+                @symbol_to_value = type.symbol_to_value.merge(symbol_to_value)
+                @value_to_symbol = type.value_to_symbol.merge(value_to_symbol)
+                self
+            end
+
             # Returns the value of a symbol
             #
             # @param [#to_sym] symbol

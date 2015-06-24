@@ -15,6 +15,13 @@ module TypeStore
                     submodel.contains_converted_types = deference.contains_converted_types? || deference.needs_convertion_to_ruby?
                 end
             end
+
+            def validate_merge(type)
+                super
+                if deference.name != type.deference.name
+                    raise MismatchingDeferencedTypeError, "#{self} deferences to #{deference.name} and #{type} to #{type.deference.name}"
+                end
+            end
         end
     end
 end

@@ -15,6 +15,10 @@ module TypeStore
             end
         end
 
+        def empty?
+            data.empty?
+        end
+
         def merge(metadata)
             @data = data.merge(metadata.data) do |k, v1, v2|
                 v1 | v2
@@ -48,6 +52,10 @@ module TypeStore
         def keys
             data.keys
         end
+        def to_hash
+            data.dup
+        end
+
         def pretty_print(pp)
             pp.seplist(each.to_a) do |entry|
                 key, values = *entry

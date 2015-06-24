@@ -4,14 +4,40 @@ module TypeStore
             include Type
 
             class Field
+                attr_reader :compound
                 attr_reader :name
                 attr_reader :type
                 attr_accessor :offset
 
                 def metadata; @metadata ||= MetaData.new end
 
-                def initialize(name, type, offset: nil)
-                    @name, @type, @offset = name, type, offset
+                def has_metadata?; @metadata && !@metadata.empty? end
+
+                def initialize(compound, name, type, offset: nil)
+                    @compound, @name, @type, @offset = compound, name, type, offset
+                end
+
+                def validate_merge(field)
+                    if field.name != name
+                        raise ArgumentError, "invalid field passed to #merge: name mismatches"
+                    end
+
+                    if field.offset != offset
+                        raise MismatchingFieldOffsetError, "field #{name} is at offset #{offset} in #{compound} and at #{field.offset} in #{field.compound}"
+                    end
+
+                    # See documentation of {Type#merge} for an explanation about
+                    # why we don't test #type completely but only on name
+                    if field.type.name != type.name
+                        raise MismatchingFieldTypeError, "field #{name} from #{compound} has a type named #{type.name} but the correspondinf field in #{field.compound} has a type named #{field.type.name}"
+                    end
+                end
+
+                def merge(field)
+                    if field.has_metadata?
+                        metadata.merge(field.metadata)
+                    end
+                    self
                 end
             end
 
@@ -65,8 +91,11 @@ module TypeStore
             def add(name, type, offset: nil)
                 if fields[name]
                     raise DuplicateFieldError, "#{self} already has a field called #{name}"
+                elsif type.registry != registry
+                    raise NotFromThisRegistryError, "#{type} is from #{type.registry} and #{self} is from #{registry}, cannot add a field"
                 end
-                field = Field.new(name, type, offset: offset)
+
+                field = Field.new(self, name, type, offset: offset)
                 fields[name] = field
                 self.contains_opaques = self.contains_opaques? || type.contains_opaques? || type.opaque?
                 self.contains_converted_types = self.contains_converted_types? || type.contains_converted_types? || type.needs_convertion_to_ruby?
@@ -229,6 +258,29 @@ module TypeStore
                     fields.each { |f| f.delete(:offset) }
                 end
                 super.merge(fields: fields)
+            end
+
+            def validate_merge(type)
+                super
+                type_fields = type.fields.dup
+                each do |f|
+                    if type_f = type_fields.delete(f.name)
+                        f.validate_merge(type_f)
+                    else
+                        raise MismatchingFieldSetError, "field #{f.name} is present in #{self} but not in #{type}"
+                    end
+                end
+                if !type_fields.empty?
+                    raise MismatchingFieldSetError, "fields #{type_fields.keys.sort.join(", ")} are present in #{type} but not in #{self}"
+                end
+            end
+
+            def merge(type)
+                super
+                each do |f|
+                    f.merge(type.get(f.name))
+                end
+                self
             end
 
 	    def pretty_print_common(pp) # :nodoc:

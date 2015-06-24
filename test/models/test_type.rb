@@ -67,6 +67,46 @@ module TypeStore
                     assert_equal [['k', ['v0', 'v1'].to_set]], t.metadata.each.to_a
                 end
             end
+            describe "#merge" do
+                it "merges the metadata together" do
+                    t0 = TypeStore::Type.new_submodel
+                    t1 = TypeStore::Type.new_submodel
+                    flexmock(t0.metadata).should_receive(:merge).with(t1.metadata).once
+                    t0.merge(t1)
+                end
+            end
+            describe "#validate_merge" do
+                it "passes for equivalent types" do
+                    t0 = TypeStore::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)
+                    t1 = TypeStore::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)
+                    t0.validate_merge(t1)
+                end
+                it "raises InvalidMerge if the names differ" do
+                    t0 = TypeStore::Type.new_submodel typename: 't0'
+                    t1 = TypeStore::Type.new_submodel typename: 't1'
+                    assert_raises(MismatchingTypeNameError) { t0.validate_merge(t1) }
+                end
+                it "raises InvalidMerge if the supermodels differ" do
+                    t0 = TypeStore::CompoundType.new_submodel
+                    t1 = TypeStore::Type.new_submodel
+                    assert_raises(MismatchingTypeModelError) { t0.validate_merge(t1) }
+                end
+                it "raises InvalidMerge if the sizes differ" do
+                    t0 = TypeStore::Type.new_submodel size: 1
+                    t1 = TypeStore::Type.new_submodel size: 2
+                    assert_raises(MismatchingTypeSizeError) { t0.validate_merge(t1) }
+                end
+                it "raises InvalidMerge if the opaque flag differ" do
+                    t0 = TypeStore::Type.new_submodel opaque: true
+                    t1 = TypeStore::Type.new_submodel opaque: false
+                    assert_raises(MismatchingTypeOpaqueFlagError) { t0.validate_merge(t1) }
+                end
+                it "raises InvalidMerge if the null flag differ" do
+                    t0 = TypeStore::Type.new_submodel null: true
+                    t1 = TypeStore::Type.new_submodel null: false
+                    assert_raises(MismatchingTypeNullFlagError) { t0.validate_merge(t1) }
+                end
+            end
         end
     end
 end

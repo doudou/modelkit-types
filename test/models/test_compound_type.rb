@@ -24,6 +24,10 @@ module TypeStore
                     compound_t.add 'f0', field_t
                     assert_raises(DuplicateFieldError) { compound_t.add 'f0', field_t }
                 end
+                it "raises NotFromThisRegistryError if the field is not from the same registry than self" do
+                    field_t = TypeStore::Type.new_submodel registry: Registry.new
+                    assert_raises(NotFromThisRegistryError) { compound_t.add 'f0', field_t }
+                end
             end
 
             describe "#empty?" do
@@ -133,9 +137,91 @@ module TypeStore
             describe "marshalling and unmarshalling" do
                 it "marshals and unmarshals metadata" do
                     f = compound_t.add('f0', field_t, offset: 10)
+                    compound_t.register(Registry.new)
                     f.metadata.set('k0', 'v0')
                     new_registry = TypeStore::Registry.from_xml(compound_t.to_xml)
                     assert_equal [['k0', ['v0']]].to_set, new_registry.get('/Test').get('field').metadata.each.to_a
+                end
+            end
+
+            describe "#validate_merge" do
+                attr_reader :other_t
+                before do
+                    @other_t = TypeStore::CompoundType.new_submodel(typename: 'compound_t', size: 10)
+                end
+                it "passes if two fields with the same name have different types with the same name" do
+                    compound_t.add('f0', field_t, offset: 0)
+                    other_t.add('f0', TypeStore::Type.new_submodel(typename: 'field_t'), offset: 0)
+                    other_t.validate_merge(compound_t)
+                end
+                it "raises if two fields with the same name have types with different names" do
+                    compound_t.add('f0', field_t, offset: 0)
+                    other_t.add('f0', TypeStore::Type.new_submodel(typename: 'field'), offset: 0)
+                    assert_raises(MismatchingFieldTypeError) { other_t.validate_merge(compound_t) }
+                end
+                it "raises if two fields with the same name have different offets" do
+                    compound_t.add('f0', field_t, offset: 0)
+                    other_t.add('f0', field_t, offset: 10)
+                    assert_raises(MismatchingFieldOffsetError) { other_t.validate_merge(compound_t) }
+                end
+                it "raises if the field set is different" do
+                    compound_t.add('f0', field_t, offset: 0)
+                    other_t.add('f0', field_t, offset: 0)
+                    other_t.add('f1', field_t, offset: 10)
+                    assert_raises(MismatchingFieldSetError) { other_t.validate_merge(compound_t) }
+                end
+            end
+
+            describe "#merge" do
+                attr_reader :other_t
+                before do
+                    @other_t = TypeStore::CompoundType.new_submodel(typename: 'compound_t', size: 10)
+                end
+                it "merges the field's metadata" do
+                    f = compound_t.add('f0', field_t, offset: 0)
+                    f.metadata.set('k', 'v')
+                    other_f = other_t.add('f0', field_t, offset: 0)
+                    other_f.metadata.set('k', 'v')
+                    flexmock(other_f.metadata).should_receive(:merge).with(f.metadata).once
+                    other_t.merge(compound_t)
+                end
+                it "does not create a field metadata object if the merged field does not have one" do
+                    f = compound_t.add('f0', field_t, offset: 0)
+                    other_f = other_t.add('f0', field_t, offset: 0)
+                    other_t.merge(compound_t)
+                    assert !other_f.has_metadata?
+                end
+                it "does not create a field metadata object if the merged field does not have one" do
+                    f = compound_t.add('f0', field_t, offset: 0)
+                    other_f = other_t.add('f0', field_t, offset: 0)
+                    other_t.merge(compound_t)
+                    assert !other_f.instance_variable_get(:@metadata)
+                end
+                it "does not create a field metadata object if the merged field as an empty one" do
+                    f = compound_t.add('f0', field_t, offset: 0)
+                    f.metadata # Create an empty metadata object
+                    other_f = other_t.add('f0', field_t, offset: 0)
+                    other_t.merge(compound_t)
+                    assert !other_f.instance_variable_get(:@metadata)
+                end
+            end
+
+            describe "#apply_resize" do
+                it "shifts subsequent fields" do
+                    f0 = compound_t.add 'f0', field_t, offset: 0
+                    f1 = compound_t.add 'f1', field_t, offset: field_t.size
+                    compound_t.apply_resize(field_t => field_t.size * 2)
+                    assert_equal 0, f0.offset
+                    assert_equal field_t.size * 2, f1.offset
+                end
+                it "does not touch fields that are beyond the necessary offset" do
+                    f0 = compound_t.add 'f0', field_t, offset: 0
+                    f1 = compound_t.add 'f1', field_t, offset: field_t.size
+                    f2 = compound_t.add 'f2', field_t, offset: field_t.size * 5
+                    compound_t.apply_resize(field_t => field_t.size * 2)
+                    assert_equal 0, f0.offset
+                    assert_equal field_t.size * 2, f1.offset
+                    assert_equal field_t.size * 5, f2.offset
                 end
             end
         end

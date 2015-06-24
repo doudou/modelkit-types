@@ -38,6 +38,24 @@ module TypeStore
                     assert t.contains_converted_types?
                 end
             end
+
+            describe "#validate_merge" do
+                it "passes if the deference'd typenames are equal" do
+                    t0 = TypeStore::Type.new_submodel typename: 't0'
+                    t1 = TypeStore::Type.new_submodel typename: 't0'
+                    i0 = TypeStore::IndirectType.new_submodel(deference: t0)
+                    i1 = TypeStore::IndirectType.new_submodel(deference: t1)
+                    i0.validate_merge(i1)
+                end
+
+                it "raises if the deference'd typename differ" do
+                    t0 = TypeStore::Type.new_submodel typename: 't0'
+                    t1 = TypeStore::Type.new_submodel typename: 't1'
+                    i0 = TypeStore::IndirectType.new_submodel(deference: t0)
+                    i1 = TypeStore::IndirectType.new_submodel(deference: t1)
+                    assert_raises(MismatchingDeferencedTypeError) { i0.validate_merge(i1) }
+                end
+            end
         end
     end
 end
