@@ -20,9 +20,10 @@ module TypeStore
         end
 
         def merge(metadata)
-            @data = data.merge(metadata.data) do |k, v1, v2|
-                v1 | v2
+            metadata.data.each do |k, v|
+                (data[k] ||= Set.new).merge(v)
             end
+            self
         end
         def add(key, *values)
             (data[key.to_str] ||= Set.new).merge(values)

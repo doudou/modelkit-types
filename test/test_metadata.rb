@@ -77,8 +77,26 @@ module TypeStore
             end
         end
 
-        it "can be accessed for fields" do
-            assert_kind_of Typelib::MetaData, type.field_metadata['field']
+        describe "#merge" do
+            it "adds missing keys" do
+                metadata = MetaData.new
+                metadata.set('k', 'v')
+                m = MetaData.new.merge(metadata)
+                assert_equal Hash['k' => ['v'].to_set], m.to_hash
+            end
+            it "creates completely independent objects" do
+                metadata = MetaData.new
+                metadata.set('k', 'v')
+                m = MetaData.new.merge(metadata)
+                refute_same m['k'], metadata['k']
+            end
+            it "merges existing keys" do
+                metadata = MetaData.new
+                metadata.set('k', 'v')
+                m = MetaData.new
+                m.set('k', 'v1', 'v')
+                assert_equal Hash['k' => ['v', 'v1'].to_set], m.to_hash
+            end
         end
     end
 end
