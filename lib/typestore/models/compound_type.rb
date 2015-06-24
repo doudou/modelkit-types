@@ -314,6 +314,22 @@ module TypeStore
 		    pp.text '>'
 		end
             end
+
+            # Apply a set of type-to-size mappings
+            #
+            # @return [Integer,nil] the type's new size if it needs to be resized
+            def apply_resize(typemap)
+                fields = self.fields.values.sort_by { |f| f.offset }
+                min_size = fields.inject(0) do |min_offset, f|
+                    if f.offset < min_offset
+                        f.offset = min_offset
+                    end
+                    f.offset + (typemap[f.type] || f.type.size)
+                end
+                if self.size < min_size
+                    min_size
+                end
+            end
         end
     end
 end

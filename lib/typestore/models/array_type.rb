@@ -29,6 +29,13 @@ module TypeStore
                 end
             end
 
+            # Apply a set of type-resize mappings
+            def apply_resize(typemap)
+                if new_size = typemap[deference]
+                    new_size * length
+                end
+            end
+
             # Returns the pointed-to type (defined for consistency reasons)
             def [](index); deference end
 
