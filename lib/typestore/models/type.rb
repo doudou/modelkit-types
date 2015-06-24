@@ -435,9 +435,6 @@ module TypeStore
             end
 
             def initialize_base_class
-                @__guard_type = Registry.new(load_plugins: false).create_null('/' + self.class.name.gsub('::', '/'))
-                @type = @__guard_type.
-                    instance_variable_get(:@type)
             end
 
             def ruby_convertion_candidates_on(ruby_mappings)
