@@ -244,6 +244,16 @@ module TypeStore
 		end
 	    end
 
+            # Register this type on a registry
+            def register(registry = self.registry)
+                if self.registry && self.registry != registry
+                    raise ArgumentError, "cannot change the registry of #{self} to #{registry}, already registered on #{self.registry}"
+                end
+                @registry = registry
+                registry.register(self)
+                self
+            end
+
             def validate_layout_options(accept_opaques: false, accept_pointers: false,
                                         merge_skip_copy: true, remove_trailing_skips: true)
                 return accept_opaques, accept_pointers, merge_skip_copy, remove_trailing_skips

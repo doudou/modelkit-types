@@ -42,6 +42,12 @@ module TypeStore
                 end
             end
 
+            def from_name(name)
+                each_submodel do |t|
+                    return t if t.name == name
+                end
+            end
+
             # Returns the description of a type using only simple ruby objects
             # (Hash, Array, Numeric and String).
             # 

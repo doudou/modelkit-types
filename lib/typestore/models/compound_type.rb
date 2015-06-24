@@ -89,6 +89,7 @@ module TypeStore
 
             # Adds a field to this type
             def add(name, type, offset: nil)
+                name = name.to_str
                 if fields[name]
                     raise DuplicateFieldError, "#{self} already has a field called #{name}"
                 elsif type.registry != registry

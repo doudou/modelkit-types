@@ -92,18 +92,11 @@ module TypeStore
         #   @yieldparam [String] name the type name, it is different from type.name for
         #     aliases
         #   @yieldparam [Model<TypeStore::Type>] type a type
-        def each(filter = nil, options = Hash.new, &block)
-            if filter.kind_of?(Hash)
-                filter, options = nil, filter
-            end
-
-            options = Kernel.validate_options options,
-                :with_aliases => false
-
+        def each(filter = nil, with_aliases: false)
             if !block_given?
                 enum_for(:each, filter, options)
             else
-                each_type(filter, options[:with_aliases], &block)
+                each_type(filter, with_aliases, &block)
             end
         end
         include Enumerable
@@ -267,16 +260,12 @@ module TypeStore
         #
         # See #resize to resize multiple types in one call.
         def resize(typemap)
-            new_sizes = typemap.map do |type, size|
-                if type.respond_to?(:name)
-                    [type.name, size]
-                else
-                    [type.to_str, size]
-                end
+            typemap = typemap.map_key do |type, size|
+                validate_type_argument(type)
             end
-
-            do_resize(new_sizes)
-            nil
+            types.each do |t|
+                t.resized_type(typemap)
+            end
         end
 
 	# Exports the registry in the provided format, into a Ruby string. The
@@ -299,31 +288,24 @@ module TypeStore
 
         # Helper class for Registry#create_compound
         class CompoundBuilder
-            # The compound type name
-            attr_reader :name
-            # The registry on which we are creating the new compound
-            attr_reader :registry
-            # The compound fields, registered at each called of #method_missing
-            # and #add. The new type is registered when #build is called.
-            attr_reader :fields
-            # The compound size, as specified on object creation. If zero, it is
-            # automatically computed
-            attr_reader :size
+            # The compound type being built
+            attr_reader :type
+            # The offset for the next field
+            attr_reader :current_size
 
-            def initialize(name, registry, size = 0)
-                @name, @registry, @size = name, registry, size
-                @fields = []
+            def initialize(name, registry, size = nil)
+                @current_size = 0
+                @type = CompoundType.new_submodel(typename: name, registry: registry, size: size)
             end
             
             # Create the type on the underlying registry
             def build
-                # Create the offsets, if they are not provided
-                current_offset = 0
-                fields.each do |field_def|
-                    field_def[2] ||= current_offset
-                    current_offset = field_def[2] + field_def[1].size
-                end
-                registry.do_create_compound(name, fields, size)
+                type.size ||= current_size
+                type.register
+            end
+
+            def skip(count)
+                @current_size += count
             end
 
             # Adds a new field
@@ -333,14 +315,11 @@ module TypeStore
             # @param [Integer,nil] offset the field offset. If nil, it is
             #   automatically computed in #build so as to follow the previous
             #   field.
-            def add(name, type, offset = nil)
-                if type.respond_to?(:to_str) || type.respond_to?(:to_sym)
-                    type = registry.build(type.to_s)
-                end
-                @fields << [name.to_s, type, offset]
+            def add(field_name, field_type, offset: current_size)
+                field = type.add(field_name.to_s, field_type, offset: offset)
+                @current_size = [current_size, field.offset + field.type.size].max
             end
 
-            # See {Registry#add} for the alternative to #add
             def method_missing(name, *args, &block)
                 if name.to_s =~ /^(.*)=$/
                     type = args.first
@@ -352,15 +331,31 @@ module TypeStore
             end
         end
 
-        def register(type)
+        def register(type, name: type.name)
             if types.has_key?(type.name)
                 raise DuplicateType, "attempting to redefine the existing type #{type.name}"
             end
-            types[type.name] = type
+            require 'pry'
+            if !name
+                binding.pry
+            end
+            if name[0,1] == '/'
+                types[name] = type
+                types[name[1..-1]] = type
+            else
+                types[name] = type
+                types["/#{name}"] = type
+            end
+            type
         end
 
         def create_null(name)
             register(Type.new_submodel(name: name, null: true))
+        end
+
+        # Create a type of unspecified model (usually for nul/opaque types)
+        def create_type(name, **options)
+            register(Type.new_submodel(typename: name, registry: self, **options))
         end
 
         # Creates a new compound type with the given name on this registry
@@ -382,7 +377,8 @@ module TypeStore
         #     c.field1 = "/another/Compound"
         #   end
         #
-        def create_compound(name, size = 0)
+        def create_compound(name, _size = nil, size: nil)
+            size ||= _size
             recorder = CompoundBuilder.new(name, self, size)
             yield(recorder) if block_given?
             recorder.build
@@ -396,63 +392,102 @@ module TypeStore
         #
         # @example create a new std::vector type
         #   registry.create_container "/std/vector", "/my/Container"
-        def create_container(container_type, element_type, size = 0)
-            if element_type.respond_to?(:to_str)
-                element_type = build(element_type)
+        def create_container(container_model, element_type, _size = nil, typename: nil, size: nil)
+            if container_model.respond_to?(:to_str)
+                container_model = ContainerType.from_name(container_model)
             end
-            return define_container(container_type.to_str, element_type, size)
+            element_type = validate_type_argument(element_type)
+
+            size ||= _size
+            typename ||= "#{container_model.name}<#{element_type.name}>"
+            size = nil if size == 0
+            size ||= container_model.size
+
+            container_t = container_model.
+                new_submodel(registry: self, typename: typename,
+                             deference: element_type, size: size)
+            container_t.register
         end
 
         # Creates a new array type on this registry
         #
         # @param [String,Type] base_type the type of the array elements,
         #   either as a type or as a type name
-        # @param [Integer] size the array size
+        # @param [Integer] length the number of elements in the array
         #
         # @example create a new array of 10 elements
         #   registry.create_array "/my/Container", 10
-        def create_array(base_type, element_count, size = 0)
-            if base_type.respond_to?(:name)
-                base_type = base_type.name
+        def create_array(element_type, length = 0, _size = nil, size: nil, typename: nil)
+            # For backward compatibility with typelib
+            size ||= _size
+            size = nil if size == 0
+
+            element_type = validate_type_argument(element_type)
+            typename ||= "#{element_type.name}[#{length}]"
+            size     ||= element_type.size * length
+            array_t = ArrayType.new_submodel(deference: element_type, typename: typename, registry: self,
+                                   length: length, size: size)
+            array_t.register
+        end
+
+        def validate_type_argument(type)
+            if type.respond_to?(:to_str)
+                get(type)
+            elsif type.registry != self
+                raise NotFromThisRegistryError, "#{type} is not from #{self}"
+            else
+                type
             end
-            return build("#{base_type}[#{element_count}]", size)
+        end
+
+        def alias(new_name, old_type)
+            register(validate_type_argument(old_type), name: new_name)
+        end
+
+        def get(typename)
+            if type = types[typename]
+                type
+            else
+                raise NotFound, "no type #{typename} in #{self}"
+            end
+        end
+
+        # Build a derived type (array or container) from its canonical name
+        def build(typename, size = nil)
+            get(typename)
+        rescue NotFound => e
+            if typename =~ /^(.*)\[(\d+)\]$/
+                create_array(build($1), length: Integer($2), size: size, typename: typename)
+            elsif typename =~ />$/
+                namespace, basename = TypeStore.split_typename(typename)
+                container_t_name, arguments = TypeStore.parse_template(basename)
+                create_container(container_t, build(arguments[0]), typename: typename, size: size)
+            else
+                raise e, "#{e.message}, and it cannot be built", e.backtrace
+            end
         end
 
         # Helper class to build new enumeration types
         class EnumBuilder
-            # [String] The enum type name
-            attr_reader :name
-            # [Registry] The registry on which the enum should be defined
-            attr_reader :registry
-            # [Array<Array(String,Integer)>] the enumeration name-to-integer
-            #   mapping. Values are added with #add
-            attr_reader :symbols
-            # Size, in bytes. If zero, it is automatically computed
-            attr_reader :size
+            # The type being built
+            attr_reader :type
+            # The value for the next symbol
+            attr_reader :current_value
 
             def initialize(name, registry, size)
-                @name, @registry, @size = name, registry, size
-                @symbols = []
+                @current_value = 0
+                @type = EnumType.new_submodel(typename: name, registry: registry, size: size)
             end
             
             # Creates the new enum type on the registry
             def build
-                if @symbols.empty?
-                    raise ArgumentError, "trying to create an empty enum"
-                end
-
-                # Create the values, if they are not provided
-                current_value = 0
-                symbols.each do |sym_def|
-                    sym_def[1] ||= current_value
-                    current_value = sym_def[1] + 1
-                end
-                registry.do_create_enum(name, symbols, size)
+                type.register
             end
 
             # Add a new symbol to this enum
-            def add(name, value = nil)
-                symbols << [name.to_s, (Integer(value) if value)]
+            def add(name, value = current_value)
+                type.add(name.to_s, Integer(value))
+                @current_value = Integer(value) + 1
             end
 
             # Alternative method to add new symbols. See {Registry#create_enum}

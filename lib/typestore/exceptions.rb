@@ -1,6 +1,6 @@
 module TypeStore
-    class NotFound < ArgumentError
-    end
+    class NotFound < ArgumentError; end
+    class FieldNotFound < NotFound; end
 
     class InvalidTypeNameError < ArgumentError; end
 
@@ -36,8 +36,6 @@ module TypeStore
 
     class DuplicateFieldError < RuntimeError; end
 
-    class FieldNotFound < NotFound
-    end
 
     # Base class for all errors related to trying to merge registries that
     # cannot be merged together
