@@ -30,7 +30,7 @@ module TypeStore
     # See TypeStore.specialize to add instance methods to the values of a given
     # TypeStore type
     def self.specialize_model(name, options = Hash.new, &block)
-        options = Kernel.validate_options options, :if => lambda { |t| true }
+        options[:if] = options[:if] || Hash.new(true)
         type_specializations.add(name, Module.new(&block), options)
     end
 
@@ -59,7 +59,7 @@ module TypeStore
     #
     # will make it possible to add two values of the Vector3 type in Ruby
     def self.specialize(name, options = Hash.new, &block)
-        options = Kernel.validate_options options, :if => lambda { |t| true }
+        options[:if] = options[:if] || Hash.new(true)
         value_specializations.add(name, TypeSpecializationModule.new(&block), options)
     end
 
@@ -146,7 +146,7 @@ module TypeStore
     #   };
     #
     def self.convert_from_ruby(ruby_class, typename, options = Hash.new, &block)
-        options = Kernel.validate_options options, :if => lambda { |t| true }
+        options[:if] = options[:if] || Hash.new(true)
         if !ruby_class.kind_of?(Class)
             raise ArgumentError, "expected a class as first argument, got #{ruby_class}"
         end

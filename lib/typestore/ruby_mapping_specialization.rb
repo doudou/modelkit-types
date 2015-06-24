@@ -54,8 +54,8 @@ module TypeStore
         # @param [Regexp,String] the object that will be used to match the type
         #   name
         # @param [Object] value the value to be stored for that key
-        def set(key, value, options = Hash.new)
-	    options = Kernel.validate_options options, :if => lambda { |obj| true }
+        def set(key, value, **options)
+            options[:if] = options[:if] || Hash.new(true)
             key, set = mapping_for_key(key)
             set = set[key] = (container || Array.new).dup
             set << [options, value]
@@ -70,8 +70,8 @@ module TypeStore
         # @param [Regexp,String] the object that will be used to match the type
         #   name
         # @param [Object] value the value to be added to the set for that key
-        def add(key, value, options = Hash.new)
-	    options = Kernel.validate_options options, :if => lambda { |obj| true }
+        def add(key, value, **options)
+            options[:if] = options[:if] || Hash.new(true)
             if !container
                 raise ArgumentError, "#{self} does not support containers"
             end

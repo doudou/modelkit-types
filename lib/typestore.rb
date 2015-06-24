@@ -2,10 +2,7 @@ require 'set'
 require 'base64'
 require 'enumerator'
 require 'utilrb/logger'
-require 'utilrb/object/singleton_class'
-require 'utilrb/kernel/options'
 require 'utilrb/module/attr_predicate'
-require 'utilrb/module/const_defined_here_p'
 require 'facets/string/camelcase'
 
 # TypeStore allows to do two things:

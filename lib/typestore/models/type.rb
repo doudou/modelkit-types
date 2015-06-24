@@ -244,13 +244,9 @@ module TypeStore
 		end
 	    end
 
-            # Helper class that validates the options given to
-            # Type.memory_layout and Type#to_byte_array
-            def validate_layout_options(options)
-                Kernel.validate_options options, :accept_opaques => false,
-                    :accept_pointers => false,
-                    :merge_skip_copy => true,
-                    :remove_trailing_skips => true
+            def validate_layout_options(accept_opaques: false, accept_pointers: false,
+                                        merge_skip_copy: true, remove_trailing_skips: true)
+                return accept_opaques, accept_pointers, merge_skip_copy, remove_trailing_skips
             end
 
             # Returns a representation of the MemoryLayout for this type.
@@ -277,13 +273,8 @@ module TypeStore
             #   because of C/C++ padding rules, structures might contain
             #   trailing bytes that don't contain information. If this option is
             #   true (the default), these bytes are removed from the layout.
-            def memory_layout(options = Hash.new)
-                options = validate_layout_options(options)
-                do_memory_layout(
-                    options[:accept_pointers],
-                    options[:accept_opaques],
-                    options[:merge_skip_copy],
-                    options[:remove_trailing_skips])
+            def memory_layout(**options)
+                do_memory_layout(*validate_layout_options(**options))
             end
 
 	    # Returns the namespace part of the type's name.  If +separator+ is

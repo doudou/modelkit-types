@@ -49,13 +49,8 @@ module TypeStore
         # Reinitializes this value to match marshalled data
         #
         # @param [String] string the buffer with marshalled data
-        def from_buffer(string, options = Hash.new)
-            options = Type.validate_layout_options(options)
-            from_buffer_direct(string,
-                               options[:accept_pointers],
-                               options[:accept_opaques],
-                               options[:merge_skip_copy],
-                               options[:remove_trailing_skips])
+        def from_buffer(string, **options)
+            from_buffer_direct(string, *Type.validate_layout_options(**options))
         end
 
         # "Raw" version of {#from_buffer}
@@ -98,14 +93,9 @@ module TypeStore
         # @option options [Boolean] remove_trailing_skips (true) whether
         #   padding bytes at the end of the value should be marshalled or
         #   not.
-        def to_byte_array(options = Hash.new)
+        def to_byte_array(**options)
             apply_changes_from_converted_types
-            options = Type.validate_layout_options(options)
-            do_byte_array(
-                options[:accept_pointers],
-                options[:accept_opaques],
-                options[:merge_skip_copy],
-                options[:remove_trailing_skips])
+            do_byte_array(**Type.validate_layout_options(options))
         end
 
         def typestore_initialize
