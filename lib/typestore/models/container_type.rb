@@ -23,8 +23,8 @@ module TypeStore
                 false
             end
 
-            def setup_submodel(submodel, random_access: false, deference: nil, registry: self.registry, typename: nil, size: 0)
-                super(submodel, deference: deference, registry: registry, typename: typename, size: size)
+            def setup_submodel(submodel, random_access: false, deference: nil, registry: self.registry, typename: nil, size: 0, opaque: false, null: false)
+                super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)
 
                 if random_access
                     submodel.include RandomAccessContainer
@@ -42,10 +42,8 @@ module TypeStore
                 end
             end
 
-            def from_name(name)
-                each_submodel do |t|
-                    return t if t.name == name
-                end
+            def copy_to(registry, **options)
+                super(registry, random_access: random_access?, **options)
             end
 
             # Returns the description of a type using only simple ruby objects

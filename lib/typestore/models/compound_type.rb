@@ -46,6 +46,47 @@ module TypeStore
                 self.name = "TypeStore::CompoundType"
             end
 
+	    # Called by the extension to initialize the subclass
+	    # For each field, it creates getters and setters on 
+	    # the object, and a getter in the singleton class 
+	    # which returns the field type
+            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, opaque: false, null: false, &block)
+                super
+
+                submodel.instance_variable_set(:@fields, Hash.new)
+                super
+
+                if !submodel.convertions_from_ruby.has_key?(Hash)
+                    submodel.convert_from_ruby Hash do |value, expected_type|
+                        result = expected_type.new
+                        result.set_hash(value)
+                        result
+                    end
+                end
+
+                if !submodel.convertions_from_ruby.has_key?(Array)
+                    submodel.convert_from_ruby Array do |value, expected_type|
+                        result = expected_type.new
+                        result.set_array(value)
+                        result
+                    end
+                end
+            end
+
+            def copy_to(registry, **options)
+                model = super
+                fields.each do |field_name, field|
+                    field_type =
+                        if registry.find_by_name(field.type.name) 
+                            registry.get(field.type.name)
+                        else field.type.copy_to(registry)
+                        end
+
+                    model.add(field_name, field_type, offset: field.offset)
+                end
+                model
+            end
+
             # @return [Hash<String,Field>] the set of fields composing this
             #   compound type
             attr_reader :fields
@@ -143,33 +184,6 @@ module TypeStore
                 end
             end
 
-	    # Called by the extension to initialize the subclass
-	    # For each field, it creates getters and setters on 
-	    # the object, and a getter in the singleton class 
-	    # which returns the field type
-            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, &block)
-                super
-
-                submodel.instance_variable_set(:@fields, Hash.new)
-                super
-
-                if !submodel.convertions_from_ruby.has_key?(Hash)
-                    submodel.convert_from_ruby Hash do |value, expected_type|
-                        result = expected_type.new
-                        result.set_hash(value)
-                        result
-                    end
-                end
-
-                if !submodel.convertions_from_ruby.has_key?(Array)
-                    submodel.convert_from_ruby Array do |value, expected_type|
-                        result = expected_type.new
-                        result.set_array(value)
-                        result
-                    end
-                end
-            end
-
             # Returns true if this compound has no fields
             def empty?
                 fields.empty?
@@ -197,7 +211,7 @@ module TypeStore
                 if result = fields[name]
                     result
                 else
-                    raise FieldNotFound, "#{name} is not a field of #{self}"
+                    raise FieldNotFound, "#{name} is not a field of #{self} (fields are #{fields.keys.join(", ")})"
                 end
             end
 
@@ -321,14 +335,11 @@ module TypeStore
             # @return [Integer,nil] the type's new size if it needs to be resized
             def apply_resize(typemap)
                 fields = self.fields.values.sort_by { |f| f.offset }
-                min_size = fields.inject(0) do |min_offset, f|
+                fields.inject(0) do |min_offset, f|
                     if f.offset < min_offset
                         f.offset = min_offset
                     end
-                    f.offset + (typemap[f.type] || f.type.size)
-                end
-                if self.size < min_size
-                    min_size
+                    f.offset + typemap[f.type]
                 end
             end
         end

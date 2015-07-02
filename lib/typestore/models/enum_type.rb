@@ -14,10 +14,18 @@ module TypeStore
                 self.name = "TypeStore::EnumType"
             end
 
-            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, opaque: false, &block)
+            def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, opaque: false, null: false, &block)
                 super
                 submodel.instance_variable_set(:@value_to_symbol, Hash.new)
                 submodel.instance_variable_set(:@symbol_to_value, Hash.new)
+            end
+
+            def copy_to(submodel, **options)
+                model = super
+                symbol_to_value.each do |sym, v|
+                    model.add(sym, v)
+                end
+                model
             end
 
             # Add a new symbol to self

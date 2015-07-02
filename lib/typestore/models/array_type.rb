@@ -12,8 +12,8 @@ module TypeStore
             end
 
             def setup_submodel(submodel, deference: nil, length: 0, registry: self.registry, typename: nil,
-                               size: deference.size * length)
-                super(submodel, deference: deference, registry: registry, typename: typename, size: size)
+                               size: deference.size * length, opaque: false, null: false)
+                super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)
 
                 submodel.length = length
                 convert_from_ruby Array do |value, expected_type|
@@ -27,6 +27,10 @@ module TypeStore
                     end
                     t
                 end
+            end
+
+            def copy_to(registry, **options)
+                super(registry, length: length, **options)
             end
 
             # Apply a set of type-resize mappings

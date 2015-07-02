@@ -101,12 +101,6 @@ module TypeStore
         def typestore_initialize
         end
 
-        def freeze_children
-        end
-
-        def invalidate_children
-        end
-
         def to_ruby
             TypeStore.to_ruby(self, self.class)
         end

@@ -1,38 +1,38 @@
 require 'typestore/test'
 
 describe TypeStore do
-    describe ".split_typename" do
+    describe ".typename_parts" do
         it "handles simple cases" do
-            assert_equal %w{NS2 NS3 Test}, TypeStore.split_typename("/NS2/NS3/Test")
+            assert_equal %w{NS2 NS3 Test}, TypeStore.typename_parts("/NS2/NS3/Test")
         end
         it "handles template patterns as namespaces" do
             assert_equal %w{wrappers Matrix</double,3,1> Scalar},
-                TypeStore.split_typename("/wrappers/Matrix</double,3,1>/Scalar")
+                TypeStore.typename_parts("/wrappers/Matrix</double,3,1>/Scalar")
         end
         it "handles template recursive templates as namespaces" do
             assert_equal %w{wrappers Matrix</double,3,1> Gaussian</double,3> Scalar},
-                TypeStore.split_typename("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar")
+                TypeStore.typename_parts("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar")
         end
         it "handles recursive templates as type basename" do
             assert_equal %w{std vector</wrappers/Matrix</double,3,1>>},
-                TypeStore.split_typename("/std/vector</wrappers/Matrix</double,3,1>>")
+                TypeStore.typename_parts("/std/vector</wrappers/Matrix</double,3,1>>")
         end
 
         describe "changing the namespace separator" do
             it "handles simple cases" do
-                assert_equal %w{NS2 NS3 Test}, TypeStore.split_typename("/NS2/NS3/Test", '::')
+                assert_equal %w{NS2 NS3 Test}, TypeStore.typename_parts("/NS2/NS3/Test", '::')
             end
             it "handles template patterns as namespaces" do
                 assert_equal %w{wrappers Matrix<::double,3,1> Scalar},
-                    TypeStore.split_typename("/wrappers/Matrix</double,3,1>/Scalar", '::')
+                    TypeStore.typename_parts("/wrappers/Matrix</double,3,1>/Scalar", '::')
             end
             it "handles template recursive templates as namespaces" do
                 assert_equal %w{wrappers Matrix<::double,3,1> Gaussian<::double,3> Scalar},
-                    TypeStore.split_typename("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar", '::')
+                    TypeStore.typename_parts("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar", '::')
             end
             it "handles recursive templates as type basename" do
                 assert_equal %w{std vector<::wrappers::Matrix<::double,3,1>>},
-                    TypeStore.split_typename("/std/vector</wrappers/Matrix</double,3,1>>", '::')
+                    TypeStore.typename_parts("/std/vector</wrappers/Matrix</double,3,1>>", '::')
             end
         end
     end
@@ -50,6 +50,10 @@ describe TypeStore do
         end
         it "handles recursive templates as type basename" do
             assert_equal "/std/", TypeStore.namespace("/std/vector</wrappers/Matrix</double,3,1>>")
+        end
+
+        it "returns the separator for root types" do
+            assert_equal '/', TypeStore.namespace('/Test')
         end
 
         describe "changing the namespace separator" do
@@ -88,6 +92,9 @@ describe TypeStore do
         it "handles recursive templates as type basename with namespace change" do
             assert_equal "vector<::wrappers::Matrix<::double,3,1>>",
                 TypeStore.basename("/std/vector</wrappers/Matrix</double,3,1>>", '::')
+        end
+        it "handles root types" do
+            assert_equal 'Test', TypeStore.basename('/Test')
         end
     end
 

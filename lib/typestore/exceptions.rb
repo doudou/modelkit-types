@@ -4,8 +4,10 @@ module TypeStore
 
     class InvalidTypeNameError < ArgumentError; end
 
-    class DuplicateType < ArgumentError
-    end
+    class UnknownFileTypeError < ArgumentError; end
+    class DuplicateTypeNameError < ArgumentError; end
+    class InvalidTypeNameError < ArgumentError; end
+    class InvalidSizeSpecifiedError < ArgumentError; end
 
     # Exception raised when TypeStore.from_ruby is called but the value cannot be
     # converted to the requested type

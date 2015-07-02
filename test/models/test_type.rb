@@ -107,6 +107,27 @@ module TypeStore
                     assert_raises(MismatchingTypeNullFlagError) { t0.validate_merge(t1) }
                 end
             end
+
+            describe "#copy_to" do
+                attr_reader :r0, :r1, :t0
+                before do
+                    @r0, @r1 = Registry.new, Registry.new
+                    @t0 = r0.create_type '/Test', opaque: true, null: false, size: 10
+                end
+                it "creates a new type on the registry with the same characteristics" do
+                    t1 = t0.copy_to(r1)
+                    assert_same t1, r1.get(t0.name)
+                    assert_equal '/Test', t1.name
+                    assert_equal 10, t1.size
+                    assert t1.opaque?
+                    assert !t1.null?
+                end
+                it "copies the metadata over" do
+                    t0.metadata.set('v0', 'v')
+                    t1 = t0.copy_to(r1)
+                    assert_equal t1.metadata.to_hash, t0.metadata.to_hash
+                end
+            end
         end
     end
 end

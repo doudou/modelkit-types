@@ -11,7 +11,7 @@ module TypeStore
             ALLOWED_OVERLOADINGS = allowed_overloadings.to_set
 
 	    # The TypeStore::Registry this type belongs to
-            attr_accessor :registry
+            attr_reader :registry
 
             # Whether this is a null type, i.e. a type that cannot be actually used
             # to store values
@@ -203,6 +203,17 @@ module TypeStore
             # Returns an object that can be used to convert to/from ruby
             def ruby_domain_converter
                 @ruby_domain_converter ||= RubyDomainConverter.build(self)
+            end
+
+            # Sets the containing registry for an unregisterd type
+            #
+            # @raise [NotFromThisRegistryError] if the type is already
+            #   registered in another registry
+            def registry=(registry)
+                if self.registry && !self.registry.equal?(registry)
+                    raise NotFromThisRegistryError, "#{self} is already registered in #{self.registry}, cannot register in #{registry}"
+                end
+                @registry = registry
             end
 
             # Called by TypeStore when a subclass is created.
@@ -434,6 +445,13 @@ module TypeStore
                 minimal_registry.to_xml
             end
 
+            def copy_to(registry, **options)
+                model = supermodel.new_submodel(
+                    registry: registry, typename: name, size: size, opaque: opaque?, null: null?, **options).register
+                model.metadata.merge(self.metadata)
+                model
+            end
+
             def initialize_base_class
             end
 
@@ -445,6 +463,9 @@ module TypeStore
                     end
                 end
                 candidates
+            end
+
+            def apply_resize(typemap)
             end
         end
     end

@@ -2,4 +2,5 @@
 # to the Ruby library root
 require './test/test_typestore'
 require './test/test_metadata'
+require './test/test_registry'
 require './test/suite_models'

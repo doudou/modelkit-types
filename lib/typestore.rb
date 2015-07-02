@@ -3,6 +3,7 @@ require 'base64'
 require 'enumerator'
 require 'utilrb/logger'
 require 'utilrb/module/attr_predicate'
+require 'utilrb/hash/map_key'
 require 'facets/string/camelcase'
 
 # TypeStore allows to do two things:
@@ -74,7 +75,7 @@ module TypeStore
     #
     # See also Type.basename
     def self.basename(name, separator = NAMESPACE_SEPARATOR)
-        split_typename(name, separator).last
+        return split_typename(name, separator).last
     end
 
     # Returns the namespace part of +name+.  If +separator+ is
@@ -82,11 +83,23 @@ module TypeStore
     # the default of TypeStore::NAMESPACE_SEPARATOR is used. If nil is
     # used as new separator, no change is made either.
     def self.namespace(name, separator = NAMESPACE_SEPARATOR, remove_leading = false)
-        parts = split_typename(name, separator)
-        ns = parts[0, parts.size - 1].join(separator)
-        if !remove_leading
-            "#{separator}#{ns}#{separator}"
-        else "#{ns}#{separator}"
+        return split_typename(name, separator, remove_leading).first
+    end
+
+    # Splits a typename into its namespace and basename
+    #
+    # @return [(String,String)] the type's basename and 
+    def self.split_typename(name, separator = NAMESPACE_SEPARATOR, remove_leading = false)
+        parts = typename_parts(name, separator)
+        basename = parts.pop
+
+        ns = parts.join(separator)
+        if ns.empty?
+            return separator, basename
+        elsif !remove_leading
+            return "#{separator}#{ns}#{separator}", basename
+        else
+            return "#{ns}#{separator}", basename
         end
     end
 
@@ -94,7 +107,7 @@ module TypeStore
     #
     # @return [Array<String>] each string is a namespace leading to the
     #   basename. The last element is the basename itself
-    def self.split_typename(name, separator = NAMESPACE_SEPARATOR)
+    def self.typename_parts(name, separator = NAMESPACE_SEPARATOR)
         tokens = typename_tokenizer(name)
         build_typename_parts(tokens, namespace_separator: separator)
     end

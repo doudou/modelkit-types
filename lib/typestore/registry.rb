@@ -31,8 +31,21 @@ module TypeStore
         # @return [Hash<String,Type>]
         attr_reader :types
 
+        # The typename-to-container mapping
+        #
+        # @return [Hash<String,ContainerType>]
+        attr_reader :container_kinds
+
+        # Another mapping used to resolve typenames
+        #
+        # It contains non-canonical types such as e.g. the typename without the
+        # leading namespace marker
+        attr_reader :types_resolver
+
         def initialize(load_plugins: TypeStore.load_plugins?)
             @types = Hash.new
+            @types_resolver = Hash.new
+            @container_kinds = Hash.new
 	    if load_plugins
             	TypeStore.load_plugins
             end
@@ -101,13 +114,53 @@ module TypeStore
         end
         include Enumerable
 
+        # Add all types from a registry to self
+        #
+        # @param [Registry] registry
+        # @raise [InvalidMergeError] if some types in the registry have the same
+        #   name than types in self, but with different definitions
+        def merge(registry)
+            # First, verify that all common types are compatible
+            common_types = Array.new
+            missing_types = Hash.new { |h, k| h[k] = Set.new }
+            registry.types.each do |name, type|
+                if self_type = find_by_name(name)
+                    self_type.validate_merge(type)
+                    common_types << [type, self_type]
+                elsif type.name != name
+                    missing_types[type] << name
+                end
+            end
+
+            common_types.each do |type, self_type|
+                self_type.merge(type)
+            end
+            missing_types.each_key do |type|
+                type.copy_to(self)
+            end
+            missing_types.each do |type, names|
+                self_type = get(type.name)
+                names.each do |n|
+                    self.alias(n, self_type)
+                end
+            end
+        end
+
+        # Returns a type by its name, or nil if none under that name exists
+        #
+        # @param [String] name the type name
+        # @return [Model<Type>]
+        def find_by_name(name)
+            types_resolver[name]
+        end
+
         # Tests for the presence of a type by its name
         #
         # @param [String] name the type name
         # @return [Boolean] true if this registry contains a type named like
         #   this
         def include?(name)
-            includes?(name)
+            !!find_by_name(name)
         end
 
         # Export this registry in the Ruby namespace. The base namespace under
@@ -126,7 +179,7 @@ module TypeStore
             if type = TYPE_BY_EXT[ext]
 		type
             else
-                raise "Cannot guess file type for #{file}: unknown extension '#{ext}'"
+                raise UnknownFileTypeError, "Cannot guess file type for #{file}: unknown extension '#{ext}'"
             end
         end
 
@@ -235,6 +288,32 @@ module TypeStore
             do_import(file, kind, do_merge, options)
         end
 
+        def each_type_topological
+            return enum_for(__method__) if !block_given?
+
+            remaining = types.values
+            queue = Array.new
+            sorted = Set.new
+            while !remaining.empty?
+                type = remaining.shift
+                next if sorted.include?(type)
+                queue.push type
+
+                while !queue.empty?
+                    type = queue.pop
+                    next if sorted.include?(type)
+                    deps = type.direct_dependencies.find_all { |t| !sorted.include?(t) }
+                    if deps.empty?
+                        sorted << type
+                        yield(type)
+                    else
+                        queue.push type
+                        queue.concat(deps)
+                    end
+                end
+            end
+        end
+
         # Resizes the given type to the given size, while updating the rest of
         # the registry to keep it consistent
         #
@@ -263,8 +342,18 @@ module TypeStore
             typemap = typemap.map_key do |type, size|
                 validate_type_argument(type)
             end
-            types.each do |t|
-                t.resized_type(typemap)
+            each_type_topological do |t|
+                min_size = t.apply_resize(typemap)
+                explicit_size = typemap[t]
+                if min_size && explicit_size && explicit_size < min_size
+                    raise InvalidSizeSpecifiedError, "#{explicit} specified as new size for #{t}, but this type has to be at least of size #{min_size}"
+                end
+                if explicit_size
+                    t.size = explicit_size
+                elsif min_size
+                    t.size = min_size
+                end
+                typemap[t] = t.size
             end
         end
 
@@ -315,9 +404,11 @@ module TypeStore
             # @param [Integer,nil] offset the field offset. If nil, it is
             #   automatically computed in #build so as to follow the previous
             #   field.
+            # @return [Field]
             def add(field_name, field_type, offset: current_size)
                 field = type.add(field_name.to_s, field_type, offset: offset)
                 @current_size = [current_size, field.offset + field.type.size].max
+                field
             end
 
             def method_missing(name, *args, &block)
@@ -331,22 +422,41 @@ module TypeStore
             end
         end
 
-        def register(type, name: type.name)
-            if types.has_key?(type.name)
-                raise DuplicateType, "attempting to redefine the existing type #{type.name}"
+        # Registers the given class as a container type
+        def register_container_kind(type)
+            TypeStore.validate_typename(type.name)
+            if container_kinds.has_key?(type.name)
+                raise DuplicateTypeNameError, "attempting to redefine the existing type #{type.name}"
             end
-            require 'pry'
-            if !name
-                binding.pry
-            end
-            if name[0,1] == '/'
-                types[name] = type
-                types[name[1..-1]] = type
+            container_kinds[type.name] = type
+        end
+
+        # Returns the container base model with the given name
+        def container_kind(name)
+            if type = container_kinds[name.to_s]
+                type
             else
-                types[name] = type
-                types["/#{name}"] = type
+                raise NotFound, "#{self} has no container type named #{name}"
             end
-            type
+        end
+
+        def register(type, name: type.name)
+            TypeStore.validate_typename(name)
+            if types.has_key?(name)
+                raise DuplicateTypeNameError, "attempting to redefine the existing type #{type.name}"
+            elsif type.registry && !type.registry.equal?(self)
+                raise NotFromThisRegistryError, "#{type} is not a type model from #{self} but from #{type.registry}, cannot register"
+            end
+
+            if name[0,1] == '/'
+                canonical_name, resolver_name = name, name[1..-1]
+            else
+                resolver_name, canonical_name = name, "/#{name}"
+            end
+
+            type.registry = self
+            types[canonical_name] = types_resolver[canonical_name] = type
+            types_resolver[resolver_name] = type
         end
 
         def create_null(name)
@@ -386,7 +496,7 @@ module TypeStore
 
         # Creates a new container type on this registry
         #
-        # @param [String] container_type the name of the container type
+        # @param [String] container_kind the name of the container type
         # @param [String,Type] element_type the type of the container elements,
         #   either as a type or as a type name
         #
@@ -394,7 +504,10 @@ module TypeStore
         #   registry.create_container "/std/vector", "/my/Container"
         def create_container(container_model, element_type, _size = nil, typename: nil, size: nil)
             if container_model.respond_to?(:to_str)
-                container_model = ContainerType.from_name(container_model)
+                container_model_name = container_model
+                if !(container_model = container_kinds[container_model])
+                    raise NotFound, "#{container_model_name} is not a valid container type name on #{self}"
+                end
             end
             element_type = validate_type_argument(element_type)
 
@@ -425,9 +538,23 @@ module TypeStore
             element_type = validate_type_argument(element_type)
             typename ||= "#{element_type.name}[#{length}]"
             size     ||= element_type.size * length
+            TypeStore.validate_typename(typename)
             array_t = ArrayType.new_submodel(deference: element_type, typename: typename, registry: self,
                                    length: length, size: size)
             array_t.register
+        end
+
+        def validate_container_kind_argument(type)
+            if type.respond_to?(:to_str)
+                if !(container_t = container_kinds[type.to_str])
+                    raise NotFound, "no container type #{type} in #{self}"
+                end
+                container_t
+            elsif type.registry != self
+                raise NotFromThisRegistryError, "#{type} is not from #{self}"
+            else
+                type
+            end
         end
 
         def validate_type_argument(type)
@@ -444,8 +571,16 @@ module TypeStore
             register(validate_type_argument(old_type), name: new_name)
         end
 
+        def aliases_of(type)
+            all_names = types.keys.find_all do |name|
+                types[name] == type
+            end
+            all_names.delete(type.name)
+            all_names
+        end
+
         def get(typename)
-            if type = types[typename]
+            if type = types_resolver[typename]
                 type
             else
                 raise NotFound, "no type #{typename} in #{self}"
@@ -457,11 +592,13 @@ module TypeStore
             get(typename)
         rescue NotFound => e
             if typename =~ /^(.*)\[(\d+)\]$/
-                create_array(build($1), length: Integer($2), size: size, typename: typename)
-            elsif typename =~ />$/
-                namespace, basename = TypeStore.split_typename(typename)
-                container_t_name, arguments = TypeStore.parse_template(basename)
-                create_container(container_t, build(arguments[0]), typename: typename, size: size)
+                return create_array(build($1), Integer($2), size: size, typename: typename)
+            end
+
+            namespace, basename = TypeStore.split_typename(typename)
+            container_t_name, arguments = TypeStore.parse_template(basename)
+            if !arguments.empty?
+                create_container("#{namespace}#{container_t_name}", build(arguments[0]), typename: typename, size: size)
             else
                 raise e, "#{e.message}, and it cannot be built", e.backtrace
             end

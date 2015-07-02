@@ -34,6 +34,16 @@ module TypeStore
                     assert_same element_t, array_t.deference
                 end
             end
+
+            describe "#copy_to" do
+                it "copies the array length over" do
+                    r0, r1 = Registry.new, Registry.new
+                    t = r0.create_type '/Element'
+                    t0 = r0.create_array t, 10, typename: '/Test'
+                    t1 = t0.copy_to(r1)
+                    assert_equal 10, t1.length
+                end
+            end
         end
     end
 end

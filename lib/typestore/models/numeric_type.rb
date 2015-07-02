@@ -18,9 +18,8 @@ module TypeStore
                 "#{DEFAULT_TYPENAMES[[integer,unsigned]]}#{size * 8}"
             end
 
-            def setup_submodel(submodel,  size: 0, integer: true, unsigned: false,
-                typename: default_numeric_typename(size, integer, unsigned), &block)
-                super(submodel, typename: typename, size: size, &block)
+            def setup_submodel(submodel,  size: 0, integer: true, unsigned: false, typename: default_numeric_typename(size, integer, unsigned), opaque: false, null: false, &block)
+                super(submodel, typename: typename, size: size, opaque: opaque, null: null, &block)
 
                 submodel.integer = integer
                 submodel.unsigned = unsigned
@@ -30,6 +29,10 @@ module TypeStore
                 else
                     convert_to_ruby(Float) { |value| value.buffer.unpack(pack_code).first }
                 end
+            end
+
+            def copy_to(registry, **options)
+                super(registry, integer: integer?, unsigned: unsigned?, **options)
             end
 
             # Returns the description of a type using only simple ruby objects

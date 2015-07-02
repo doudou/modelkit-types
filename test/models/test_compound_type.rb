@@ -6,7 +6,7 @@ module TypeStore
             attr_reader :compound_t, :field_t
             before do
                 @field_t = TypeStore::Type.new_submodel(typename: 'field_t', size: 10)
-                @compound_t = TypeStore::CompoundType.new_submodel(typename: 'compound_t', size: 10)
+                @compound_t = TypeStore::CompoundType.new_submodel(typename: '/compound_t', size: 10)
             end
 
             describe "#add" do
@@ -147,7 +147,7 @@ module TypeStore
             describe "#validate_merge" do
                 attr_reader :other_t
                 before do
-                    @other_t = TypeStore::CompoundType.new_submodel(typename: 'compound_t', size: 10)
+                    @other_t = TypeStore::CompoundType.new_submodel(typename: '/compound_t', size: 10)
                 end
                 it "passes if two fields with the same name have different types with the same name" do
                     compound_t.add('f0', field_t, offset: 0)

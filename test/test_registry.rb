@@ -12,8 +12,6 @@ module TypeStore
             it "registers a new name for an existing type" do
                 registry.alias "/my_own_and_only_int", "/int"
                 assert_same int_t, registry.get("/my_own_and_only_int")
-
-                current_aliases = registry.aliases_of(int_t)
                 assert_equal(["/my_own_and_only_int"], registry.aliases_of(int_t))
             end
         end
@@ -43,6 +41,7 @@ module TypeStore
             attr_reader :container_model
             before do
                 @container_model = ContainerType.new_submodel typename: '/container_t'
+                registry.register_container_type(@container_model)
             end
             it "returns an existing type" do
                 assert_same int_t, registry.build('/int')
@@ -54,53 +53,56 @@ module TypeStore
             end
             it "knows how to build a container" do
                 container_t = registry.build('/container_t</int>')
-                assert_same containre_model, container_t.container_kind
+                assert_same container_model, container_t.container_kind
                 assert_same int_t, container_t.deference
             end
             it "ignores subsequent arguments when building containers" do
                 container_t = registry.build('/container_t</int,10>')
-                assert_same containre_model, container_t.container_kind
+                assert_same container_model, container_t.container_kind
                 assert_same int_t, container_t.deference
             end
             it "recursively builds types" do
                 type = registry.build('/container_t</int>[20]')
                 assert(type <= ArrayType)
                 container_t = type.deference
-                assert(type <= container_model)
+                assert(container_t <= container_model)
                 assert_same int_t, container_t.deference
             end
             it "raises NotFound if the array element type does not exist" do
                 assert_raises(NotFound) { registry.build('/does_not_exist[10]') }
             end
             it "raises NotFound if the container type does not exist" do
-                assert_raises(NotFound) { registry.build('/does_not_exist</int>') }
+                container_typename = '/does_not_exist'
+                error = assert_raises(NotFound) { registry.build("#{container_typename}</int>") }
+                assert error.message =~ /#{container_typename}/
             end
             it "raises NotFound if the container element type does not exist" do
                 assert_raises(NotFound) { registry.build('/container_t</does_not_exist>') }
             end
         end
 
-        describe "#import" do
-            it "raises ImportFailed if the file does not exist" do
-                assert_raises(ArgumentError) { registry.import("bla.c") }
-            end
-            it "raises the importer's exception if the importer fails" do
-                assert_raises(ArgumentError) { registry.import(testfile) }
-            end
-            it "passes the options to the importer" do
-                registry = Registry.new
-                testfile = File.join(SRCDIR, "test_cimport.h")
-                registry.import(testfile, nil, :include => [ File.join(SRCDIR, '..') ], :define => [ 'GOOD' ])
-            end
+        # describe "#import" do
+        #     it "raises ImportFailed if the file does not exist" do
+        #         assert_raises(ArgumentError) { registry.import("bla.c") }
+        #     end
+        #     it "raises the importer's exception if the importer fails" do
+        #         assert_raises(ArgumentError) { registry.import(testfile) }
+        #     end
+        #     it "passes the options to the importer" do
+        #         registry = Registry.new
+        #         testfile = File.join(SRCDIR, "test_cimport.h")
+        #         registry.import(testfile, nil, :include => [ File.join(SRCDIR, '..') ], :define => [ 'GOOD' ])
+        #     end
 
-            it "merges the result into the receiver is merge is true" do
-                testfile = File.join(SRCDIR, "test_cimport.h")
-                registry.import(testfile, nil, :rawflags => [ "-I#{File.join(SRCDIR, '..')}", "-DGOOD" ])
-                registry.import(testfile, nil, :merge => true, :rawflags => [ "-I#{File.join(SRCDIR, '..')}", "-DGOOD" ])
-            end
-        end
+        #     it "merges the result into the receiver is merge is true" do
+        #         testfile = File.join(SRCDIR, "test_cimport.h")
+        #         registry.import(testfile, nil, :rawflags => [ "-I#{File.join(SRCDIR, '..')}", "-DGOOD" ])
+        #         registry.import(testfile, nil, :merge => true, :rawflags => [ "-I#{File.join(SRCDIR, '..')}", "-DGOOD" ])
+        #     end
+        # end
 
         describe "#resize" do
+            attr_reader :compound_t, :array_t, :compound_array_t
             before do
                 dummy_t = registry.create_type '/dummy', size: 10
                 @compound_t = registry.create_compound '/Test' do |t|
@@ -109,6 +111,7 @@ module TypeStore
                     t.add 'after', dummy_t, offset: 20
                 end
                 @array_t = registry.create_array int_t, 10
+                @compound_array_t = registry.create_array compound_t, 10
                 registry.resize(int_t => 64)
             end
 
@@ -122,21 +125,24 @@ module TypeStore
             end
 
             it "raises NotFromThisRegistryError if given a type from another registry" do
-                registry = Registry.new
-                int = registry.create_type '/int'
+                int = Registry.new.create_type '/int'
                 assert_raises(NotFromThisRegistryError) { registry.resize(int => 20) }
             end
 
             it "modifies the registry's compound types field offsets to make room for the new size" do
-                assert_equal 74, test_t.get('resized').offset
+                assert_equal 74, compound_t.get('after').offset
             end
 
             it "modifies the registry's compound types size to make room for the new size" do
-                assert_equal 84, test_t.size
+                assert_equal 84, compound_t.size
             end
 
             it "modifies the registry's array types size to make room for the new size" do
                 assert_equal 64 * 10, array_t.size
+            end
+
+            it "handles recursive resizes" do
+                assert_equal 84 * 10, compound_array_t.size
             end
         end
 
@@ -144,6 +150,7 @@ module TypeStore
             attr_reader :container_t
             before do
                 @container_t = ContainerType.new_submodel(typename: '/std/vector')
+                registry.register_container_type(container_t)
             end
 
             it "creates a container of the specified container kind and element type" do
@@ -198,6 +205,7 @@ module TypeStore
                 assert_equal({:VAL0 => 0, :VAL1 => -1, :VAL2 => 0}, t.symbol_to_value)
             end
             it "refuses to use an existing name" do
+                registry.create_enum('/NewEnum') { |enum_t| enum_t.VAL0 }
                 assert_raises(DuplicateTypeNameError) do
                     registry.create_enum('/NewEnum') { |enum_t| enum_t.VAL0 }
                 end
@@ -219,7 +227,7 @@ module TypeStore
                 assert_same element_t, array_t.deference
             end
             it "generates the type name automatically" do
-                array_t = registry.create_array element_t, length: 20
+                array_t = registry.create_array element_t, 20
                 assert_equal "#{element_t.name}[20]", array_t.name
             end
             it "allows to override the type name" do
@@ -285,9 +293,11 @@ module TypeStore
                     it "calls #add with the current offset as offset" do
                         compound_t = registry.create_compound('/NewCompound') do |t|
                             t.skip 10
-                            flexmock(t).should_receive('add').with(:field0, f0_t, offset: 10)
+                            flexmock(t).should_receive('add').with('field0', f0_t).
+                                pass_thru
                             t.field0 = f0_t
                         end
+                        assert_equal 10, compound_t['field0'].offset
                     end
                 end
                 describe "the #add syntax" do
@@ -311,6 +321,24 @@ module TypeStore
                         assert_equal 20, compound_t.get('field0').offset
                     end
                 end
+            end
+        end
+
+        describe "#merge" do
+            attr_reader :r0, :r1
+            before do
+                @r0 = Registry.new
+                @r1 = Registry.new
+            end
+
+            it "raises if two types with the same name cannot be merged" do
+                t0 = r0.create_type '/Type'
+                r0.create_type '/T0'
+                t1 = r1.create_type '/Type'
+                r1.create_type '/T1'
+                flexmock(t0).should_receive(:validate_merge).with(t1).and_raise(InvalidMergeError)
+                assert_raises(InvalidMergeError) { r0.merge(r1) }
+                assert !r0.include?('/T1')
             end
         end
 
