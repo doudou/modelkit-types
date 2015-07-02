@@ -120,5 +120,20 @@ describe TypeStore do
             assert_raises(TypeStore::InvalidTypeNameError) { TypeStore.validate_typename(":blabla") }
         end
     end
+
+    describe ".parse_template" do
+        it "handles typenames without template markers" do
+            assert_equal ["base",[]], TypeStore.parse_template("base")
+        end
+        it "parses a simple template argument" do
+            assert_equal ["base",['10']], TypeStore.parse_template("base<10>")
+        end
+        it "parses multiple template arguments" do
+            assert_equal ["base",['10', '20', 'test']], TypeStore.parse_template("base<10,20,test>")
+        end
+        it "parses recursive template arguments" do
+            assert_equal ["base",['10', '20<foo>', 'test<foo,test<bar>>']], TypeStore.parse_template("base<10,20<foo>,test<foo,test<bar>>>")
+        end
+    end
 end
 

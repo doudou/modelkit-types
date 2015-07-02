@@ -99,6 +99,44 @@ module TypeStore
         build_typename_parts(tokens, namespace_separator: separator)
     end
 
+    # Splits a type basename into its main name and (possible) template
+    # arguments
+    def self.parse_template(type_basename)
+        if type_basename =~ /^([^<]+)(?:<(.*)>)?$/
+            basename, raw_arguments = $1, $2
+            if !raw_arguments
+                return basename, []
+            end
+        else
+            raise ArgumentError, "#{type_basename} does not look like a valid typename"
+        end
+
+        arguments = []
+        tokens = typename_tokenizer(raw_arguments)
+        current = []
+        level = 0
+        while !tokens.empty?
+            tk = tokens.shift
+            if tk == ',' && level == 0
+                arguments << current.join("")
+                current = []
+                next
+            end
+
+            current << tk
+            if tk == '<'
+                level += 1
+            elsif tk == '>'
+                level -= 1
+            end
+        end
+
+        if !current.empty?
+            arguments << current.join("")
+        end
+        return basename, arguments
+    end
+
     # Validates that the given name is a canonical TypeStore type name
     def self.validate_typename(name, absolute: true)
         tokens = typename_tokenizer(name)
