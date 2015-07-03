@@ -47,8 +47,11 @@ module TypeStore
             end
 
             def ==(other)
-                super &&
-                    fields == other.fields
+                super && fields == other.fields
+            end
+
+            def casts_to?(type)
+                super || (f = fields.first && f.type == type)
             end
 
 	    # Called by the extension to initialize the subclass

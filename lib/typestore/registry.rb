@@ -51,6 +51,10 @@ module TypeStore
             end
         end
 
+        def size
+            types.size
+        end
+
         def dup
             copy = self.class.new
             copy.merge(self)
@@ -477,6 +481,13 @@ module TypeStore
             container_kinds[type.name] = type
         end
 
+        # Enumerate the available container kinds
+        #
+        # @yieldparam [Model<Type>] the container base class
+        def each_available_container_kind(&block)
+            containers.values.each(&block)
+        end
+
         # Returns the container base model with the given name
         def container_kind(name)
             if type = container_kinds[name.to_s]
@@ -484,6 +495,15 @@ module TypeStore
             else
                 raise NotFound, "#{self} has no container type named #{name}"
             end
+        end
+
+        def registration_names(name)
+            if name[0,1] == '/'
+                canonical_name, resolver_name = name, name[1..-1]
+            else
+                resolver_name, canonical_name = name, "/#{name}"
+            end
+            return canonical_name, resolver_name
         end
 
         def register(type, name: type.name)
@@ -494,15 +514,14 @@ module TypeStore
                 raise NotFromThisRegistryError, "#{type} is not a type model from #{self} but from #{type.registry}, cannot register"
             end
 
-            if name[0,1] == '/'
-                canonical_name, resolver_name = name, name[1..-1]
-            else
-                resolver_name, canonical_name = name, "/#{name}"
-            end
-
+            canonical_name, resolver_name = registration_names(name)
             type.registry = self
             types[canonical_name] = types_resolver[canonical_name] = type
             types_resolver[resolver_name] = type
+        end
+
+        def create_opaque(name, size: 0)
+            register(Type.new_submodel(name: name, opaque: true, size: size))
         end
 
         def create_null(name)
@@ -700,6 +719,16 @@ module TypeStore
             end
             all_names.delete(type.name)
             all_names
+        end
+
+        def clear_aliases
+            types.delete_if do |name, type|
+                if name != type.name
+                    _, resolver_name = registration_names(name)
+                    types_resolver.delete(resolver_name)
+                    types_resolver.delete(name)
+                end
+            end
         end
 
         def get(typename)

@@ -479,6 +479,10 @@ module TypeStore
 
             def apply_resize(typemap)
             end
+
+            def casts_to?(type)
+                self == type
+            end
         end
     end
 end

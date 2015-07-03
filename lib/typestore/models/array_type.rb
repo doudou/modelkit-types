@@ -15,6 +15,10 @@ module TypeStore
                 super && length == other.length
             end
 
+            def casts_to?(type)
+                super || deference == type
+            end
+
             def setup_submodel(submodel, deference: nil, length: 0, registry: self.registry, typename: nil,
                                size: deference.size * length, opaque: false, null: false)
                 super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)
