@@ -124,6 +124,15 @@ module TypeStore
                     recursive_dependencies.include?(type) || recursive_dependencies.any? { |t| t <= type }
             end
 
+            def ==(other)
+                other.kind_of?(Class) &&
+                    other.superclass == self.superclass &&
+                    other.name == self.name &&
+                    other.size == self.size &&
+                    !(other.opaque? ^ self.opaque?) &&
+                    !(other.null? ^ self.null?)
+            end
+
             # Validates that a certain type can be merged in self
             #
             # Note that this method does NOT check for global consistency. For
@@ -157,8 +166,10 @@ module TypeStore
             #   excluding self
             #
             # @see recursive_dependencies
-            def direct_dependencies
-                @direct_dependencies ||= Set.new
+            attr_reader :direct_dependencies
+
+            def add_direct_dependency(type)
+                direct_dependencies << type
             end
 
             # Returns the set of all types that are needed to define self,
@@ -220,6 +231,7 @@ module TypeStore
             def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, null: false, opaque: false, &block)
                 super(submodel, &block)
 
+                submodel.instance_variable_set(:@direct_dependencies, Set.new)
                 submodel.registry = registry
                 submodel.name = typename
                 submodel.size = size
@@ -436,8 +448,8 @@ module TypeStore
 
             # @return [Registry] a registry that contains only the types needed
             #   to define this type
-            def minimal_registry
-                registry.minimal(name, true)
+            def minimal_registry(with_aliases: true)
+                registry.minimal(self, with_aliases: with_aliases)
             end
 
             # @return [String] a XML representation of this type

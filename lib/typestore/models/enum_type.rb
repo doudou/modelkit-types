@@ -14,6 +14,10 @@ module TypeStore
                 self.name = "TypeStore::EnumType"
             end
 
+            def ==(other)
+                super && symbol_to_value == other.symbol_to_value
+            end
+
             def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, opaque: false, null: false, &block)
                 super
                 submodel.instance_variable_set(:@value_to_symbol, Hash.new)

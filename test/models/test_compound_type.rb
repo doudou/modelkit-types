@@ -5,7 +5,7 @@ module TypeStore
         describe CompoundType do
             attr_reader :compound_t, :field_t
             before do
-                @field_t = TypeStore::Type.new_submodel(typename: 'field_t', size: 10)
+                @field_t = TypeStore::Type.new_submodel(typename: '/field_t', size: 10)
                 @compound_t = TypeStore::CompoundType.new_submodel(typename: '/compound_t', size: 10)
             end
 
@@ -134,13 +134,20 @@ module TypeStore
                 end
             end
 
+            describe "#direct_dependencies" do
+                it "lists the field types" do
+                    compound_t.add('f0', field_t, offset: 10)
+                    assert_equal [field_t].to_set, compound_t.direct_dependencies
+                end
+            end
+
             describe "marshalling and unmarshalling" do
                 it "marshals and unmarshals metadata" do
                     f = compound_t.add('f0', field_t, offset: 10)
                     compound_t.register(Registry.new)
                     f.metadata.set('k0', 'v0')
                     new_registry = TypeStore::Registry.from_xml(compound_t.to_xml)
-                    assert_equal [['k0', ['v0']]].to_set, new_registry.get('/Test').get('field').metadata.each.to_a
+                    assert_equal [['k0', ['v0'].to_set]], new_registry.get('/compound_t').get('f0').metadata.each.to_a
                 end
             end
 
@@ -151,7 +158,7 @@ module TypeStore
                 end
                 it "passes if two fields with the same name have different types with the same name" do
                     compound_t.add('f0', field_t, offset: 0)
-                    other_t.add('f0', TypeStore::Type.new_submodel(typename: 'field_t'), offset: 0)
+                    other_t.add('f0', TypeStore::Type.new_submodel(typename: '/field_t'), offset: 0)
                     other_t.validate_merge(compound_t)
                 end
                 it "raises if two fields with the same name have types with different names" do
@@ -172,6 +179,18 @@ module TypeStore
                 end
             end
 
+            describe "#copy_to" do
+                it "copies the metadata over" do
+                    f = compound_t.add('f0', field_t, offset: 0)
+                    f.metadata.set('k', 'v')
+                    reg = Registry.new
+                    compound_t.copy_to(reg)
+                    other_t = reg.get('/compound_t')
+                    other_f = other_t.get('f0')
+                    assert_equal [['k', ['v'].to_set]], other_f.metadata.each.to_a
+                end
+            end
+
             describe "#merge" do
                 attr_reader :other_t
                 before do
@@ -181,9 +200,10 @@ module TypeStore
                     f = compound_t.add('f0', field_t, offset: 0)
                     f.metadata.set('k', 'v')
                     other_f = other_t.add('f0', field_t, offset: 0)
-                    other_f.metadata.set('k', 'v')
-                    flexmock(other_f.metadata).should_receive(:merge).with(f.metadata).once
+                    flexmock(other_f.metadata).should_receive(:merge).with(f.metadata).once.
+                        pass_thru
                     other_t.merge(compound_t)
+                    assert_equal [['k', ['v'].to_set]], other_f.metadata.each.to_a
                 end
                 it "does not create a field metadata object if the merged field does not have one" do
                     f = compound_t.add('f0', field_t, offset: 0)

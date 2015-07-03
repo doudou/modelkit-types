@@ -10,7 +10,7 @@ module TypeStore
                 submodel.deference = deference
                 super(submodel, registry: registry, typename: typename, size: size, opaque: opaque, null: null)
                 if deference
-                    submodel.direct_dependencies << deference
+                    submodel.add_direct_dependency(deference)
                     submodel.contains_opaques = deference.contains_opaques? || deference.opaque?
                     submodel.contains_converted_types = deference.contains_converted_types? || deference.needs_convertion_to_ruby?
                 end

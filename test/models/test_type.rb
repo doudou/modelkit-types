@@ -61,7 +61,8 @@ module TypeStore
             end
             describe "XML marshalling" do
                 it "marshals and unmarshals metadata" do
-                    t = TypeStore::Type.new_submodel
+                    registry = TypeStore::Registry.new
+                    t = registry.create_type '/Test'
                     t.metadata.set('k', 'v0', 'v1')
                     t = TypeStore::Registry.from_xml(t.to_xml).get(t.name)
                     assert_equal [['k', ['v0', 'v1'].to_set]], t.metadata.each.to_a

@@ -342,6 +342,8 @@ require 'typestore/enum_type'
 require 'typestore/models/container_type'
 require 'typestore/container_type'
 
+require 'typestore/io/xml_exporter'
+require 'typestore/io/xml_importer'
 require 'typestore/registry'
 require 'typestore/registry_export'
 

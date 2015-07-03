@@ -57,35 +57,11 @@ module TypeStore
             copy
         end
 
-        # Generates the smallest new registry that allows to define a set of types
-        #
-        # @overload minimal(type_name, with_aliases = true)
-        #   @param [String] type_name the name of a type
-        #   @param [Boolean] with_aliases if true, aliases defined in self that
-        #     point to types ending up in the minimal registry will be copied
-        #   @return [TypeStore::Registry] the registry that allows to define the
-        #     named type
-        #
-        # @overload minimal(auto_types, with_aliases = true)
-        #   @param [TypeStore::Registry] auto_types a registry containing the
-        #     types that are not necessary in the result
-        #   @param [Boolean] with_aliases if true, aliases defined in self that
-        #     point to types ending up in the minimal registry will be copied
-        #   @return [TypeStore::Registry] the registry that allows to define all
-        #     types of self that are not in auto_types. Note that it may contain
-        #     types that are in the auto_types registry, if they are needed to
-        #     define some other type
-	def minimal(type, with_aliases = true)
-	    do_minimal(type, with_aliases)
-	end
-
         # Creates a new registry by loading a TypeStore XML file
         #
         # @see Registry#merge_xml
         def self.from_xml(xml)
-            reg = TypeStore::Registry.new
-            reg.merge_xml(xml)
-            reg
+            TypeStore::IO::XMLImporter.new.from_xml(xml)
         end
 
         # Enumerate the types contained in this registry
@@ -156,6 +132,62 @@ module TypeStore
                     self.alias(n, self_type)
                 end
             end
+        end
+
+        # Generates the smallest new registry that allows to define a set of types
+        #
+        # @param [String] type_name the name of a type
+        # @param [Boolean] with_aliases if true, aliases defined in self that
+        #   point to types ending up in the minimal registry will be copied
+        # @return [Registry] the registry that allows to define the
+        #   named type
+	def minimal(type, with_aliases: true)
+            type = validate_type_argument(type)
+
+            result = self.class.new
+            type.copy_to(result)
+            if with_aliases
+                new_type = result.get(type.name)
+                aliases_of(type).each do |name|
+                    result.alias(name, new_type)
+                end
+            end
+            result
+	end
+
+        # Generates the smallest new registry that defines all types of self
+        # except some
+        #
+        # Note that types in the removed_types registry might be present in the
+        # result if some other types need them
+        #
+        # @param [Registry] removed_types a registry containing the
+        #   types that are not necessary in the result
+        # @param [Boolean] with_aliases if true, aliases defined in self that
+        #   point to types ending up in the minimal registry will be copied
+        # @return [Registry] the registry that allows to define all
+        #   types of self that are not in auto_types. Note that it may contain
+        #   types that are in the auto_types registry, if they are needed to
+        #   define some other type
+        def minimal_without(removed_types, with_aliases: true)
+            removed_types =
+                removed_types.map { |t| validate_type_argument(t) }.
+                to_set
+
+            result = Registry.new
+            registry.types.each do |name, type|
+                next if removed_types.include?(type)
+                type.copy_to(result)
+            end
+
+            if with_aliases
+                each_alias do |name, type|
+                    if result.include?(type.name)
+                        result.alias(name, type.name)
+                    end
+                end
+            end
+            result
         end
 
         # Returns a type by its name, or nil if none under that name exists
@@ -383,8 +415,10 @@ module TypeStore
 	end
 
         # Export the registry into TypeStore's own XML format
+        #
+        # @return [REXML::Document]
         def to_xml
-            export('tlb')
+            IO::XMLExporter.new.to_xml(self)
         end
 
         # Helper class for Registry#create_compound

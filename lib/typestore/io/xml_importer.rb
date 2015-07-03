@@ -13,6 +13,10 @@ module TypeStore
 
             def import(document, registry: TypeStore::Registry.new)
                 document = REXML::Document.new(document)
+                from_xml(document, registry)
+            end
+
+            def from_xml(document, registry: TypeStore::Registry.new)
                 document.root.each_element do |element|
                     typename = element.attributes['name']
                     case element.name

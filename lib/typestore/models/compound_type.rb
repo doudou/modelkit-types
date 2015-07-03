@@ -46,6 +46,11 @@ module TypeStore
                 self.name = "TypeStore::CompoundType"
             end
 
+            def ==(other)
+                super &&
+                    fields == other.fields
+            end
+
 	    # Called by the extension to initialize the subclass
 	    # For each field, it creates getters and setters on 
 	    # the object, and a getter in the singleton class 
@@ -82,7 +87,8 @@ module TypeStore
                         else field.type.copy_to(registry)
                         end
 
-                    model.add(field_name, field_type, offset: field.offset)
+                    new_field = model.add(field_name, field_type, offset: field.offset)
+                    new_field.metadata.merge(field.metadata)
                 end
                 model
             end
@@ -138,6 +144,8 @@ module TypeStore
                 elsif type.registry != registry
                     raise NotFromThisRegistryError, "#{type} is from #{type.registry} and #{self} is from #{registry}, cannot add a field"
                 end
+
+                add_direct_dependency(type)
 
                 field = Field.new(self, name, type, offset: offset)
                 fields[name] = field
