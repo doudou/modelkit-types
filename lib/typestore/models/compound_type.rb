@@ -133,6 +133,8 @@ module TypeStore
                 name = name.to_str
                 if fields[name]
                     raise DuplicateFieldError, "#{self} already has a field called #{name}"
+                elsif type.respond_to?(:to_str)
+                    type = registry.build(type)
                 elsif type.registry != registry
                     raise NotFromThisRegistryError, "#{type} is from #{type.registry} and #{self} is from #{registry}, cannot add a field"
                 end

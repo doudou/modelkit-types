@@ -106,10 +106,22 @@ module TypeStore
         #     aliases
         #   @yieldparam [Model<TypeStore::Type>] type a type
         def each(filter = nil, with_aliases: false)
-            if !block_given?
-                enum_for(:each, filter, options)
+            return enum_for(__method__, filter, options) if !block_given?
+
+            if filter.respond_to?(:to_str)
+                filter = Regexp.new("^#{Regexp.quote(filter)}")
+            end
+
+            if with_aliases
+                types.each do |name, type|
+                    next if filter && !(filter === name)
+                    yield(name, type)
+                end
             else
-                each_type(filter, with_aliases, &block)
+                types.each_value do |type|
+                    next if filter && !(filter === type.name)
+                    yield(type)
+                end
             end
         end
         include Enumerable
@@ -382,9 +394,9 @@ module TypeStore
             # The offset for the next field
             attr_reader :current_size
 
-            def initialize(name, registry, size = nil)
+            def initialize(name, registry, **options)
                 @current_size = 0
-                @type = CompoundType.new_submodel(typename: name, registry: registry, size: size)
+                @type = CompoundType.new_submodel(typename: name, registry: registry, **options)
             end
             
             # Create the type on the underlying registry
@@ -468,6 +480,10 @@ module TypeStore
             register(Type.new_submodel(typename: name, registry: self, **options))
         end
 
+        def create_numeric(name, **options)
+            register(NumericType.new_submodel(typename: name, registry: self, **options))
+        end
+
         # Creates a new compound type with the given name on this registry
         #
         # @yield [CompoundBuilder] the compound building helper, see below for
@@ -487,9 +503,9 @@ module TypeStore
         #     c.field1 = "/another/Compound"
         #   end
         #
-        def create_compound(name, _size = nil, size: nil)
+        def create_compound(name, _size = nil, size: nil, **options)
             size ||= _size
-            recorder = CompoundBuilder.new(name, self, size)
+            recorder = CompoundBuilder.new(name, self, size: size, **options)
             yield(recorder) if block_given?
             recorder.build
         end
@@ -502,7 +518,7 @@ module TypeStore
         #
         # @example create a new std::vector type
         #   registry.create_container "/std/vector", "/my/Container"
-        def create_container(container_model, element_type, _size = nil, typename: nil, size: nil)
+        def create_container(container_model, element_type, _size = nil, typename: nil, size: nil, **options)
             if container_model.respond_to?(:to_str)
                 container_model_name = container_model
                 if !(container_model = container_kinds[container_model])
@@ -518,7 +534,7 @@ module TypeStore
 
             container_t = container_model.
                 new_submodel(registry: self, typename: typename,
-                             deference: element_type, size: size)
+                             deference: element_type, size: size, **options)
             container_t.register
         end
 
@@ -530,7 +546,7 @@ module TypeStore
         #
         # @example create a new array of 10 elements
         #   registry.create_array "/my/Container", 10
-        def create_array(element_type, length = 0, _size = nil, size: nil, typename: nil)
+        def create_array(element_type, length = 0, _size = nil, size: nil, typename: nil, **options)
             # For backward compatibility with typelib
             size ||= _size
             size = nil if size == 0
@@ -540,68 +556,8 @@ module TypeStore
             size     ||= element_type.size * length
             TypeStore.validate_typename(typename)
             array_t = ArrayType.new_submodel(deference: element_type, typename: typename, registry: self,
-                                   length: length, size: size)
+                                   length: length, size: size, **options)
             array_t.register
-        end
-
-        def validate_container_kind_argument(type)
-            if type.respond_to?(:to_str)
-                if !(container_t = container_kinds[type.to_str])
-                    raise NotFound, "no container type #{type} in #{self}"
-                end
-                container_t
-            elsif type.registry != self
-                raise NotFromThisRegistryError, "#{type} is not from #{self}"
-            else
-                type
-            end
-        end
-
-        def validate_type_argument(type)
-            if type.respond_to?(:to_str)
-                get(type)
-            elsif type.registry != self
-                raise NotFromThisRegistryError, "#{type} is not from #{self}"
-            else
-                type
-            end
-        end
-
-        def alias(new_name, old_type)
-            register(validate_type_argument(old_type), name: new_name)
-        end
-
-        def aliases_of(type)
-            all_names = types.keys.find_all do |name|
-                types[name] == type
-            end
-            all_names.delete(type.name)
-            all_names
-        end
-
-        def get(typename)
-            if type = types_resolver[typename]
-                type
-            else
-                raise NotFound, "no type #{typename} in #{self}"
-            end
-        end
-
-        # Build a derived type (array or container) from its canonical name
-        def build(typename, size = nil)
-            get(typename)
-        rescue NotFound => e
-            if typename =~ /^(.*)\[(\d+)\]$/
-                return create_array(build($1), Integer($2), size: size, typename: typename)
-            end
-
-            namespace, basename = TypeStore.split_typename(typename)
-            container_t_name, arguments = TypeStore.parse_template(basename)
-            if !arguments.empty?
-                create_container("#{namespace}#{container_t_name}", build(arguments[0]), typename: typename, size: size)
-            else
-                raise e, "#{e.message}, and it cannot be built", e.backtrace
-            end
         end
 
         # Helper class to build new enumeration types
@@ -611,9 +567,9 @@ module TypeStore
             # The value for the next symbol
             attr_reader :current_value
 
-            def initialize(name, registry, size)
+            def initialize(name, registry, **options)
                 @current_value = 0
-                @type = EnumType.new_submodel(typename: name, registry: registry, size: size)
+                @type = EnumType.new_submodel(typename: name, registry: registry, **options)
             end
             
             # Creates the new enum type on the registry
@@ -663,10 +619,78 @@ module TypeStore
         #     c.sym2
         #   end
         #
-        def create_enum(name, size = 0)
-            recorder = EnumBuilder.new(name, self, size)
+        def create_enum(name, _size = nil, size: nil, **options)
+            size ||= _size
+            recorder = EnumBuilder.new(name, self, size: size, **options)
             yield(recorder)
             recorder.build
+        end
+
+        def validate_container_kind_argument(type)
+            if type.respond_to?(:to_str)
+                if !(container_t = container_kinds[type.to_str])
+                    raise NotFound, "no container type #{type} in #{self}"
+                end
+                container_t
+            elsif type.registry != self
+                raise NotFromThisRegistryError, "#{type} is not from #{self}"
+            else
+                type
+            end
+        end
+
+        def validate_type_argument(type)
+            if type.respond_to?(:to_str)
+                get(type)
+            elsif type.registry != self
+                raise NotFromThisRegistryError, "#{type} is not from #{self}"
+            else
+                type
+            end
+        end
+
+        def alias(new_name, old_type)
+            register(validate_type_argument(old_type), name: new_name)
+        end
+
+        def each_alias
+            return enum_for(__method__) if !block_given?
+            each(with_aliases: true) do |name, type|
+                yield(name, type) if name != type.name
+            end
+        end
+
+        def aliases_of(type)
+            all_names = types.keys.find_all do |name|
+                types[name] == type
+            end
+            all_names.delete(type.name)
+            all_names
+        end
+
+        def get(typename)
+            if type = types_resolver[typename]
+                type
+            else
+                raise NotFound, "no type #{typename} in #{self}"
+            end
+        end
+
+        # Build a derived type (array or container) from its canonical name
+        def build(typename, size = nil)
+            get(typename)
+        rescue NotFound => e
+            if typename =~ /^(.*)\[(\d+)\]$/
+                return create_array(build($1), Integer($2), size: size, typename: typename)
+            end
+
+            namespace, basename = TypeStore.split_typename(typename)
+            container_t_name, arguments = TypeStore.parse_template(basename)
+            if !arguments.empty?
+                create_container("#{namespace}#{container_t_name}", build(arguments[0]), typename: typename, size: size)
+            else
+                raise e, "#{e.message}, and it cannot be built", e.backtrace
+            end
         end
 
         # Add a type from a different registry to this one

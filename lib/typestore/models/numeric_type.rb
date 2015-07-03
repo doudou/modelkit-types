@@ -18,8 +18,8 @@ module TypeStore
                 "#{DEFAULT_TYPENAMES[[integer,unsigned]]}#{size * 8}"
             end
 
-            def setup_submodel(submodel,  size: 0, integer: true, unsigned: false, typename: default_numeric_typename(size, integer, unsigned), opaque: false, null: false, &block)
-                super(submodel, typename: typename, size: size, opaque: opaque, null: null, &block)
+            def setup_submodel(submodel, registry: nil, size: 0, integer: true, unsigned: false, typename: default_numeric_typename(size, integer, unsigned), opaque: false, null: false, &block)
+                super(submodel, registry: registry, typename: typename, size: size, opaque: opaque, null: null, &block)
 
                 submodel.integer = integer
                 submodel.unsigned = unsigned

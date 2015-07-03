@@ -2,7 +2,7 @@ require 'typestore/cxx/gccxml_loader'
 require 'typestore/cxx/clang_loader'
 
 module TypeStore
-    module Importers
+    module IO
     module CXX
         def self.parse_template(name)
             tokens = template_tokenizer(name)
