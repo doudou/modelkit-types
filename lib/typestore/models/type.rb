@@ -240,18 +240,8 @@ module TypeStore
                 submodel.instance_variable_set(:@metadata, MetaData.new)
                 submodel.instance_variable_set(:@convertions_from_ruby, Hash.new)
 
-                TypeStore.type_specializations.find_all(submodel).each do |m|
-                    extend m
-                end
-                TypeStore.value_specializations.find_all(submodel).each do |m|
-                    include m
-                end
-
-                TypeStore.convertions_from_ruby.find_all(submodel).each do |conv|
-                    submodel.convert_from_ruby(conv.ruby, &conv.block)
-                end
-                if conv = TypeStore.convertions_to_ruby.find(submodel, false)
-                    submodel.convert_to_ruby(conv.ruby, &conv.block)
+                if registry
+                    registry.specialization_manager.apply(submodel)
                 end
             end
 
@@ -467,7 +457,7 @@ module TypeStore
             def initialize_base_class
             end
 
-            def ruby_convertion_candidates_on(ruby_mappings)
+            def ruby_convertion_candidates_on(ruby_mappings, name: self.name)
                 candidates = (ruby_mappings.from_typename[name] || Array.new)
                 ruby_mappings.from_regexp.each do |matcher, registered|
                     if matcher === name

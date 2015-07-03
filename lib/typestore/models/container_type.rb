@@ -73,7 +73,7 @@ module TypeStore
                 info
             end
 
-            def ruby_convertion_candidates_on(ruby_mappings)
+            def ruby_convertion_candidates_on(ruby_mappings, name)
                 super + (ruby_mappings.from_container_basename[container_kind.name] || Array.new)
             end
         end

@@ -5,7 +5,7 @@ module TypeStore
     # regexp-to-object mappings. We have to go through all regexps in the second
     # case, so we split the two matching methods to speed up the common case
     # (strings)
-    class RubyMappingCustomization
+    class RubySpecializationMapping
         # Mapping from type names to registered objects
         # @return [{String=>Object}]
         attr_reader :from_typename
@@ -23,7 +23,7 @@ module TypeStore
         # registered at the time
         attr_reader :container
 
-        def initialize(container = nil)
+        def initialize(container = Array.new)
             @from_typename = Hash.new
             @from_array_basename = Hash.new
             @from_container_basename = Hash.new
@@ -55,9 +55,9 @@ module TypeStore
         #   name
         # @param [Object] value the value to be stored for that key
         def set(key, value, **options)
-            options[:if] = options[:if] || Hash.new(true)
+            options[:if] = options[:if] || proc { true }
             key, set = mapping_for_key(key)
-            set = set[key] = (container || Array.new).dup
+            set = set[key] = container.dup
             set << [options, value]
         end
 
@@ -71,10 +71,7 @@ module TypeStore
         #   name
         # @param [Object] value the value to be added to the set for that key
         def add(key, value, **options)
-            options[:if] = options[:if] || Hash.new(true)
-            if !container
-                raise ArgumentError, "#{self} does not support containers"
-            end
+            options[:if] = options[:if] || proc { true }
             key, set = mapping_for_key(key)
             set = (set[key] ||= container.dup)
             set << [options, value]
@@ -83,7 +80,7 @@ module TypeStore
         # Returns the single object registered for the given type name
         #
         # @raise [ArgumentError] if more than one matching object is found
-        def find(type_model, error_if_ambiguous = true)
+        def find(type_model, error_if_ambiguous: true)
             all = find_all(type_model)
             if all.size > 1 && error_if_ambiguous
                 raise ArgumentError, "more than one entry matches #{name}"
@@ -94,12 +91,12 @@ module TypeStore
         # Returns all objects matching the given type name
         #
         # @raise [Array<Object>]
-        def find_all(type_model, name = type_model.name)
+        def find_all(type_model, name: type_model.name)
             # We delegate the building of candidates to the type models to avoid
-            # weird dependency issues (i.e. RubyMappingCustomization must be
+            # weird dependency issues (i.e. RubySpecializationMapping must be
             # available when the submodels are created, which means that we
-            # can't access the type classes from there)
-            candidates = type_model.ruby_convertion_candidates_on(self)
+            # can't access the type classes)
+            candidates = type_model.ruby_convertion_candidates_on(self, name: name)
             candidates.map do |options, obj|
                 obj if options[:if].call(type_model)
             end.compact

@@ -42,13 +42,18 @@ module TypeStore
         # leading namespace marker
         attr_reader :types_resolver
 
-        def initialize(load_plugins: TypeStore.load_plugins?)
+        # The object that manages class extensions as well as conversions
+        # to/from Ruby
+        #
+        # @return [SpecializationManager]
+        attr_reader :specialization_manager
+
+        def initialize(specialization_manager: TypeStore.specialization_manager.dup)
             @types = Hash.new
             @types_resolver = Hash.new
-            @container_kinds = Hash.new
-	    if load_plugins
-            	TypeStore.load_plugins
-            end
+            @container_models = Hash.new
+            @specialization_manager = specialization_manager ||
+                SpecializationManager.new
         end
 
         def size

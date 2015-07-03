@@ -318,9 +318,9 @@ end
 # Type models
 require 'metaruby'
 require 'typestore/exceptions'
-require 'typestore/ruby_mapping_specialization'
+require 'typestore/ruby_specialization_mapping'
 require 'typestore/type_specialization_module'
-require 'typestore/specializations'
+require 'typestore/specialization_manager'
 require 'typestore/metadata'
 require 'typestore/deep_copy_array'
 
@@ -354,6 +354,26 @@ class Class
 end
 
 module TypeStore
+    def self.specialization_manager
+        @specialization_manager ||= SpecializationManager.new
+    end
+
+    def self.specialize_model(*args, **options, &block)
+        specialization_manager.specialize(*args, **options, &block)
+    end
+
+    def self.specialize(*args, **options, &block)
+        specialization_manager.specialize(*args, **options, &block)
+    end
+
+    def self.convert_to_ruby(*args, **options, &block)
+        specialization_manager.specialize(*args, **options, &block)
+    end
+
+    def self.convert_from_ruby(*args, **options, &block)
+        specialization_manager.specialize(*args, **options, &block)
+    end
+
     # Generic method that converts a TypeStore value into the corresponding Ruby
     # value.
     def self.to_ruby(value, original_type = nil)
@@ -428,6 +448,26 @@ module TypeStore
         end
         converted
     end
+
+    def self.load_plugins
+        if !ENV['TYPELIB_RUBY_PLUGIN_PATH'] || (@@typelib_plugin_path == ENV['TYPELIB_RUBY_PLUGIN_PATH'])
+            return
+        end
+
+        ENV['TYPELIB_RUBY_PLUGIN_PATH'].split(':').each do |dir|
+            specific_file = File.join(dir, "typelib_plugin.rb")
+            if File.exists?(specific_file)
+                require specific_file
+            else
+                Dir.glob(File.join(dir, '*.rb')) do |file|
+                    require file
+                end
+            end
+        end
+
+        @@typelib_plugin_path = ENV['TYPELIB_RUBY_PLUGIN_PATH'].dup
+    end
+    @@typelib_plugin_path = nil
 end
 
 # Finally, set guard types on the root classes

@@ -79,7 +79,7 @@ module TypeStore
 
             # Used by {RubyMappingCustomization} to find out which
             # specialization blocks apply to self
-            def ruby_convertion_candidates_on(ruby_mappings)
+            def ruby_convertion_candidates_on(ruby_mappings, name)
                 super + (ruby_mappings.from_array_basename[deference.name] || Array.new)
             end
         end
