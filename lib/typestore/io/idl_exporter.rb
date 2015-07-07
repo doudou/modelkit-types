@@ -265,7 +265,7 @@ module TypeStore
                     end
                 elsif type <= EnumType
                     _, basename, _ = name_of(type)
-                    ields = type.each.map do |symbol, value|
+                    fields = type.each.map do |symbol, value|
                         "    #{symbol} = #{value};"
                     end
                     return ["enum #{basename}", "{", *fields, "}"]
@@ -273,7 +273,7 @@ module TypeStore
                     _, basename, _ = name_of(type)
                     fields = type.each.map do |field|
                         field_namespace, field_basename, field_suffix = name_of(field.type)
-                        "    #{emit_typename(field.type)} #{field.name}#{suffix_of(field.type)};"
+                        "    #{emit_typename(field.type, current_namespace)} #{field.name}#{suffix_of(field.type)};"
                     end
                     return ["struct #{basename}", "{", *fields, "}"]
                 else
