@@ -92,7 +92,7 @@ module TypeStore
         #     aliases
         #   @yieldparam [Model<TypeStore::Type>] type a type
         def each(filter = nil, with_aliases: false)
-            return enum_for(__method__, filter, options) if !block_given?
+            return enum_for(__method__, filter, with_aliases: with_aliases) if !block_given?
 
             if filter.respond_to?(:to_str)
                 filter = Regexp.new("^#{Regexp.quote(filter)}")
