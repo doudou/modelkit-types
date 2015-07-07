@@ -340,6 +340,34 @@ module TypeStore
                 assert_raises(InvalidMergeError) { r0.merge(r1) }
                 assert !r0.include?('/T1')
             end
+
+            it "copies mising types over" do
+                t0 = r0.create_type '/Type'
+                flexmock(t0).should_receive(:copy_to).with(r1).once
+                r1.merge(r0)
+            end
+
+            it "copies aliases of new types" do
+                t0 = r0.create_type '/Type'
+                r0.alias '/Alias', t0
+                r1.merge(r0)
+                assert_equal t0, r1.get('/Alias')
+            end
+
+            it "copies aliases of existing types" do
+                t0 = r0.create_type '/Type'
+                r0.alias '/Alias', t0
+                r1.create_type '/Type'
+                r1.merge(r0)
+                assert_equal t0, r1.get('/Alias')
+            end
+
+            it "calls #merge on common types" do
+                t0 = r0.create_type '/Type'
+                t1 = r1.create_type '/Type'
+                flexmock(t1).should_receive(:merge).with(t0).once
+                r1.merge(r0)
+            end
         end
 
         #def test_registry_iteration

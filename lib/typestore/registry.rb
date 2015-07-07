@@ -120,28 +120,38 @@ module TypeStore
         def merge(registry)
             # First, verify that all common types are compatible
             common_types = Array.new
-            missing_types = Hash.new { |h, k| h[k] = Set.new }
+            missing_types = Array.new
+            new_aliases = Hash.new { |h, k| h[k] = Set.new }
             registry.types.each do |name, type|
-                if self_type = find_by_name(name)
-                    self_type.validate_merge(type)
-                    common_types << [type, self_type]
-                elsif type.name != name
-                    missing_types[type] << name
+                if self_type = find_by_name(type.name)
+                    if name == type.name
+                        self_type.validate_merge(type)
+                        common_types << [type, self_type]
+                    else
+                        new_aliases[type.name] << name
+                    end
+                else
+                    missing_types << type
+                    if type.name != name
+                        new_aliases[type.name] << name
+                    end
                 end
             end
 
             common_types.each do |type, self_type|
                 self_type.merge(type)
             end
-            missing_types.each_key do |type|
-                type.copy_to(self)
-            end
-            missing_types.each do |type, names|
-                self_type = get(type.name)
-                names.each do |n|
-                    self.alias(n, self_type)
+            missing_types.each do |type|
+                if !find_by_name(type.name) # Has been copied because of a dependency
+                    type.copy_to(self)
                 end
             end
+            new_aliases.each do |name, aliases|
+                aliases.each do |n|
+                    self.alias(n, name)
+                end
+            end
+            self
         end
 
         # Generates the smallest new registry that allows to define a set of types
