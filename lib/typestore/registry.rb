@@ -458,7 +458,8 @@ module TypeStore
             #   automatically computed in #build so as to follow the previous
             #   field.
             # @return [Field]
-            def add(field_name, field_type, offset: current_size)
+            def add(field_name, field_type, _offset = nil, offset: current_size)
+                offset ||= _offset
                 field = type.add(field_name.to_s, field_type, offset: offset)
                 @current_size = [current_size, field.offset + field.type.size].max
                 field
