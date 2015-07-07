@@ -19,6 +19,11 @@ module TypeStore
             data.empty?
         end
 
+        def initialize_copy(other)
+            @data = Hash.new
+            merge(other)
+        end
+
         def merge(metadata)
             metadata.data.each do |k, v|
                 (data[k] ||= Set.new).merge(v)
