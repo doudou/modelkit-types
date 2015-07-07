@@ -34,7 +34,7 @@ module TypeStore
         # The typename-to-container mapping
         #
         # @return [Hash<String,ContainerType>]
-        attr_reader :container_kinds
+        attr_reader :container_models
 
         # Another mapping used to resolve typenames
         #
@@ -478,24 +478,32 @@ module TypeStore
         end
 
         # Registers the given class as a container type
-        def register_container_kind(type)
+        def register_container_model(type)
             TypeStore.validate_typename(type.name)
-            if container_kinds.has_key?(type.name)
+            if container_models.has_key?(type.name)
                 raise DuplicateTypeNameError, "attempting to redefine the existing type #{type.name}"
             end
-            container_kinds[type.name] = type
+            container_models[type.name] = type
         end
 
         # Enumerate the available container kinds
         #
         # @yieldparam [Model<Type>] the container base class
-        def each_available_container_kind(&block)
-            containers.values.each(&block)
+        def each_available_container_model(&block)
+            container_models.values.each(&block)
+        end
+
+        def has_container_model?(name)
+            container_models.has_key?(name)
+        end
+
+        def find_container_model_by_name(name)
+            container_models[name.to_str]
         end
 
         # Returns the container base model with the given name
-        def container_kind(name)
-            if type = container_kinds[name.to_s]
+        def container_model(name)
+            if type = container_models[name.to_s]
                 type
             else
                 raise NotFound, "#{self} has no container type named #{name}"
@@ -570,7 +578,7 @@ module TypeStore
 
         # Creates a new container type on this registry
         #
-        # @param [String] container_kind the name of the container type
+        # @param [String] container_model the name of the container type
         # @param [String,Type] element_type the type of the container elements,
         #   either as a type or as a type name
         #
@@ -579,7 +587,7 @@ module TypeStore
         def create_container(container_model, element_type, _size = nil, typename: nil, size: nil, **options)
             if container_model.respond_to?(:to_str)
                 container_model_name = container_model
-                if !(container_model = container_kinds[container_model])
+                if !(container_model = container_models[container_model])
                     raise NotFound, "#{container_model_name} is not a valid container type name on #{self}"
                 end
             end
@@ -684,9 +692,9 @@ module TypeStore
             recorder.build
         end
 
-        def validate_container_kind_argument(type)
+        def validate_container_model_argument(type)
             if type.respond_to?(:to_str)
-                if !(container_t = container_kinds[type.to_str])
+                if !(container_t = container_models[type.to_str])
                     raise NotFound, "no container type #{type} in #{self}"
                 end
                 container_t

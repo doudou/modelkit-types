@@ -107,7 +107,7 @@ module TypeStore
             end
 
             def update_container_node(type, node)
-                node.attributes['kind'] = type.container_kind.name
+                node.attributes['kind'] = type.container_model.name
                 node.attributes['of']   = type.deference.name
                 update_type_node(type, node)
             end

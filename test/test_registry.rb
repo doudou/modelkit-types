@@ -41,7 +41,7 @@ module TypeStore
             attr_reader :container_model
             before do
                 @container_model = ContainerType.new_submodel typename: '/container_t'
-                registry.register_container_kind(@container_model)
+                registry.register_container_model(@container_model)
             end
             it "returns an existing type" do
                 assert_same int_t, registry.build('/int')
@@ -53,12 +53,12 @@ module TypeStore
             end
             it "knows how to build a container" do
                 container_t = registry.build('/container_t</int>')
-                assert_same container_model, container_t.container_kind
+                assert_same container_model, container_t.container_model
                 assert_same int_t, container_t.deference
             end
             it "ignores subsequent arguments when building containers" do
                 container_t = registry.build('/container_t</int,10>')
-                assert_same container_model, container_t.container_kind
+                assert_same container_model, container_t.container_model
                 assert_same int_t, container_t.deference
             end
             it "recursively builds types" do
@@ -150,7 +150,7 @@ module TypeStore
             attr_reader :container_t
             before do
                 @container_t = ContainerType.new_submodel(typename: '/std/vector')
-                registry.register_container_kind(container_t)
+                registry.register_container_model(container_t)
             end
 
             it "creates a container of the specified container kind and element type" do

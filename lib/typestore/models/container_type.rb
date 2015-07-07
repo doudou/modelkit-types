@@ -14,7 +14,7 @@ module TypeStore
             # there is always one class between {ContainerType} and the actual
             # container class. This class characterizes what type of container
             # it is
-            def container_kind
+            def container_model
                 supermodel
             end
 
@@ -74,7 +74,7 @@ module TypeStore
             end
 
             def ruby_convertion_candidates_on(ruby_mappings, name)
-                super + (ruby_mappings.from_container_basename[container_kind.name] || Array.new)
+                super + (ruby_mappings.from_container_basename[container_model.name] || Array.new)
             end
         end
     end
