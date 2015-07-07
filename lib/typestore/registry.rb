@@ -62,7 +62,7 @@ module TypeStore
         end
 
         def dup
-            copy = self.class.new
+            copy = Registry.new
             copy.merge(self)
             copy
         end
@@ -154,7 +154,7 @@ module TypeStore
 	def minimal(type, with_aliases: true)
             type = validate_type_argument(type)
 
-            result = self.class.new
+            result = Registry.new
             type.copy_to(result)
             if with_aliases
                 new_type = result.get(type.name)

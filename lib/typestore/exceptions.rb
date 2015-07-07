@@ -71,6 +71,9 @@ module TypeStore
     # Raised when attempting to merge two {EnumType} that have the same symbol
     # pointing to two different values
     class MismatchingEnumSymbolsError < InvalidMergeError; end
+    # Raised when attempting to merge two {ContainerType} that are not from the
+    # same container model
+    class MismatchingContainerModel < InvalidMergeError; end
 
     # Raises when attempting an operation that required a type from a registry
     # (for a registry operation) or a type from the same registry as the

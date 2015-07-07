@@ -42,7 +42,18 @@ module TypeStore
                 end
             end
 
+            def validate_merge(type)
+                super
+
+                if container_model != type.container_model
+                    raise MismatchingContainerModel, "#{self} and #{type} are not from the same container model"
+                end
+            end
+
             def copy_to(registry, **options)
+                if !registry.has_container_model?(container_model.name)
+                    registry.register_container_model(container_model)
+                end
                 super(registry, random_access: random_access?, **options)
             end
 
