@@ -113,5 +113,6 @@ module TypeStore
             end
         end
     end
+    Registry::EXPORT_TYPE_HANDLERS['tlb'] = IO::XMLExporter
 end
 

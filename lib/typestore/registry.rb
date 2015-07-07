@@ -24,7 +24,8 @@ module TypeStore
             ".tlb" => "tlb"
         }
 
-        TYPE_HANDLERS = Hash.new
+        IMPORT_TYPE_HANDLERS = Hash.new
+        EXPORT_TYPE_HANDLERS = Hash.new
 
         # The typename-to-type mapping
         #
@@ -269,12 +270,12 @@ module TypeStore
         # either be a string, in which case we use a TypeStore internal importer,
         # or a Ruby object responding to 'call' in which case Registry#import
         # will use that object to do the importing.
-        def self.handler_for(file, kind = 'auto')
+        def self.import_handler_for(file, kind = 'auto')
 	    file = File.expand_path(file)
             if !kind || kind == 'auto'
                 kind    = Registry.guess_type(file)
             end
-            if handler = TYPE_HANDLERS[kind]
+            if handler = IMPORT_TYPE_HANDLERS[kind]
                 return handler
             end
             return kind
@@ -320,25 +321,13 @@ module TypeStore
         #   defined in +self+ will generate an error, even if the two
         #   definitions are the same.
 	#
-        def import(file, kind = 'auto', options = {})
+        def import(file, kind = 'auto', **options)
 	    file = File.expand_path(file)
-
-            handler = Registry.handler_for(file, kind)
-            if handler.respond_to?(:call)
-                return handler.call(self, file, kind, options)
+            if handler = Registry.import_handler_for(file, kind)
+                return handler.import(file, registry: self, **options)
             else
-                kind = handler
+                raise ArgumentError, "no importer defined for #{file} (#{kind})"
             end
-
-            do_merge = 
-                if options.has_key?('merge') then options.delete('merge')
-                elsif options.has_key?(:merge) then options.delete(:merge)
-                else true
-                end
-
-            options = Registry.format_options(options)
-
-            do_import(file, kind, do_merge, options)
         end
 
         def each_type_topological
@@ -410,17 +399,13 @@ module TypeStore
             end
         end
 
-	# Exports the registry in the provided format, into a Ruby string. The
-	# following formats are allowed as +format+:
-	# 
-	# +tlb+:: TypeStore's own XML format
-	# +idl+:: CORBA IDL
-	# 
-	# +options+ is an option hash, which is export-format specific. See the C++
-	# documentation of each exporter for more information.
-	def export(kind, options = {})
-            options = Registry.format_options(options)
-            do_export(kind, options)
+        # @deprecated use the exporter objects in {TypeStore::IO} directly
+	def export(kind, **options)
+            if handler = EXPORT_TYPE_HANDLERS[kind]
+                return handler.export(self, **options)
+            else
+                raise ArgumentError, "no exporter defined for #{kind}"
+            end
 	end
 
         # Export the registry into TypeStore's own XML format

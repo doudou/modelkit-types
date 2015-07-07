@@ -96,5 +96,6 @@ module TypeStore
             end
         end
     end
+    Registry::IMPORT_TYPE_HANDLERS['tlb'] = IO::XMLImporter
 end
 
