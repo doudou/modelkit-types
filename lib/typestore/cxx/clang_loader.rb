@@ -5,7 +5,7 @@ module TypeStore
     module CXX
     module CLangLoader
         # Imports the given C++ file into the registry using CLANG
-        def self.load(registry, file, kind, options)
+        def self.import(path, registry: Registry.new, **options)
             #Checking if the clang importer is installed and can be found on the system
             if !system("which typelib-clang-tlb-importer > /dev/null 2>&1")
                 raise RuntimeError, "typelib-clang-tlb-importer is not installed in PATH"
