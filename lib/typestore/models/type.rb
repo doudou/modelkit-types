@@ -236,7 +236,7 @@ module TypeStore
                 submodel.size = size
                 submodel.null = null
                 submodel.opaque = opaque
-                submodel.instance_variable_set(:@metadata, MetaData.new)
+                submodel.instance_variable_set(:@metadata, metadata.dup)
 
                 if registry
                     registry.specialization_manager.apply(submodel)
