@@ -202,14 +202,12 @@ module TypeStore
             #   the converted object
             def convert_to_ruby(to = nil, &block)
                 self.convertion_to_ruby = [to, Hash[block: block]]
-                @converter = nil
             end
 
             # Extends this type class to have be able to use the Ruby class +from+
             # to initialize a value of type +self+
             def convert_from_ruby(from, &block)
                 convertions_from_ruby[from] = lambda(&block)
-                @converter = nil
             end
 
             # Returns an object that can be used to convert to/from ruby
