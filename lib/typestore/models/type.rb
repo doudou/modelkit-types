@@ -54,7 +54,7 @@ module TypeStore
             #
             # It is a mapping from a Ruby class K to a block which can convert a
             # value of class K to the corresponding TypeStore value
-            attr_reader :convertions_from_ruby
+            inherited_attribute(:convertion_from_ruby,  :convertions_from_ruby, map: true) { Hash.new }
 
             # Returns whether one needs to call TypeStore.to_ruby to convert this
             # type to the type expected by the caller
@@ -69,7 +69,8 @@ module TypeStore
             #
             # @return [Boolean]
             def needs_convertion_from_ruby?
-                !convertions_from_ruby.empty?
+                each_convertion_from_ruby { return true }
+                false
             end
 
             # Returns the description of a type using only simple ruby objects
@@ -238,7 +239,6 @@ module TypeStore
                 submodel.null = null
                 submodel.opaque = opaque
                 submodel.instance_variable_set(:@metadata, MetaData.new)
-                submodel.instance_variable_set(:@convertions_from_ruby, Hash.new)
 
                 if registry
                     registry.specialization_manager.apply(submodel)

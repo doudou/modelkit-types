@@ -63,22 +63,6 @@ module TypeStore
 
                 submodel.instance_variable_set(:@fields, Hash.new)
                 super
-
-                if !submodel.convertions_from_ruby.has_key?(Hash)
-                    submodel.convert_from_ruby Hash do |value, expected_type|
-                        result = expected_type.new
-                        result.set_hash(value)
-                        result
-                    end
-                end
-
-                if !submodel.convertions_from_ruby.has_key?(Array)
-                    submodel.convert_from_ruby Array do |value, expected_type|
-                        result = expected_type.new
-                        result.set_array(value)
-                        result
-                    end
-                end
             end
 
             def copy_to(registry, **options)

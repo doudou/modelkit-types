@@ -6,6 +6,17 @@ module TypeStore
     class CompoundType < Type
         extend Models::CompoundType
 
+        convert_from_ruby Hash do |value, expected_type|
+            result = expected_type.new
+            result.set_hash(value)
+            result
+        end
+        convert_from_ruby Array do |value, expected_type|
+            result = expected_type.new
+            result.set_array(value)
+            result
+        end
+
         module CustomConvertionsHandling
             def invalidate_changes_from_converted_types
                 super()
