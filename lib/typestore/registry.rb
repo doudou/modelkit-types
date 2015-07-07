@@ -71,7 +71,10 @@ module TypeStore
         #
         # @see Registry#merge_xml
         def self.from_xml(xml)
-            TypeStore::IO::XMLImporter.new.from_xml(xml)
+            if xml.respond_to?(:to_str)
+                xml = REXML::Document.new(xml)
+            end
+            TypeStore::IO::XMLImporter.new.from_xml(xml, registry: new)
         end
 
         # Enumerate the types contained in this registry
