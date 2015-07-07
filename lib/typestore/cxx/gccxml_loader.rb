@@ -382,6 +382,8 @@ module TypeStore
                 end
             end
 
+            IGNORED_FUNDAMENTALS = ["void"].to_set
+
             def resolve_type_definition(xmlnode)
                 kind = xmlnode.name
                 id   = xmlnode['id']
@@ -542,16 +544,17 @@ module TypeStore
                     end
 
                     case name = xmlnode['name']
-                    when /int/
+                    when /int/, /char/, /short/, /long/
+                        std_name =  "int#{size * 8}_t"
                         if name =~ /unsigned/
-                            registry.alias("/#{name}", "/uint#{size * 8}_t")
-                        else
-                            registry.alias("/#{name}", "/int#{size * 8}_t")
+                            std_name = "u#{std_name}"
                         end
-                    when /float/
-                        registry.alias("/#{name}", "/float")
-                    when /double/
-                        registry.alias("/#{name}", "/double")
+
+                        if name != std_name
+                            registry.alias("/#{name}", "/#{std_name}")
+                        end
+                    when "float"
+                    when "double"
                     when "bool"
                         registry.create_numeric("/bool", size: size, integer: true)
                     else
