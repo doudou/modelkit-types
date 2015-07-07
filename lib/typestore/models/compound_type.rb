@@ -17,6 +17,12 @@ module TypeStore
                     @compound, @name, @type, @offset = compound, name, type, offset
                 end
 
+                def ==(other)
+                    other.name == name &&
+                        other.type == type &&
+                        other.offset == offset
+                end
+
                 def validate_merge(field)
                     if field.name != name
                         raise ArgumentError, "invalid field passed to #merge: name mismatches"

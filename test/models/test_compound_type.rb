@@ -250,6 +250,42 @@ module TypeStore
                     assert_equal field_t.size * 5, f2.offset
                 end
             end
+
+            describe "#==" do
+                attr_reader :c0, :c1, :field_t
+                before do
+                    @c0 = TypeStore::CompoundType.new_submodel
+                    @c1 = TypeStore::CompoundType.new_submodel
+                    @field_t = TypeStore::Type.new_submodel
+                end
+
+                it "returns true for the same type" do
+                    c0.add 'f', field_t
+                    c1.add 'f', field_t
+                    assert_equal c0, c1
+                end
+                it "returns false if there is a missing field" do
+                    field_t = TypeStore::Type.new_submodel
+                    c0.add 'f', field_t
+                    refute_equal c0, c1
+                end
+                it "returns false if there is a new field" do
+                    field_t = TypeStore::Type.new_submodel
+                    c1.add 'f', field_t
+                    refute_equal c0, c1
+                end
+                it "returns false if the field offset differ" do
+                    c0.add 'f', field_t, offset: 0
+                    c1.add 'f', field_t, offset: 10
+                    refute_equal c0, c1
+                end
+                it "returns false if the field type differ" do
+                    c0.add 'f', field_t
+                    c1_field_t = TypeStore::Type.new_submodel typename: 'differ'
+                    c1.add 'f', c1_field_t
+                    refute_equal c0, c1
+                end
+            end
         end
     end
 end
