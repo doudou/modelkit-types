@@ -7,6 +7,8 @@ module TypeStore
     class Type
         extend Models::Type
 
+        @metadata = MetaData.new
+
         # Returns a new Type instance that contains the same value, but using a
         # different type object
         #
