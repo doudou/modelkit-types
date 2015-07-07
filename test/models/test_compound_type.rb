@@ -171,7 +171,13 @@ module TypeStore
                     other_t.add('f0', field_t, offset: 10)
                     assert_raises(MismatchingFieldOffsetError) { other_t.validate_merge(compound_t) }
                 end
-                it "raises if the field set is different" do
+                it "raises if self has a field that the argument does not" do
+                    compound_t.add('f0', field_t, offset: 0)
+                    compound_t.add('f1', field_t, offset: 10)
+                    other_t.add('f0', field_t, offset: 0)
+                    assert_raises(MismatchingFieldSetError) { other_t.validate_merge(compound_t) }
+                end
+                it "raises if the argument has a field that self does not" do
                     compound_t.add('f0', field_t, offset: 0)
                     other_t.add('f0', field_t, offset: 0)
                     other_t.add('f1', field_t, offset: 10)
