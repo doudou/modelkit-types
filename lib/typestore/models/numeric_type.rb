@@ -34,7 +34,7 @@ module TypeStore
             def ==(other)
                 super &&
                     !(integer? ^ other.integer?) &&
-                    (!integer? || !(unsigned? && other.unsigned?))
+                    (!integer? || !(unsigned? ^ other.unsigned?))
             end
 
             def copy_to(registry, **options)

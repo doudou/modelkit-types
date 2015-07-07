@@ -87,6 +87,30 @@ module TypeStore
                     end
                 end
             end
+
+            describe "#==" do
+                it "tests the integer flag" do
+                    int_t   = TypeStore::NumericType.new_submodel integer: false
+                    float_t = TypeStore::NumericType.new_submodel integer: true
+                    assert_equal int_t, int_t
+                    assert_equal float_t, float_t
+                    refute_equal float_t, int_t
+                    refute_equal int_t, float_t
+                end
+                it "tests the unsigned flag for integers" do
+                    uint_t = TypeStore::NumericType.new_submodel integer: true, unsigned: true
+                    int_t  = TypeStore::NumericType.new_submodel integer: true, unsigned: false
+                    assert_equal uint_t, uint_t
+                    assert_equal int_t, int_t
+                    refute_equal uint_t, int_t
+                    refute_equal int_t, uint_t
+                end
+                it "does not test the unsigned flag for floats" do
+                    ufloat_t = TypeStore::NumericType.new_submodel integer: false, unsigned: true
+                    float_t  = TypeStore::NumericType.new_submodel integer: false, unsigned: false
+                    assert_equal ufloat_t, float_t
+                end
+            end
         end
     end
 end
