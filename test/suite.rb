@@ -6,3 +6,5 @@ require './test/test_ruby_specialization_mapping'
 require './test/test_specialization_manager'
 require './test/test_typestore'
 require './test/suite_models'
+
+require './test/io/test_cxx_importer'
