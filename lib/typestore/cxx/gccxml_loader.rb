@@ -552,19 +552,21 @@ module TypeStore
                         size = Integer(size) / 8
                     end
 
-                    case name = xmlnode['name']
+                    case name
                     when /int/, /char/, /short/, /long/
                         std_name =  "int#{size * 8}_t"
                         if name =~ /unsigned/
                             std_name = "u#{std_name}"
                         end
+                        std_name = "/#{std_name}"
 
                         if name != std_name
-                            registry.alias("/#{name}", "/#{std_name}")
+                            registry.create_alias(name, std_name)
                         end
-                    when "float"
-                    when "double"
-                    when "bool"
+                        name = id_to_name[id] = std_name
+                    when "/float"
+                    when "/double"
+                    when "/bool"
                         registry.create_numeric("/bool", size: size, integer: true)
                     else
                         if !IGNORED_FUNDAMENTALS.any? { |matcher| matcher === name }
