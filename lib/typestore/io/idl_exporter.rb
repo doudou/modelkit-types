@@ -80,7 +80,7 @@ module TypeStore
                     return [], basename, ''
                 elsif type <= EnumType || type <= CompoundType
                     name_parts = TypeStore.typename_parts(type.name)
-                    basename  = name_parts.pop
+                    basename  = name_parts.pop.gsub(/[^\w]/, '_')
                     namespace = name_parts.map { |s| s.gsub(/[^\w]/, '_') }
                     return (namespace_prefix + namespace + namespace_suffix), basename, ''
                 else
@@ -90,19 +90,25 @@ module TypeStore
 
             def compute_name_of_numeric(type)
                 if type.integer?
-                    name =
-                        case type.size
-                        when 1 then 'octet'
-                        when 2 then 'short'
-                        when 4 then 'long'
-                        when 8 then 'long long'
-                        else
-                            raise ArgumentError, "no IDL equivalent for integer types of size #{type.size}"
+                    if type.size == 1
+                        if type.unsigned?
+                            return 'octet'
+                        else return 'char'
                         end
-                    if type.unsigned?
-                        return "unsigned #{name}"
                     else
-                        return name
+                        name =
+                            case type.size
+                            when 2 then 'short'
+                            when 4 then 'long'
+                            when 8 then 'long long'
+                            else
+                                raise ArgumentError, "no IDL equivalent for integer types of size #{type.size}"
+                            end
+                        if type.unsigned?
+                            return "unsigned #{name}"
+                        else
+                            return name
+                        end
                     end
                 else
                     case type.size
@@ -123,7 +129,7 @@ module TypeStore
                 end
 
                 def depends_on?(namespace_name)
-                    dependencies.include?(namespace_name.to_str)
+                    dependencies.include?(namespace_name)
                 end
             end
 
@@ -147,7 +153,7 @@ module TypeStore
             def export(registry, to: '', opaque_as_any: false, selected: registry.each)
                 selected = selected.map do |type_or_name|
                     registry.validate_type_argument(type_or_name)
-                end
+                end.to_set
 
                 # We have two constraints here:
                 #  - the relationship between types (obviously)
@@ -158,13 +164,16 @@ module TypeStore
                 selected.each do |type|
                     ns = namespace_of(type)
                     new_ns_dependencies = type.recursive_dependencies.map do |dep_type|
-                        dep_ns = namespace_of(type)
+                        next if !selected.include?(dep_type)
+
+                        dep_ns = namespace_of(dep_type)
                         if dep_ns == ns
                         elsif dep_ns.depends_on?(ns.name)
                             new_namespace_instance(ns.name)
                         else dep_ns
                         end
                     end.compact
+                    puts "#{type}: #{new_ns_dependencies}"
                     ns.types << type
                     ns.dependencies.merge(new_ns_dependencies)
                 end
@@ -266,16 +275,20 @@ module TypeStore
                 elsif type <= EnumType
                     _, basename, _ = name_of(type)
                     fields = type.each.map do |symbol, value|
-                        "    #{symbol} = #{value};"
+                        "    #{symbol},"
                     end
-                    return ["enum #{basename}", "{", *fields, "}"]
+                    if !fields.empty?
+                        # Remove the comma on the last symbol
+                        fields[-1] = fields[-1][0..-2]
+                    end
+                    return ["enum #{basename}", "{", *fields, "};"]
                 elsif type <= CompoundType
                     _, basename, _ = name_of(type)
                     fields = type.each.map do |field|
                         field_namespace, field_basename, field_suffix = name_of(field.type)
                         "    #{emit_typename(field.type, current_namespace)} #{field.name}#{suffix_of(field.type)};"
                     end
-                    return ["struct #{basename}", "{", *fields, "}"]
+                    return ["struct #{basename}", "{", *fields, "};"]
                 else
                     raise ArgumentError, "don't know how to represent #{type} in IDL"
                 end
