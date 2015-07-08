@@ -217,9 +217,11 @@ module TypeStore
                             tk = "/#{tk}"
                         end
                         result << "#{tk}<#{arg}>"
-                    elsif tk =~ /^\/?std\/basic_string/
-                        CXX.collect_template_arguments(tokens)
-                        result << "/std/string"
+                    elsif tk =~ /^\/?std\/basic_string$/
+                        arguments = CXX.collect_template_arguments(tokens)
+                        if arguments[0] == 'char'
+                            result << "/std/string"
+                        end
                     elsif tk =~ /^[-\d<>,]+/
                         result << tk.gsub(/[-x]/, "0")
                     elsif tk[0, 1] != "/"
@@ -446,7 +448,11 @@ module TypeStore
                 if kind == "Struct" || kind == "Class"
                     type_name, template_args = CXX.parse_template(name)
                     if type_name == "/std/string"
-                        # This is internally known to typelib
+                        # TypeStore does not (yet) have a character type class.
+                        # We just pick int8_t and be done with it
+                        type = registry.create_container('/std/string', '/int8_t', Integer(xmlnode['size']), typename: '/std/string')
+                        set_source_file(type, xmlnode)
+
                     elsif registry.has_container_model?(type_name)
                         # This is known to TypeStore as a container
                         contained_type = template_args[0]
