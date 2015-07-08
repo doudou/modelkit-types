@@ -197,8 +197,8 @@ module TypeStore
                 to_set
 
             result = Registry.new
-            registry.types.each do |name, type|
-                next if removed_types.include?(type)
+            each do |type|
+                next if removed_types.include?(type) || result.include?(type.name)
                 type.copy_to(result)
             end
 
