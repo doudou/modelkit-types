@@ -171,6 +171,7 @@ module TypeStore
 
             def add_direct_dependency(type)
                 direct_dependencies << type
+                @recursive_dependencies = nil
             end
 
             # Returns the set of all types that are needed to define self,
