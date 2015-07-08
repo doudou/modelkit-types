@@ -43,6 +43,9 @@ module TypeStore
                 def [](name)
                     attributes[name]
                 end
+                def to_s
+                    "<#{name} " + attributes.map { |k, v| "#{k}=#{v}" }.join(" ") + "/>"
+                end
             end
 
             STORED_TAGS = %w{Namespace Typedef Enumeration Struct Class ArrayType FundamentalType PointerType}
