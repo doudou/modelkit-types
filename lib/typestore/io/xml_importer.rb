@@ -13,7 +13,7 @@ module TypeStore
 
             def import(document, registry: TypeStore::Registry.new)
                 document = REXML::Document.new(document)
-                from_xml(document, registry)
+                from_xml(document, registry: registry)
             end
 
             def from_xml(document, registry: TypeStore::Registry.new)
