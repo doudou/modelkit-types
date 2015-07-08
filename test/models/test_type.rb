@@ -25,6 +25,10 @@ module TypeStore
                     assert_equal false, TypeStore::Type.new_submodel(opaque: false).opaque?
                     assert_equal true, TypeStore::Type.new_submodel(opaque: true).opaque?
                 end
+                it "sets #contains_opaques? to true if the type is opaque itself" do
+                    assert_equal false, TypeStore::Type.new_submodel(opaque: false).contains_opaques?
+                    assert_equal true, TypeStore::Type.new_submodel(opaque: true).contains_opaques?
+                end
             end
             describe "#basename" do
                 it "calls TypeStore.basename to extract the type's basename" do

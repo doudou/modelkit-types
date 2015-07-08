@@ -231,6 +231,7 @@ module TypeStore
                 super(submodel, &block)
 
                 submodel.instance_variable_set(:@direct_dependencies, Set.new)
+                submodel.contains_opaques = opaque
                 submodel.registry = registry
                 submodel.name = typename
                 submodel.size = size
