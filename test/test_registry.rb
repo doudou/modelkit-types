@@ -297,7 +297,7 @@ module TypeStore
                                 pass_thru
                             t.field0 = f0_t
                         end
-                        assert_equal 10, compound_t['field0'].offset
+                        assert_equal 10, compound_t.get('field0').offset
                     end
                 end
                 describe "the #add syntax" do

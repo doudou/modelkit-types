@@ -201,8 +201,10 @@ module TypeStore
                 get(fieldname).offset
             end
 
-            # Alias for {get}
-            def [](name); get(name) end
+            # Returns the type of the expected field
+            def [](name)
+                get(name).type
+            end
 
             # Accesses a field by name
             #
