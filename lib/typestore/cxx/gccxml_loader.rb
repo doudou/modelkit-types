@@ -624,8 +624,7 @@ module TypeStore
 
                     name = id_to_name[id] = full_name
 
-
-                    type = registry.create_enum full_name do |e|
+                    type = registry.create_enum full_name, size: Integer(xmlnode['size']) do |e|
                         info.enum_values[id].each do |enum_value|
                             e.add(enum_value["name"], Integer(enum_value['init']))
                         end
