@@ -119,18 +119,24 @@ module TypeStore
             missing_types = Array.new
             new_aliases = Hash.new { |h, k| h[k] = Set.new }
             registry.types.each do |name, type|
-                if self_type = find_by_name(type.name)
-                    if name == type.name
+                if self_type = find_by_name(name)
+                    begin
                         self_type.validate_merge(type)
+                    rescue InvalidMergeError => e
+                        if name == type.name
+                            raise
+                        else
+                            raise e, "merged registry aliases #{type} under the name #{name} but #{name} resolves to #{self_type} on the receiver: #{e.message}"
+                        end
+                    end
+
+                    if name == type.name
                         common_types << [type, self_type]
-                    else
-                        new_aliases[type.name] << name
                     end
-                else
+                elsif type.name == name
                     missing_types << type
-                    if type.name != name
-                        new_aliases[type.name] << name
-                    end
+                else
+                    new_aliases[type.name] << name
                 end
             end
 

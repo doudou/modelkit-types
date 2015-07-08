@@ -368,6 +368,13 @@ module TypeStore
                 flexmock(t1).should_receive(:merge).with(t0).once
                 r1.merge(r0)
             end
+
+            it "raises if an alias on the argument resolves to a different type on the receiver" do
+                t0 = r0.create_type '/Type'
+                r0.create_alias '/Alias', t0
+                r1.create_type '/Alias', null: true
+                assert_raises(InvalidMergeError) { r1.merge(r0) }
+            end
         end
 
         #def test_registry_iteration

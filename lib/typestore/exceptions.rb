@@ -74,6 +74,9 @@ module TypeStore
     # Raised when attempting to merge two {ContainerType} that are not from the
     # same container model
     class MismatchingContainerModel < InvalidMergeError; end
+    # Raised when attempting to merge two {Registry} which use the same alias
+    # for two different types
+    class MismatchingAlias < InvalidMergeError; end
 
     # Raises when attempting an operation that required a type from a registry
     # (for a registry operation) or a type from the same registry as the
