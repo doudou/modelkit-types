@@ -746,13 +746,37 @@ module TypeStore
             get(typename)
         rescue NotFound => e
             if typename =~ /^(.*)\[(\d+)\]$/
-                return create_array(build($1), Integer($2), size: size, typename: typename)
+                element_name = $1
+                length = Integer($2)
+                element_t = build(element_name)
+                if element_t.name != element_name
+                    # The element type is an alias. The container type  might
+                    # already exist under its canonical name, call #build to
+                    # make sure, and create an alias
+                    array_t = build("#{element_t.name}[#{length}]")
+                    create_alias(typename, array_t)
+                else
+                    array_t = create_array(element_t, length, size: size)
+                end
+                return array_t
             end
 
             namespace, basename = TypeStore.split_typename(typename)
             container_t_name, arguments = TypeStore.parse_template(basename)
             if !arguments.empty?
-                create_container("#{namespace}#{container_t_name}", build(arguments[0]), typename: typename, size: size)
+                # Always register auto-created containers like this under their
+                # canonical name, and then alias if necessary
+                element_t = build(arguments[0])
+                if element_t.name != arguments[0]
+                    # The element type is an alias. The container type  might
+                    # already exist under its canonical name, call #build to
+                    # make sure, and create an alias
+                    container_t = build("#{namespace}#{container_t_name}<#{element_t.name}>")
+                    create_alias(typename, container_t)
+                else
+                    container_t = create_container("#{namespace}#{container_t_name}", element_t, size: size)
+                end
+                container_t
             else
                 raise e, "#{e.message}, and it cannot be built", e.backtrace
             end

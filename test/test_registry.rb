@@ -51,10 +51,23 @@ module TypeStore
                 assert_equal 10, array_t.length
                 assert_same int_t, array_t.deference
             end
+            it "creates an alias if the element name is an alias itself" do
+                registry.create_alias '/Alias', '/int'
+                array_t = registry.build('/Alias[10]')
+                assert_equal '/int[10]', array_t.name
+                assert_same array_t, registry.get('/int[10]')
+            end
             it "knows how to build a container" do
                 container_t = registry.build('/container_t</int>')
                 assert_same container_model, container_t.container_model
                 assert_same int_t, container_t.deference
+            end
+            it "creates an alias if the container element is itself an alias" do
+                registry.create_alias '/Alias', '/int'
+                container_t = registry.build('/container_t</Alias>')
+                assert_equal '/container_t</int>', container_t.name
+                assert_same container_t, registry.get('/container_t</Alias>')
+                assert_same container_t, registry.get('/container_t</int>')
             end
             it "ignores subsequent arguments when building containers" do
                 container_t = registry.build('/container_t</int,10>')
