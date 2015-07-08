@@ -473,7 +473,7 @@ module TypeStore
         def register_container_model(type)
             TypeStore.validate_typename(type.name)
             if container_models.has_key?(type.name)
-                raise DuplicateTypeNameError, "attempting to redefine the existing type #{type.name}"
+                raise DuplicateTypeNameError, "attempting to redefine the existing container model #{type.name}"
             end
             container_models[type.name] = type
         end
@@ -505,7 +505,7 @@ module TypeStore
         def register(type, name: type.name)
             TypeStore.validate_typename(name)
             if types.has_key?(name)
-                raise DuplicateTypeNameError, "attempting to redefine the existing type #{type.name}"
+                raise DuplicateTypeNameError, "attempting to register #{type} as #{name} but there is already #{types[name]} under that name"
             elsif type.registry && !type.registry.equal?(self)
                 raise NotFromThisRegistryError, "#{type} is not a type model from #{self} but from #{type.registry}, cannot register"
             end

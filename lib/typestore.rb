@@ -202,6 +202,9 @@ module TypeStore
         if template_level != 0
             raise InvalidTypeNameError, "missing closing >"
         end
+        
+    rescue InvalidTypeNameError => e
+        raise e, "#{name} is not a valid#{' absolute' if absolute} type name: #{e.message}", e.backtrace
     end
 
     def self.build_typename_parts(tokens, namespace_separator: NAMESPACE_SEPARATOR)
