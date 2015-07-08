@@ -390,6 +390,25 @@ module TypeStore
             end
         end
 
+        describe "#each" do
+            attr_reader :r0
+            before do
+                @r0 = Registry.new
+            end
+
+            describe "without aliases" do
+                it "enumerates the registry types" do
+                    t = r0.create_type '/Type'
+                    assert_equal [t], r0.each.to_a
+                end
+                it "enumerates an aliased type only once" do
+                    t = r0.create_type '/Type'
+                    r0.create_alias '/Alias', t
+                    assert_equal [t], r0.each.to_a
+                end
+            end
+        end
+
         #def test_registry_iteration
         #    reg = make_registry
 

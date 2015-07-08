@@ -100,7 +100,8 @@ module TypeStore
                     yield(name, type)
                 end
             else
-                types.each_value do |type|
+                types.each do |name, type|
+                    next if name != type.name
                     next if filter && !(filter === type.name)
                     yield(type)
                 end
