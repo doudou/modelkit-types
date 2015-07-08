@@ -520,12 +520,13 @@ module TypeStore
             types[name] = type
         end
 
-        def create_opaque(name, size: 0)
-            register(Type.new_submodel(name: name, opaque: true, size: size))
+        def create_opaque(name, _size = 0, size: nil)
+            size ||= _size
+            register(Type.new_submodel(typename: name, registry: self, opaque: true, size: size))
         end
 
         def create_null(name)
-            register(Type.new_submodel(name: name, null: true))
+            register(Type.new_submodel(typename: name, registry: self, null: true))
         end
 
         # Create a type of unspecified model (usually for nul/opaque types)
