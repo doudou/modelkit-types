@@ -37,12 +37,6 @@ module TypeStore
         # @return [Hash<String,ContainerType>]
         attr_reader :container_models
 
-        # Another mapping used to resolve typenames
-        #
-        # It contains non-canonical types such as e.g. the typename without the
-        # leading namespace marker
-        attr_reader :types_resolver
-
         # The object that manages class extensions as well as conversions
         # to/from Ruby
         #
@@ -51,7 +45,6 @@ module TypeStore
 
         def initialize(specialization_manager: TypeStore.specialization_manager.dup)
             @types = Hash.new
-            @types_resolver = Hash.new
             @container_models = Hash.new
             @specialization_manager = specialization_manager ||
                 SpecializationManager.new
@@ -218,7 +211,7 @@ module TypeStore
         # @param [String] name the type name
         # @return [Model<Type>]
         def find_by_name(name)
-            types_resolver[name]
+            types[name]
         end
 
         # Tests for the presence of a type by its name
@@ -509,15 +502,6 @@ module TypeStore
             end
         end
 
-        def registration_names(name)
-            if name[0,1] == '/'
-                canonical_name, resolver_name = name, name[1..-1]
-            else
-                resolver_name, canonical_name = name, "/#{name}"
-            end
-            return canonical_name, resolver_name
-        end
-
         def register(type, name: type.name)
             TypeStore.validate_typename(name)
             if types.has_key?(name)
@@ -526,10 +510,8 @@ module TypeStore
                 raise NotFromThisRegistryError, "#{type} is not a type model from #{self} but from #{type.registry}, cannot register"
             end
 
-            canonical_name, resolver_name = registration_names(name)
             type.registry = self
-            types[canonical_name] = types_resolver[canonical_name] = type
-            types_resolver[resolver_name] = type
+            types[name] = type
         end
 
         def create_opaque(name, size: 0)
@@ -735,16 +717,12 @@ module TypeStore
 
         def clear_aliases
             types.delete_if do |name, type|
-                if name != type.name
-                    _, resolver_name = registration_names(name)
-                    types_resolver.delete(resolver_name)
-                    types_resolver.delete(name)
-                end
+                name != type.name
             end
         end
 
         def get(typename)
-            if type = types_resolver[typename]
+            if type = types[typename]
                 type
             else
                 raise NotFound, "no type #{typename} in #{self}"
