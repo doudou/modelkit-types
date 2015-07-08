@@ -144,7 +144,7 @@ module TypeStore
             end
             new_aliases.each do |name, aliases|
                 aliases.each do |n|
-                    self.alias(n, name)
+                    create_alias(n, name)
                 end
             end
             self
@@ -165,7 +165,7 @@ module TypeStore
             if with_aliases
                 new_type = result.get(type.name)
                 aliases_of(type).each do |name|
-                    result.alias(name, new_type)
+                    result.create_alias(name, new_type)
                 end
             end
             result
@@ -199,7 +199,7 @@ module TypeStore
             if with_aliases
                 each_alias do |name, type|
                     if result.include?(type.name)
-                        result.alias(name, type.name)
+                        result.create_alias(name, type.name)
                     end
                 end
             end
@@ -696,7 +696,13 @@ module TypeStore
             end
         end
 
-        def alias(new_name, old_type)
+        # Registers an existing type under a different name
+        #
+        # @param [String] new_name the new name
+        # @param [String,Model<Type>] old_type the type to be aliased
+        # @raise (see validate_type_argument)
+        # @raise (see register)
+        def create_alias(new_name, old_type)
             register(validate_type_argument(old_type), name: new_name)
         end
 

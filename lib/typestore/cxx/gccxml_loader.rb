@@ -590,7 +590,7 @@ module TypeStore
                     end
 
                     if full_name != registry.get(pointed_to_type).name
-                        registry.alias(full_name, registry.get(pointed_to_type).name)
+                        registry.create_alias(full_name, registry.get(pointed_to_type).name)
 
                         # And always resolve the typedef as the type it is pointing to
                         name = id_to_name[id] = pointed_to_type
@@ -652,7 +652,7 @@ module TypeStore
                         opaque_t = registry.get(opaque_name)
                         set_source_file(opaque_t, typedef)
                         opaque_t.metadata.set('opaque_is_typedef', '1')
-                        registry.alias full_name, opaque_name
+                        registry.create_alias full_name, opaque_name
                     end
                 end
             end

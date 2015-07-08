@@ -10,7 +10,7 @@ module TypeStore
 
         describe "#alias" do
             it "registers a new name for an existing type" do
-                registry.alias "/my_own_and_only_int", "/int"
+                registry.create_alias "/my_own_and_only_int", "/int"
                 assert_same int_t, registry.get("/my_own_and_only_int")
                 assert_equal(["/my_own_and_only_int"], registry.aliases_of(int_t))
             end
@@ -349,14 +349,14 @@ module TypeStore
 
             it "copies aliases of new types" do
                 t0 = r0.create_type '/Type'
-                r0.alias '/Alias', t0
+                r0.create_alias '/Alias', t0
                 r1.merge(r0)
                 assert_equal t0, r1.get('/Alias')
             end
 
             it "copies aliases of existing types" do
                 t0 = r0.create_type '/Type'
-                r0.alias '/Alias', t0
+                r0.create_alias '/Alias', t0
                 r1.create_type '/Type'
                 r1.merge(r0)
                 assert_equal t0, r1.get('/Alias')
