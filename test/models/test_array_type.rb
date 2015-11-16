@@ -1,13 +1,13 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     module Models
         describe ArrayType do
             describe "#to_h" do
                 attr_reader :array_t, :element_t
                 before do
-                    @element_t = TypeStore::Type.new_submodel
-                    @array_t = TypeStore::ArrayType.new_submodel(deference: element_t, length: 10)
+                    @element_t = ModelKit::Types::Type.new_submodel
+                    @array_t = ModelKit::Types::ArrayType.new_submodel(deference: element_t, length: 10)
                 end
 
                 it "should be able to describe the type" do
@@ -29,8 +29,8 @@ module TypeStore
 
             describe "#[]" do
                 it "returns the deference'd type" do
-                    element_t = TypeStore::Type.new_submodel
-                    array_t = TypeStore::ArrayType.new_submodel(deference: element_t, length: 10)
+                    element_t = ModelKit::Types::Type.new_submodel
+                    array_t = ModelKit::Types::ArrayType.new_submodel(deference: element_t, length: 10)
                     assert_same element_t, array_t.deference
                 end
             end

@@ -1,27 +1,27 @@
-# Backward-compatible wrapping of the TypeStore API to mimick the Typelib API
-require 'typestore'
-require 'typestore/cxx'
-require 'typestore/io/idl_exporter'
+# Backward-compatible wrapping of the ModelKit::Types API to mimick the Typelib API
+require 'modelkit/types'
+require 'modelkit/types/cxx'
+require 'modelkit/types/io/idl_exporter'
 module Typelib
-    NotFound = TypeStore::NotFound
+    NotFound = ModelKit::Types::NotFound
 
-    Type = TypeStore::Type
+    Type = ModelKit::Types::Type
     class Type
         def self.dependencies
             direct_dependencies
         end
     end
 
-    ArrayType = TypeStore::ArrayType
-    NumericType = TypeStore::NumericType
-    ContainerType = TypeStore::ContainerType
+    ArrayType = ModelKit::Types::ArrayType
+    NumericType = ModelKit::Types::NumericType
+    ContainerType = ModelKit::Types::ContainerType
     class ContainerType
         def self.container_kind
             container_model.name
         end
     end
 
-    CompoundType = TypeStore::CompoundType
+    CompoundType = ModelKit::Types::CompoundType
     class CompoundType
         def self.field_metadata
             each.inject(Hash.new) do |h, field|
@@ -30,24 +30,24 @@ module Typelib
         end
     end
 
-    IndirectType = TypeStore::IndirectType
-    EnumType = TypeStore::EnumType
+    IndirectType = ModelKit::Types::IndirectType
+    EnumType = ModelKit::Types::EnumType
     class EnumType
         def self.keys
             symbol_to_value.keys
         end
     end
-    OpaqueType = TypeStore::Type
+    OpaqueType = ModelKit::Types::Type
 
-    Registry = TypeStore::Registry
+    Registry = ModelKit::Types::Registry
     class Registry
         def merge_xml(string)
             xml = REXML::Document.new(string)
-            merge(TypeStore::IO::XMLImporter.new.from_xml(xml))
+            merge(ModelKit::Types::IO::XMLImporter.new.from_xml(xml))
         end
 
         def to_xml
-            TypeStore::IO::XMLExporter.new.to_xml(self).to_s
+            ModelKit::Types::IO::XMLExporter.new.to_xml(self).to_s
         end
 
         def alias(new_name, old_type)
@@ -56,54 +56,54 @@ module Typelib
     end
 
     def self.specialize_model(*args, **options, &block)
-        TypeStore.specialize_model(*args, **options, &block)
+        ModelKit::Types.specialize_model(*args, **options, &block)
     end
 
     def self.specialize(*args, **options, &block)
-        TypeStore.specialize(*args, **options, &block)
+        ModelKit::Types.specialize(*args, **options, &block)
     end
 
     def self.convert_to_ruby(*args, **options, &block)
-        TypeStore.convert_to_ruby(*args, **options, &block)
+        ModelKit::Types.convert_to_ruby(*args, **options, &block)
     end
 
     def self.convert_from_ruby(*args, **options, &block)
-        TypeStore.convert_from_ruby(*args, **options, &block)
+        ModelKit::Types.convert_from_ruby(*args, **options, &block)
     end
 
-    CXXRegistry = TypeStore::CXX::Registry
+    CXXRegistry = ModelKit::Types::CXX::Registry
 
-    CXX = TypeStore::CXX
+    CXX = ModelKit::Types::CXX
 
     def self.namespace(name)
-        TypeStore.namespace(name)
+        ModelKit::Types.namespace(name)
     end
 
     def self.basename(name)
-        TypeStore.basename(name)
+        ModelKit::Types.basename(name)
     end
 
     def self.split_typename(name)
-        TypeStore.typename_parts(name)
+        ModelKit::Types.typename_parts(name)
     end
 
     def self.load_type_plugins?
-        TypeStore.warn "load_type_plugins? is deprecated, you have to call Typelib.load_plugins explicitely now"
+        ModelKit::Types.warn "load_type_plugins? is deprecated, you have to call Typelib.load_plugins explicitely now"
         false
     end
 
     def self.load_type_plugins=(flag)
-        TypeStore.warn "load_type_plugins= is deprecated, you have to call Typelib.load_plugins explicitely now"
+        ModelKit::Types.warn "load_type_plugins= is deprecated, you have to call Typelib.load_plugins explicitely now"
     end
 
     def self.load_typelib_plugins
-        TypeStore.load_plugins
+        ModelKit::Types.load_plugins
     end
 
     module CXX
         def self.preprocess(toplevel_files, kind, options)
-            require 'typestore/io/cxx_importer'
-            TypeStore::IO::CXXImporter.preprocess(toplevel_files, options)
+            require 'modelkit/types/io/cxx_importer'
+            ModelKit::Types::IO::CXXImporter.preprocess(toplevel_files, options)
         end
     end
 end

@@ -1,6 +1,6 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     describe Registry do
         attr_reader :registry, :int_t
         before do

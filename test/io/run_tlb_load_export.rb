@@ -4,18 +4,18 @@
 # To avoid problems with whitespaces, the input file is reformatted before being
 # compared
 #
-require 'typestore'
-require 'typestore/io/xml_importer'
-require 'typestore/io/xml_exporter'
-require 'typestore/cxx'
+require 'modelkit/types'
+require 'modelkit/types/io/xml_importer'
+require 'modelkit/types/io/xml_exporter'
+require 'modelkit/types/cxx'
 require 'tempfile'
 
 ARGV.each do |path|
     string_in = File.read(path)
-    registry = TypeStore::IO::XMLImporter.import(string_in, registry: TypeStore::CXX::Registry.new)
+    registry = ModelKit::Types::IO::XMLImporter.import(string_in, registry: ModelKit::Types::CXX::Registry.new)
 
     xml_in  = REXML::Document.new(string_in)
-    xml_out = TypeStore::IO::XMLExporter.new.to_xml(registry)
+    xml_out = ModelKit::Types::IO::XMLExporter.new.to_xml(registry)
 
     string_in, string_out = '', ''
     REXML::Formatters::Default.new.write(xml_in, string_in)

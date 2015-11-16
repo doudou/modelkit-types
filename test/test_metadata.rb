@@ -1,6 +1,6 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     describe MetaData do
         it "supports UTF-8 encoding" do
             metadata = MetaData.new

@@ -1,6 +1,6 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     describe RubySpecializationMapping do
         subject { RubySpecializationMapping.new }
         let(:type) { Type.new_submodel typename: '/Test' }

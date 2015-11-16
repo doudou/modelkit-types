@@ -1,7 +1,7 @@
-require 'typestore/test'
-require 'typestore/io/cxx_importer'
+require 'modelkit/types/test'
+require 'modelkit/types/io/cxx_importer'
 
-module TypeStore
+module ModelKit::Types
     module IO
         describe CXXImporter do
             def data_dir; Pathname.new(__FILE__).dirname.expand_path + "cxx" end

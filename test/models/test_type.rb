@@ -1,114 +1,114 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     module Models
         describe Type do
             describe "#new_submodel" do
                 it "inherits the registry by default" do
-                    assert_same TypeStore::Type.new_submodel.registry, TypeStore::Type.registry
+                    assert_same ModelKit::Types::Type.new_submodel.registry, ModelKit::Types::Type.registry
                 end
                 it "overrides the default registry" do
                     registry = Registry.new
-                    assert_same registry, TypeStore::Type.new_submodel(registry: registry).registry
+                    assert_same registry, ModelKit::Types::Type.new_submodel(registry: registry).registry
                 end
                 it "sets #name to the provided type name" do
-                    assert_equal '/Test', TypeStore::Type.new_submodel(typename: '/Test').name
+                    assert_equal '/Test', ModelKit::Types::Type.new_submodel(typename: '/Test').name
                 end
                 it "sets #size to the provided type size" do
-                    assert_equal 10, TypeStore::Type.new_submodel(size: 10).size
+                    assert_equal 10, ModelKit::Types::Type.new_submodel(size: 10).size
                 end
                 it "sets #null? to the provided null option" do
-                    assert_equal false, TypeStore::Type.new_submodel(null: false).null?
-                    assert_equal true, TypeStore::Type.new_submodel(null: true).null?
+                    assert_equal false, ModelKit::Types::Type.new_submodel(null: false).null?
+                    assert_equal true, ModelKit::Types::Type.new_submodel(null: true).null?
                 end
                 it "sets #opaque? to the provided opaque option" do
-                    assert_equal false, TypeStore::Type.new_submodel(opaque: false).opaque?
-                    assert_equal true, TypeStore::Type.new_submodel(opaque: true).opaque?
+                    assert_equal false, ModelKit::Types::Type.new_submodel(opaque: false).opaque?
+                    assert_equal true, ModelKit::Types::Type.new_submodel(opaque: true).opaque?
                 end
                 it "sets #contains_opaques? to true if the type is opaque itself" do
-                    assert_equal false, TypeStore::Type.new_submodel(opaque: false).contains_opaques?
-                    assert_equal true, TypeStore::Type.new_submodel(opaque: true).contains_opaques?
+                    assert_equal false, ModelKit::Types::Type.new_submodel(opaque: false).contains_opaques?
+                    assert_equal true, ModelKit::Types::Type.new_submodel(opaque: true).contains_opaques?
                 end
             end
             describe "#basename" do
-                it "calls TypeStore.basename to extract the type's basename" do
-                    flexmock(TypeStore).should_receive(:basename).with("/NS1/Bla/Test", '/').
+                it "calls ModelKit::Types.basename to extract the type's basename" do
+                    flexmock(ModelKit::Types).should_receive(:basename).with("/NS1/Bla/Test", '/').
                         and_return(ret = flexmock)
-                    assert_equal ret, TypeStore::Type.new_submodel(typename: "/NS1/Bla/Test").basename
+                    assert_equal ret, ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").basename
                 end
             end
             describe "#namespace" do
-                it "calls TypeStore.namespace to extract the type's namespace" do
-                    flexmock(TypeStore).should_receive(:namespace).with("/NS1/Bla/Test", '/', false).
+                it "calls ModelKit::Types.namespace to extract the type's namespace" do
+                    flexmock(ModelKit::Types).should_receive(:namespace).with("/NS1/Bla/Test", '/', false).
                         and_return(ret = flexmock)
-                    assert_equal ret, TypeStore::Type.new_submodel(typename: "/NS1/Bla/Test").namespace
+                    assert_equal ret, ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").namespace
                 end
             end
             describe "#split_typename" do
-                it "calls TypeStore.split_typename to split the type's name" do
-                    flexmock(TypeStore).should_receive(:split_typename).with("/NS1/Bla/Test", '/').
+                it "calls ModelKit::Types.split_typename to split the type's name" do
+                    flexmock(ModelKit::Types).should_receive(:split_typename).with("/NS1/Bla/Test", '/').
                         and_return(ret = flexmock)
-                    assert_equal ret, TypeStore::Type.new_submodel(typename: "/NS1/Bla/Test").split_typename
+                    assert_equal ret, ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").split_typename
                 end
             end
             describe "#metadata" do
                 it "always returns the same MetaData object" do
-                    t = TypeStore::Type.new_submodel
+                    t = ModelKit::Types::Type.new_submodel
                     assert_same t.metadata, t.metadata
                 end
                 it "returns a MetaData object" do
-                    assert_kind_of MetaData, TypeStore::Type.new_submodel.metadata
+                    assert_kind_of MetaData, ModelKit::Types::Type.new_submodel.metadata
                 end
                 it "returns the type's own MetaData object" do
-                    refute_same TypeStore::Type.metadata, TypeStore::Type.new_submodel.metadata
+                    refute_same ModelKit::Types::Type.metadata, ModelKit::Types::Type.new_submodel.metadata
                 end
             end
             describe "XML marshalling" do
                 it "marshals and unmarshals metadata" do
-                    registry = TypeStore::Registry.new
+                    registry = ModelKit::Types::Registry.new
                     t = registry.create_type '/Test'
                     t.metadata.set('k', 'v0', 'v1')
-                    t = TypeStore::Registry.from_xml(t.to_xml).get(t.name)
+                    t = ModelKit::Types::Registry.from_xml(t.to_xml).get(t.name)
                     assert_equal [['k', ['v0', 'v1'].to_set]], t.metadata.each.to_a
                 end
             end
             describe "#merge" do
                 it "merges the metadata together" do
-                    t0 = TypeStore::Type.new_submodel
-                    t1 = TypeStore::Type.new_submodel
+                    t0 = ModelKit::Types::Type.new_submodel
+                    t1 = ModelKit::Types::Type.new_submodel
                     flexmock(t0.metadata).should_receive(:merge).with(t1.metadata).once
                     t0.merge(t1)
                 end
             end
             describe "#validate_merge" do
                 it "passes for equivalent types" do
-                    t0 = TypeStore::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)
-                    t1 = TypeStore::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)
+                    t0 = ModelKit::Types::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)
+                    t1 = ModelKit::Types::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)
                     t0.validate_merge(t1)
                 end
                 it "raises InvalidMerge if the names differ" do
-                    t0 = TypeStore::Type.new_submodel typename: 't0'
-                    t1 = TypeStore::Type.new_submodel typename: 't1'
+                    t0 = ModelKit::Types::Type.new_submodel typename: 't0'
+                    t1 = ModelKit::Types::Type.new_submodel typename: 't1'
                     assert_raises(MismatchingTypeNameError) { t0.validate_merge(t1) }
                 end
                 it "raises InvalidMerge if the supermodels differ" do
-                    t0 = TypeStore::CompoundType.new_submodel
-                    t1 = TypeStore::Type.new_submodel
+                    t0 = ModelKit::Types::CompoundType.new_submodel
+                    t1 = ModelKit::Types::Type.new_submodel
                     assert_raises(MismatchingTypeModelError) { t0.validate_merge(t1) }
                 end
                 it "raises InvalidMerge if the sizes differ" do
-                    t0 = TypeStore::Type.new_submodel size: 1
-                    t1 = TypeStore::Type.new_submodel size: 2
+                    t0 = ModelKit::Types::Type.new_submodel size: 1
+                    t1 = ModelKit::Types::Type.new_submodel size: 2
                     assert_raises(MismatchingTypeSizeError) { t0.validate_merge(t1) }
                 end
                 it "raises InvalidMerge if the opaque flag differ" do
-                    t0 = TypeStore::Type.new_submodel opaque: true
-                    t1 = TypeStore::Type.new_submodel opaque: false
+                    t0 = ModelKit::Types::Type.new_submodel opaque: true
+                    t1 = ModelKit::Types::Type.new_submodel opaque: false
                     assert_raises(MismatchingTypeOpaqueFlagError) { t0.validate_merge(t1) }
                 end
                 it "raises InvalidMerge if the null flag differ" do
-                    t0 = TypeStore::Type.new_submodel null: true
-                    t1 = TypeStore::Type.new_submodel null: false
+                    t0 = ModelKit::Types::Type.new_submodel null: true
+                    t1 = ModelKit::Types::Type.new_submodel null: false
                     assert_raises(MismatchingTypeNullFlagError) { t0.validate_merge(t1) }
                 end
             end

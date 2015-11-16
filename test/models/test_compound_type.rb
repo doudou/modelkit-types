@@ -1,12 +1,12 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     module Models
         describe CompoundType do
             attr_reader :compound_t, :field_t
             before do
-                @field_t = TypeStore::Type.new_submodel(typename: '/field_t', size: 10)
-                @compound_t = TypeStore::CompoundType.new_submodel(typename: '/compound_t', size: 10)
+                @field_t = ModelKit::Types::Type.new_submodel(typename: '/field_t', size: 10)
+                @compound_t = ModelKit::Types::CompoundType.new_submodel(typename: '/compound_t', size: 10)
             end
 
             describe "#add" do
@@ -25,7 +25,7 @@ module TypeStore
                     assert_raises(DuplicateFieldError) { compound_t.add 'f0', field_t }
                 end
                 it "raises NotFromThisRegistryError if the field is not from the same registry than self" do
-                    field_t = TypeStore::Type.new_submodel registry: Registry.new
+                    field_t = ModelKit::Types::Type.new_submodel registry: Registry.new
                     assert_raises(NotFromThisRegistryError) { compound_t.add 'f0', field_t }
                 end
             end
@@ -80,8 +80,8 @@ module TypeStore
 
             describe "#each_field" do
                 it "enumerates the fields by name and type" do
-                    f0 = compound_t.add('f0', (f0_t = TypeStore::Type.new_submodel), offset: 10)
-                    f1 = compound_t.add('f1', (f1_t = TypeStore::Type.new_submodel), offset: 20)
+                    f0 = compound_t.add('f0', (f0_t = ModelKit::Types::Type.new_submodel), offset: 10)
+                    f1 = compound_t.add('f1', (f1_t = ModelKit::Types::Type.new_submodel), offset: 20)
                     assert_equal [['f0', f0_t], ['f1', f1_t]].to_set, compound_t.each_field.to_set
                 end
             end
@@ -89,8 +89,8 @@ module TypeStore
             describe "#to_h" do
                 attr_reader :f0_t, :f1_t
                 before do
-                    f0_t = @f0_t = TypeStore::Type.new_submodel typename: '/int32_t'
-                    f1_t = @f1_t = TypeStore::Type.new_submodel typename: '/float'
+                    f0_t = @f0_t = ModelKit::Types::Type.new_submodel typename: '/int32_t'
+                    f1_t = @f1_t = ModelKit::Types::Type.new_submodel typename: '/float'
                     compound_t.add 'f0', f0_t, offset: 0
                     compound_t.add 'f1', f1_t, offset: 100
                 end
@@ -146,7 +146,7 @@ module TypeStore
                     f = compound_t.add('f0', field_t, offset: 10)
                     compound_t.register(Registry.new)
                     f.metadata.set('k0', 'v0')
-                    new_registry = TypeStore::Registry.from_xml(compound_t.to_xml)
+                    new_registry = ModelKit::Types::Registry.from_xml(compound_t.to_xml)
                     assert_equal [['k0', ['v0'].to_set]], new_registry.get('/compound_t').get('f0').metadata.each.to_a
                 end
             end
@@ -154,16 +154,16 @@ module TypeStore
             describe "#validate_merge" do
                 attr_reader :other_t
                 before do
-                    @other_t = TypeStore::CompoundType.new_submodel(typename: '/compound_t', size: 10)
+                    @other_t = ModelKit::Types::CompoundType.new_submodel(typename: '/compound_t', size: 10)
                 end
                 it "passes if two fields with the same name have different types with the same name" do
                     compound_t.add('f0', field_t, offset: 0)
-                    other_t.add('f0', TypeStore::Type.new_submodel(typename: '/field_t'), offset: 0)
+                    other_t.add('f0', ModelKit::Types::Type.new_submodel(typename: '/field_t'), offset: 0)
                     other_t.validate_merge(compound_t)
                 end
                 it "raises if two fields with the same name have types with different names" do
                     compound_t.add('f0', field_t, offset: 0)
-                    other_t.add('f0', TypeStore::Type.new_submodel(typename: 'field'), offset: 0)
+                    other_t.add('f0', ModelKit::Types::Type.new_submodel(typename: 'field'), offset: 0)
                     assert_raises(MismatchingFieldTypeError) { other_t.validate_merge(compound_t) }
                 end
                 it "raises if two fields with the same name have different offets" do
@@ -200,7 +200,7 @@ module TypeStore
             describe "#merge" do
                 attr_reader :other_t
                 before do
-                    @other_t = TypeStore::CompoundType.new_submodel(typename: 'compound_t', size: 10)
+                    @other_t = ModelKit::Types::CompoundType.new_submodel(typename: 'compound_t', size: 10)
                 end
                 it "merges the field's metadata" do
                     f = compound_t.add('f0', field_t, offset: 0)
@@ -254,9 +254,9 @@ module TypeStore
             describe "#==" do
                 attr_reader :c0, :c1, :field_t
                 before do
-                    @c0 = TypeStore::CompoundType.new_submodel
-                    @c1 = TypeStore::CompoundType.new_submodel
-                    @field_t = TypeStore::Type.new_submodel
+                    @c0 = ModelKit::Types::CompoundType.new_submodel
+                    @c1 = ModelKit::Types::CompoundType.new_submodel
+                    @field_t = ModelKit::Types::Type.new_submodel
                 end
 
                 it "returns true for the same type" do
@@ -265,12 +265,12 @@ module TypeStore
                     assert_equal c0, c1
                 end
                 it "returns false if there is a missing field" do
-                    field_t = TypeStore::Type.new_submodel
+                    field_t = ModelKit::Types::Type.new_submodel
                     c0.add 'f', field_t
                     refute_equal c0, c1
                 end
                 it "returns false if there is a new field" do
-                    field_t = TypeStore::Type.new_submodel
+                    field_t = ModelKit::Types::Type.new_submodel
                     c1.add 'f', field_t
                     refute_equal c0, c1
                 end
@@ -281,7 +281,7 @@ module TypeStore
                 end
                 it "returns false if the field type differ" do
                     c0.add 'f', field_t
-                    c1_field_t = TypeStore::Type.new_submodel typename: 'differ'
+                    c1_field_t = ModelKit::Types::Type.new_submodel typename: 'differ'
                     c1.add 'f', c1_field_t
                     refute_equal c0, c1
                 end

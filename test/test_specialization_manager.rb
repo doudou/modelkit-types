@@ -1,6 +1,6 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     describe SpecializationManager do
         subject { SpecializationManager.new }
         let(:registry) { Registry.new(specialization_manager: subject) }

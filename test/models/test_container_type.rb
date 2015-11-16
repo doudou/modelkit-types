@@ -1,13 +1,13 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     module Models
         describe ContainerType do
             describe "#to_h" do
                 attr_reader :container_t, :element_t
                 before do
-                    @element_t = TypeStore::Type.new_submodel
-                    container_model = TypeStore::ContainerType.new_submodel(typename: '/std/vector')
+                    @element_t = ModelKit::Types::Type.new_submodel
+                    container_model = ModelKit::Types::ContainerType.new_submodel(typename: '/std/vector')
 
                     @container_t = container_model.new_submodel(typename: 'container', deference: element_t)
                 end

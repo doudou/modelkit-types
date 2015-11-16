@@ -1,27 +1,27 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     module Models
         describe NumericType do
             describe "#new_submodel" do
                 it "stores the name property" do
-                    float_t = TypeStore::NumericType.new_submodel(typename: '/Test')
+                    float_t = ModelKit::Types::NumericType.new_submodel(typename: '/Test')
                     assert_equal '/Test', float_t.name
                 end
                 it "stores the size property" do
-                    float_t = TypeStore::NumericType.new_submodel(size: 10)
+                    float_t = ModelKit::Types::NumericType.new_submodel(size: 10)
                     assert_equal 10, float_t.size
                 end
                 it "stores the integer property" do
-                    numeric_t = TypeStore::NumericType.new_submodel(integer: true)
+                    numeric_t = ModelKit::Types::NumericType.new_submodel(integer: true)
                     assert numeric_t.integer?
-                    numeric_t = TypeStore::NumericType.new_submodel(integer: false)
+                    numeric_t = ModelKit::Types::NumericType.new_submodel(integer: false)
                     assert !numeric_t.integer?
                 end
                 it "stores the unsigned property" do
-                    numeric_t = TypeStore::NumericType.new_submodel(unsigned: true)
+                    numeric_t = ModelKit::Types::NumericType.new_submodel(unsigned: true)
                     assert numeric_t.unsigned?
-                    numeric_t = TypeStore::NumericType.new_submodel(unsigned: false)
+                    numeric_t = ModelKit::Types::NumericType.new_submodel(unsigned: false)
                     assert !numeric_t.unsigned?
                 end
             end
@@ -29,11 +29,11 @@ module TypeStore
             describe "#to_h" do
                 attr_reader :int_t, :uint_t, :float_t
                 before do
-                    @int_t = TypeStore::NumericType.new_submodel(
+                    @int_t = ModelKit::Types::NumericType.new_submodel(
                         size: 4, integer: true, unsigned: false)
-                    @uint_t = TypeStore::NumericType.new_submodel(
+                    @uint_t = ModelKit::Types::NumericType.new_submodel(
                         size: 4, integer: true, unsigned: true)
-                    @float_t = TypeStore::NumericType.new_submodel(
+                    @float_t = ModelKit::Types::NumericType.new_submodel(
                         size: 4, integer: false)
                 end
                 it "should report a class of 'NumericType'" do
@@ -69,18 +69,18 @@ module TypeStore
 
             describe "#pack_code" do
                 it "can return the pack code of a float" do
-                    float_t = TypeStore::NumericType.new_submodel(
+                    float_t = ModelKit::Types::NumericType.new_submodel(
                         size: 8, integer: false)
-                    if TypeStore.big_endian?
+                    if ModelKit::Types.big_endian?
                         assert_equal "G", float_t.pack_code
                     else
                         assert_equal "E", float_t.pack_code
                     end
                 end
                 it "can return the pack code of an integer" do
-                    int_t = TypeStore::NumericType.new_submodel(
+                    int_t = ModelKit::Types::NumericType.new_submodel(
                         size: 4, integer: true, unsigned: false)
-                    if TypeStore.big_endian?
+                    if ModelKit::Types.big_endian?
                         assert_equal "l>", int_t.pack_code
                     else
                         assert_equal "l<", int_t.pack_code
@@ -90,24 +90,24 @@ module TypeStore
 
             describe "#==" do
                 it "tests the integer flag" do
-                    int_t   = TypeStore::NumericType.new_submodel integer: false
-                    float_t = TypeStore::NumericType.new_submodel integer: true
+                    int_t   = ModelKit::Types::NumericType.new_submodel integer: false
+                    float_t = ModelKit::Types::NumericType.new_submodel integer: true
                     assert_equal int_t, int_t
                     assert_equal float_t, float_t
                     refute_equal float_t, int_t
                     refute_equal int_t, float_t
                 end
                 it "tests the unsigned flag for integers" do
-                    uint_t = TypeStore::NumericType.new_submodel integer: true, unsigned: true
-                    int_t  = TypeStore::NumericType.new_submodel integer: true, unsigned: false
+                    uint_t = ModelKit::Types::NumericType.new_submodel integer: true, unsigned: true
+                    int_t  = ModelKit::Types::NumericType.new_submodel integer: true, unsigned: false
                     assert_equal uint_t, uint_t
                     assert_equal int_t, int_t
                     refute_equal uint_t, int_t
                     refute_equal int_t, uint_t
                 end
                 it "does not test the unsigned flag for floats" do
-                    ufloat_t = TypeStore::NumericType.new_submodel integer: false, unsigned: true
-                    float_t  = TypeStore::NumericType.new_submodel integer: false, unsigned: false
+                    ufloat_t = ModelKit::Types::NumericType.new_submodel integer: false, unsigned: true
+                    float_t  = ModelKit::Types::NumericType.new_submodel integer: false, unsigned: false
                     assert_equal ufloat_t, float_t
                 end
             end

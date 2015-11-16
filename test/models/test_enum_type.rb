@@ -1,11 +1,11 @@
-require 'typestore/test'
+require 'modelkit/types/test'
 
-module TypeStore
+module ModelKit::Types
     module Models
         describe EnumType do
             attr_reader :enum_t
             before do
-                @enum_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                @enum_t = ModelKit::Types::EnumType.new_submodel(typename: 'Test')
             end
 
             describe "#add" do
@@ -67,7 +67,7 @@ module TypeStore
                 it "merges the symbol_to_value and value_to_symbol mappings" do
                     enum_t.add :TEST, 10
                     enum_t.add :TEST1, 20
-                    other_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                    other_t = ModelKit::Types::EnumType.new_submodel(typename: 'Test')
                     other_t.add :TEST, 10
                     other_t.add :TEST2, 20
                     assert_equal Hash[TEST: 10, TEST1: 20, TEST2: 20],
@@ -78,14 +78,14 @@ module TypeStore
                 it "passes if the two enums do not have colliding symbol-to-value mappings" do
                     enum_t.add :TEST, 10
                     enum_t.add :TEST1, 20
-                    other_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                    other_t = ModelKit::Types::EnumType.new_submodel(typename: 'Test')
                     other_t.add :TEST, 10
                     other_t.add :TEST2, 20
                     other_t.validate_merge(enum_t)
                 end
                 it "raises if the two enums have different values for the same symbol" do
                     enum_t.add :TEST, 10
-                    other_t = TypeStore::EnumType.new_submodel(typename: 'Test')
+                    other_t = ModelKit::Types::EnumType.new_submodel(typename: 'Test')
                     other_t.add :TEST, 20
                     assert_raises(MismatchingEnumSymbolsError) { enum_t.validate_merge(other_t) }
                 end
