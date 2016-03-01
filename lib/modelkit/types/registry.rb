@@ -62,12 +62,21 @@ module ModelKit::Types
 
         # Creates a new registry by loading a ModelKit::Types XML file
         #
-        # @see Registry#merge_xml
+        # @param [String,REXML::Document] xml a registry marshalled into XML
+        # @return [Registry]
         def self.from_xml(xml)
             if xml.respond_to?(:to_str)
                 xml = REXML::Document.new(xml)
             end
             ModelKit::Types::IO::XMLImporter.new.from_xml(xml, registry: new)
+        end
+
+        # Helper method to merge a registry marshalled in XML into this registry
+        #
+        # @param (see Registry.from_xml)
+        # @return 
+        def merge_xml(xml)
+            merge(from_xml(xml))
         end
 
         # Enumerate the types contained in this registry
