@@ -37,15 +37,10 @@ end
 # so that we can require it 'as-is'
 require 'minitest/autorun'
 require 'minitest/spec'
-require 'flexmock/test_unit'
+require 'flexmock/minitest'
 
 module ModelKit::Types
     module SelfTest
-        if defined? FlexMock
-            include FlexMock::ArgumentTypes
-            include FlexMock::MockContainer
-        end
-
         def setup
             @__warn_about_helper_method_clashes = ModelKit::Types.warn_about_helper_method_clashes?
             ModelKit::Types.warn_about_helper_method_clashes = false
@@ -60,15 +55,6 @@ module ModelKit::Types
             ModelKit::Types.warn_about_helper_method_clashes = @__warn_about_helper_method_clashes
         end
     end
-end
-
-# Workaround a problem with flexmock and minitest not being compatible with each
-# other (currently). See github.com/jimweirich/flexmock/issues/15.
-if defined?(FlexMock) && !FlexMock::TestUnitFrameworkAdapter.method_defined?(:assertions)
-    class FlexMock::TestUnitFrameworkAdapter
-        attr_accessor :assertions
-    end
-    FlexMock.framework_adapter.assertions = 0
 end
 
 module Minitest
