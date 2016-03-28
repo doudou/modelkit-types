@@ -173,7 +173,7 @@ module ModelKit::Types
             else
                 case tk = tokens.shift
                 when NAMESPACE_SEPARATOR
-                    if (tk = tokens.first) && tk !~ /[a-zA-Z]/
+                    if (tk = tokens.first) && tk !~ /[a-zA-Z_]/
                         raise InvalidTypeNameError, "found #{tk} after /, expected a letter"
                     end
                 when "["
