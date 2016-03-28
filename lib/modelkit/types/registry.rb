@@ -544,6 +544,10 @@ module ModelKit::Types
             register(Type.new_submodel(typename: name, registry: self, **options))
         end
 
+        def create_character(name, **options)
+            register(CharacterType.new_submodel(typename: name, registry: self, **options))
+        end
+
         def create_numeric(name, **options)
             register(NumericType.new_submodel(typename: name, registry: self, **options))
         end

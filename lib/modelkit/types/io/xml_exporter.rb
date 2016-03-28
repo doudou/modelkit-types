@@ -27,6 +27,8 @@ module ModelKit::Types
             def to_xml(registry, root: self.class.create_xml)
                 registry.each_type_topological do |type|
                     if type <= ArrayType
+                    elsif type <= CharacterType
+                        update_type_node(type, root.add_element('character'))
                     elsif type <= CompoundType
                         update_compound_node(type, root.add_element('compound'))
                     elsif type <= NumericType

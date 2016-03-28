@@ -42,6 +42,8 @@ module ModelKit::Types
                         type = registry.create_type(typename, opaque: true, **type_options(element))
                     when 'null'
                         type = registry.create_type(typename, null: true, **type_options(element))
+                    when 'character'
+                        type = registry.create_character(typename, **type_options(element))
                     when "alias"
                         type = registry.create_alias(typename, registry.get(element.attributes['source']))
                         next
