@@ -54,6 +54,15 @@ module ModelKit::Types
             super
             ModelKit::Types.warn_about_helper_method_clashes = @__warn_about_helper_method_clashes
         end
+
+        def find_in_path(name)
+            ENV['PATH'].split(':').each do |p|
+                if File.file?(full_path = File.join(p, name))
+                    return full_path
+                end
+            end
+            nil
+        end
     end
 end
 

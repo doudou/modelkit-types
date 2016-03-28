@@ -1,13 +1,14 @@
 require 'modelkit/types/cxx'
 require 'modelkit/types/cxx/gccxml_loader'
 require 'modelkit/types/cxx/clang_loader'
+require 'modelkit/types/cxx/castxml_loader'
 
 module ModelKit::Types
     module IO
         module CXXImporter
             CXX_LOADERS = Hash[
-                'gccxml' => CXX::GCCXMLLoader,
-                'clang'  => CXX::CLangLoader
+                'gccxml'   => CXX::GCCXMLLoader,
+                'castxml'  => CXX::CastXMLLoader
             ]
 
             class << self
@@ -28,7 +29,7 @@ module ModelKit::Types
             def self.loader
                 if @loader
                     @loader
-                elsif cxx_loader_name = ENV['TYPESTORE_CXX_LOADER']
+                elsif cxx_loader_name = ENV['MODELKIT_TYPES_CXX_LOADER']
                     cxx_loader = CXX_LOADERS[cxx_loader_name]
                     if !cxx_loader
                         raise ArgumentError, "#{cxx_loader_name} is not a known C++ loader, known loaders are '#{CXX_LOADERS.keys.sort.join("', '")}'"
