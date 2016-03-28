@@ -18,7 +18,7 @@
 <metadata key="source_file_line"><![CDATA[enums.hh:16]]></metadata>
 
   </enum>
-  <alias name="/enums/E2_t" source="/enums/E2"/>
+  <alias name="/enums/E2" source="/enums/E2"/>
   <compound name="/enums/S2" size="4" >
     <field name="A" type="/enums/E2" offset="0">
     
@@ -35,11 +35,11 @@
 <metadata key="source_file_line"><![CDATA[enums.hh:33]]></metadata>
 
   </compound>
-  <numeric name="/int32_t" category="sint" size="4" >
+  <numeric name="/int32" category="sint" size="4" >
   
   </numeric>
   <compound name="/enums/S1" size="8" >
-    <field name="A" type="/int32_t" offset="0">
+    <field name="A" type="/int32" offset="0">
     
     </field>
     <field name="B" type="/enums/E1" offset="4">
@@ -51,10 +51,10 @@
   </compound>
   <enum name="/std/float_round_style" >
     <value symbol="round_indeterminate" value="-1"/>
-    <value symbol="round_to_nearest" value="1"/>
-    <value symbol="round_toward_infinity" value="2"/>
-    <value symbol="round_toward_neg_infinity" value="3"/>
-    <value symbol="round_toward_zero" value="0"/>
+    <value symbol="roundo_nearest" value="1"/>
+    <value symbol="roundoward_infinity" value="2"/>
+    <value symbol="roundoward_neg_infinity" value="3"/>
+    <value symbol="roundoward_zero" value="0"/>
   <metadata key="cxxname"><![CDATA[::std::float_round_style]]></metadata>
 
   </enum>

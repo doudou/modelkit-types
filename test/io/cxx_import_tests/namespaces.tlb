@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <typelib>
-  <numeric name="/double" category="float" size="8" >
+  <numeric name="/float64" category="float" size="8" >
   
   </numeric>
-  <numeric name="/int32_t" category="sint" size="4" >
+  <numeric name="/int32" category="sint" size="4" >
   
   </numeric>
-  <numeric name="/int8_t" category="sint" size="1" >
+  <numeric name="/int8" category="sint" size="1" >
   
   </numeric>
   <compound name="/N1/N2/S1" size="24" >
-    <field name="A" type="/int32_t" offset="0">
+    <field name="A" type="/int32" offset="0">
     
     </field>
-    <field name="B" type="/double" offset="8">
+    <field name="B" type="/float64" offset="8">
     
     </field>
-    <field name="C" type="/int8_t" offset="16">
+    <field name="C" type="/int8" offset="16">
     
     </field>
   <metadata key="cxxname"><![CDATA[::N1::N2::S1]]></metadata>
@@ -24,7 +24,7 @@
 
   </compound>
   <compound name="/standard/__1/StandardClass" size="4" >
-    <field name="standardMember" type="/int32_t" offset="0">
+    <field name="standardMember" type="/int32" offset="0">
     
     </field>
   <metadata key="cxxname"><![CDATA[::standard::__1::StandardClass]]></metadata>

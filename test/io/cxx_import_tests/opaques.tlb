@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <typelib>
-    <numeric name='/int32_t' category='sint' size='4'>
+    <numeric name='/int32' category='sint' size='4'>
     </numeric>
     <opaque name='/ns_opaques/C1' size='0'>
         <metadata key='cxxname'>
@@ -15,7 +15,7 @@ the class is named, so it has to be be added.]]>
             <![CDATA[opaques.hh:14]]>
         </metadata>
     </opaque>
-    <opaque name='/ns_opaques/C4&lt;/float&gt;' size='0'>
+    <opaque name='/ns_opaques/C4&lt;/float32&gt;' size='0'>
         <metadata key='cxxname'>
             <![CDATA[::ns_opaques::C4<float>]]>
         </metadata>
@@ -23,7 +23,7 @@ the class is named, so it has to be be added.]]>
             <![CDATA[opaques.hh:43]]>
         </metadata>
     </opaque>
-    <opaque name='/ns_opaques/C5&lt;/float,/int&gt;' size='0'>
+    <opaque name='/ns_opaques/C5&lt;/float32,/int&gt;' size='0'>
         <metadata key='cxxname'>
             <![CDATA[::ns_opaques::C5<float, int>]]>
         </metadata>
@@ -32,7 +32,7 @@ the class is named, so it has to be be added.]]>
         </metadata>
     </opaque>
     <compound name='/ns_opaques/cruft' size='16'>
-        <field name='data' type='/int32_t[4]' offset='0'>
+        <field name='data' type='/int32[4]' offset='0'>
             <metadata key='source_file_line'>
                 <![CDATA[opaques.hh:8]]>
             </metadata>
@@ -51,7 +51,7 @@ the class is named, so it has to be be added.]]>
         <metadata key='cxxname'>
             <![CDATA[::ns_opaques::typedef_of_C3]]>
         </metadata>
-        <metadata key='opaque_is_typedef'>
+        <metadata key='opaque_isypedef'>
             <![CDATA[1]]>
         </metadata>
         <metadata key='source_file_line'>

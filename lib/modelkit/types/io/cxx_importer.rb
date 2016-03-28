@@ -42,12 +42,12 @@ module ModelKit::Types
 
             # Loads a C++ file and imports it in the given registry, based on the
             # current C++ importer setting
-            def self.import(path, registry: CXX::Registry.new, **options)
-                loader.import(path, registry: registry, **options)
+            def self.import(path, registry: CXX::Registry.new, cxx_importer: loader, **options)
+                cxx_importer.import(path, registry: registry, **options)
             end
 
-            def self.preprocess(files, options)
-                loader.preprocess(files, options)
+            def self.preprocess(files, cxx_importer: loader, **options)
+                cxx_importer.preprocess(files, options)
             end
         end
     end

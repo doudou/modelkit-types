@@ -1,9 +1,9 @@
 <?xml version='1.0'?>
 <typelib>
-    <numeric name='/int32_t' category='sint' size='4'>
+    <numeric name='/int32' category='sint' size='4'>
     </numeric>
     <compound name='/examples/MultiArrayStruct' size='16'>
-        <field name='array' type='/int32_t[2][2]' offset='0'>
+        <field name='array' type='/int32[2][2]' offset='0'>
             <metadata key='source_file_line'>
                 <![CDATA[examples.hh:9]]>
             </metadata>

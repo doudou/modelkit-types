@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <typelib>
-  <numeric name="/double" category="float" size="8" >
+  <numeric name="/float64" category="float" size="8" >
   
   </numeric>
-  <numeric name="/int32_t" category="sint" size="4" >
+  <numeric name="/int32" category="sint" size="4" >
   
   </numeric>
-  <numeric name="/uint32_t" category="uint" size="4" >
+  <numeric name="/uint32" category="uint" size="4" >
   
   </numeric>
   <compound name="/Laser/Data" size="2056" >
-    <field name="sec" type="/int32_t" offset="0">
+    <field name="sec" type="/int32" offset="0">
     
     </field>
-    <field name="usec" type="/uint32_t" offset="4">
+    <field name="usec" type="/uint32" offset="4">
     
     </field>
-    <field name="ranges" type="/double[256]" offset="8">
+    <field name="ranges" type="/float64[256]" offset="8">
     
     </field>
   <metadata key="cxxname"><![CDATA[::Laser::Data]]></metadata>
 <metadata key="source_file_line"><![CDATA[laser.hh:7]]></metadata>
 
   </compound>
-  <alias name="/Laser/array_typedef" source="/int32_t[256]"/>
+  <alias name="/Laser/arrayypedef" source="/int32[256]"/>
 </typelib>

@@ -1,7 +1,7 @@
 module ModelKit::Types
     module CXX
         class BasicString < ContainerType
-            @name = '/std/string'
+            self.name = '/std/basic_string'
         end
     end
 end
