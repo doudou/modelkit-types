@@ -80,8 +80,8 @@ module ModelKit::Types
 
             describe "#each_field" do
                 it "enumerates the fields by name and type" do
-                    f0 = compound_t.add('f0', (f0_t = ModelKit::Types::Type.new_submodel), offset: 10)
-                    f1 = compound_t.add('f1', (f1_t = ModelKit::Types::Type.new_submodel), offset: 20)
+                    compound_t.add('f0', (f0_t = ModelKit::Types::Type.new_submodel), offset: 10)
+                    compound_t.add('f1', (f1_t = ModelKit::Types::Type.new_submodel), offset: 20)
                     assert_equal [['f0', f0_t], ['f1', f1_t]].to_set, compound_t.each_field.to_set
                 end
             end
@@ -212,13 +212,13 @@ module ModelKit::Types
                     assert_equal [['k', ['v'].to_set]], other_f.metadata.each.to_a
                 end
                 it "does not create a field metadata object if the merged field does not have one" do
-                    f = compound_t.add('f0', field_t, offset: 0)
+                    compound_t.add('f0', field_t, offset: 0)
                     other_f = other_t.add('f0', field_t, offset: 0)
                     other_t.merge(compound_t)
                     assert !other_f.has_metadata?
                 end
                 it "does not create a field metadata object if the merged field does not have one" do
-                    f = compound_t.add('f0', field_t, offset: 0)
+                    compound_t.add('f0', field_t, offset: 0)
                     other_f = other_t.add('f0', field_t, offset: 0)
                     other_t.merge(compound_t)
                     assert !other_f.instance_variable_get(:@metadata)

@@ -10,6 +10,7 @@ module ModelKit::Types
                 include CXXCommonTests
 
                 before do
+                    CXX::GCCXMLLoader.make_own_logger 'GCCXMLLoader', Logger::FATAL
                     if !find_in_path(CXX::GCCXMLLoader.castxml_binary_name)
                         skip("castxml not installed")
                     end
@@ -47,6 +48,7 @@ module ModelKit::Types
                 include CXXCommonTests
 
                 before do
+                    CXX::GCCXMLLoader.make_own_logger 'GCCXMLLoader', Logger::FATAL
                     if !find_in_path('gccxml')
                         skip("gccxml not installed")
                     end

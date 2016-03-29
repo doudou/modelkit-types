@@ -10,8 +10,8 @@ module ModelKit::Types
             assert_equal [10], subject.find_all(type)
         end
         it "resolves using regular expressions" do
-            subject.add /T/, 10
-            subject.add /E/, 20
+            subject.add(/T/, 10)
+            subject.add(/E/, 20)
             assert_equal [10], subject.find_all(type)
         end
         it "resolves using its name argument" do

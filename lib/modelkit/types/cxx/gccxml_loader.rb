@@ -133,6 +133,9 @@ module ModelKit::Types
 
         # A converted from the output of GCC-XML into a {Registry}
         class GCCXMLLoader
+            extend Logger::Hierarchy
+            include Logger::Hierarchy
+
             # @return [GCCXMLInfo] The raw information contained in the GCCXML output
             attr_reader :info
             # The set of types that should be considered as opaques by the engine
@@ -224,8 +227,8 @@ module ModelKit::Types
                     if tk == "<"
                         tokens.unshift(tk)
                         template_arguments = CXX.collect_template_arguments(tokens)
-                        args = template_arguments.map do |tk|
-                            typelib_name = tokenized_cxx_to_typelib(tk)
+                        args = template_arguments.map do |arg_tk|
+                            typelib_name = tokenized_cxx_to_typelib(arg_tk)
                             if filter then filter[typelib_name]
                             else typelib_name
                             end
@@ -386,10 +389,6 @@ module ModelKit::Types
                 elsif node = node_from_id(id)
                     resolve_type_definition(node)
                 end
-            end
-
-            def warn(msg)
-                ModelKit::Types.warn msg
             end
 
             def file_context(xmlnode)
@@ -567,9 +566,8 @@ module ModelKit::Types
 
                 type = registry.create_compound(normalized_name, Integer(xmlnode['size']) / 8) do |c|
                     base_classes.each do |base_type, base_offset|
-                        base_type.each_field do |name, type|
-                            offset = base_type.offset_of(name)
-                            c.add(name, type, offset: base_offset + offset)
+                        base_type.each do |base_field|
+                            c.add(base_field.name, base_field.type, offset: base_offset + base_field.offset)
                         end
                     end
 
@@ -815,10 +813,10 @@ module ModelKit::Types
                 # want the line before the definition. Remove two
                 line = line - 2
                 while true
-                    case l = lines[line]
+                    case line_text = lines[line]
                     when /^\s*$/
                     when /^\s*(\*|\/\/|\/\*)/
-                        block << l
+                        block << line_text
                     else break
                     end
                     line = line - 1
@@ -978,10 +976,10 @@ module ModelKit::Types
                     cmdline << "-I#{str}"
                 end
 
-                required_files.map do |file|
+                required_files.map do |req_file|
                     Tempfile.open('typelib_gccxml') do |io|
-                        if !system(*cmdline, '-o', io.path, file)
-                            raise ArgumentError, "castxml returned an error while parsing #{file} with call #{cmdline.join(' ')}"
+                        if !system(*cmdline, '-o', io.path, req_file)
+                            raise ArgumentError, "castxml returned an error while parsing #{req_file} with call #{cmdline.join(' ')}"
                         end
                         io.open
                         io.read

@@ -185,7 +185,8 @@ module ModelKit::Types
                 end
             end
             it "accepts to be given the container kind by name" do
-                vector_t = registry.create_container('/std/vector', int_t)
+                type = registry.create_container('/std/vector', int_t)
+                assert(type <= container_t)
             end
             it "raises NotFound if the container kind name does not exist" do
                 assert_raises(NotFound) do

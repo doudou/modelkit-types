@@ -15,6 +15,8 @@ module ModelKit::Types
 
                 def initialize(compound, name, type, offset: nil)
                     @compound, @name, @type, @offset = compound, name, type, offset
+                    # We create the metadata only if needed
+                    @metadata = nil
                 end
 
                 def ==(other)

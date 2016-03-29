@@ -245,18 +245,6 @@ module ModelKit::Types
                 end
             end
 
-	    # The type's full name (i.e. name and namespace). In ModelKit::Types,
-	    # namespace components are separated by '/'
-            #
-            # @return [String]
-	    def name
-		if defined? @name
-		    @name
-		else
-		    super
-		end
-	    end
-
             # Register this type on a registry
             def register(registry = self.registry)
                 if self.registry && self.registry != registry
@@ -455,6 +443,7 @@ module ModelKit::Types
             end
 
             def initialize_base_class
+                @name = nil
             end
 
             def ruby_convertion_candidates_on(ruby_mappings, name: self.name)

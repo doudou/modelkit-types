@@ -118,7 +118,6 @@ module ModelKit::Types
                 super
 		pp.text '{'
                 pp.nest(2) do
-                    keys = self.keys.sort_by(&:last)
 		    pp.breakable
                     pp.seplist(symbol_to_value) do |keydef|
                         if verbose

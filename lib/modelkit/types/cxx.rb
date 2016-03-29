@@ -9,6 +9,8 @@ require 'modelkit/types/cxx/registry'
 # IO::CXXImporter
 module ModelKit::Types
     module CXX
+        extend Logger::Hierarchy
+
         def self.collect_template_arguments(tokens)
             level = 0
             arguments = []
