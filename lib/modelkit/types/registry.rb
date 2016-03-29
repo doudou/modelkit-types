@@ -786,7 +786,12 @@ module ModelKit::Types
 
             namespace, basename = ModelKit::Types.split_typename(typename)
             container_t_name, arguments = ModelKit::Types.parse_template(basename)
+            container_t_name = "#{namespace}#{container_t_name}"
             if !arguments.empty?
+                if !has_container_model?(container_t_name)
+                    raise NotFound, "cannot build #{typename}: #{container_t_name} is not a known container type"
+                end
+
                 # Always register auto-created containers like this under their
                 # canonical name, and then alias if necessary
                 element_t = build(arguments[0])
@@ -794,10 +799,10 @@ module ModelKit::Types
                     # The element type is an alias. The container type  might
                     # already exist under its canonical name, call #build to
                     # make sure, and create an alias
-                    container_t = build("#{namespace}#{container_t_name}<#{element_t.name}>")
+                    container_t = build("#{container_t_name}<#{element_t.name}>")
                     create_alias(typename, container_t)
                 else
-                    container_t = create_container("#{namespace}#{container_t_name}", element_t, size: size)
+                    container_t = create_container("#{container_t_name}", element_t, size: size)
                 end
                 container_t
             else
