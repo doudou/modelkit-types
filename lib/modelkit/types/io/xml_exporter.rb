@@ -1,4 +1,3 @@
-require 'modelkit/types'
 require 'rexml/document'
 
 module ModelKit::Types

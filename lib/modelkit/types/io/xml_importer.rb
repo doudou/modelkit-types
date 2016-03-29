@@ -1,6 +1,4 @@
-require 'modelkit/types'
 require 'rexml/document'
-require 'pp'
 
 module ModelKit::Types
     module IO
