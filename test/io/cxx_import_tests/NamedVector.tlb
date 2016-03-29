@@ -2,9 +2,9 @@
 <typelib>
     <numeric name="/float64" category="float" size="8" >
     </numeric>
-    <numeric name="/int8" category="sint" size="1" >
-    </numeric>
-    <container  name="/std/string" of="/int8" size="8" kind="/std/string" >
+    <character name="/char" category="sint" size="1" >
+    </character>
+    <container name="/std/string" of="/char" size="8" kind="/std/basic_string" >
         <metadata key="cxxname"><![CDATA[::std::string]]></metadata>
     </container>
     <container  name="/std/vector&lt;/float64&gt;" of="/float64" size="24" kind="/std/vector" >

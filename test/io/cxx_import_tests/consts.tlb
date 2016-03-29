@@ -17,8 +17,8 @@
 <metadata key="source_file_line"><![CDATA[consts.hh:17]]></metadata>
 
   </compound>
-  <alias name="/consts/my_constypedef" source="/uint64"/>
-  <alias name="/consts/my_other_constypedef" source="/uint64"/>
-  <alias name="/consts/my_otherypedef" source="/uint64"/>
-  <alias name="/consts/myypedef" source="/uint64"/>
+  <alias name="/consts/my_const_typedef" source="/uint64"/>
+  <alias name="/consts/my_other_const_typedef" source="/uint64"/>
+  <alias name="/consts/my_other_typedef" source="/uint64"/>
+  <alias name="/consts/my_typedef" source="/uint64"/>
 </typelib>

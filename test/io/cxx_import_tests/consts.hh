@@ -21,7 +21,6 @@ namespace consts {
     };
 
     struct C2 {
-        const int *m1;
         const double m2;
     };
 

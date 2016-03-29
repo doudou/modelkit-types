@@ -23,5 +23,5 @@
 <metadata key="source_file_line"><![CDATA[laser.hh:7]]></metadata>
 
   </compound>
-  <alias name="/Laser/arrayypedef" source="/int32[256]"/>
+  <alias name="/Laser/array_typedef" source="/int32[256]"/>
 </typelib>

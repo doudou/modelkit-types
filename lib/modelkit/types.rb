@@ -116,7 +116,13 @@ module ModelKit::Types
 
     # Splits a type basename into its main name and (possible) template
     # arguments
-    def self.parse_template(type_basename)
+    def self.parse_template(type_basename, full_name: false)
+        if full_name
+            namespace, basename = split_typename(type_basename)
+            basename, args = parse_template(basename)
+            return "#{namespace}#{basename}", args
+        end
+
         if type_basename =~ /^([^<]+)(?:<(.*)>)?$/
             basename, raw_arguments = $1, $2
             if !raw_arguments
@@ -180,12 +186,20 @@ module ModelKit::Types
                     in_array = true
                 when "<"
                     template_level += 1
-                    if (tk = tokens.first) && tk !~ /[\-0-9\/]/
-                        raise InvalidTypeNameError, "found #{tk} after <, expected a type name or a number"
+                    if (tk = tokens.first)
+                        if tk =~ /^[\-0-9][0-9]*$/
+                            tokens.shift
+                        elsif tk !~ /^\//
+                            raise InvalidTypeNameError, "found #{tk} after <, expected a type name or a number"
+                        end
                     end
                 when ","
-                    if (tk = tokens.first) && tk !~ /[\-0-9\/]/
-                        raise InvalidTypeNameError, "found #{tk} after ,, expected a type name or a number"
+                    if (tk = tokens.first)
+                        if tk =~ /^[\-0-9][0-9]*$/
+                            tokens.shift
+                        elsif tk !~ /^\//
+                            raise InvalidTypeNameError, "found #{tk} after <, expected a type name or a number"
+                        end
                     end
                 when ">"
                     if template_level == 0

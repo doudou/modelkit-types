@@ -5,27 +5,27 @@
     <compound name='/ns/Context&lt;/int32&gt;/Parameter' size='4'>
         <field name='field' type='/int32' offset='0'>
             <metadata key='source_file_line'>
-                <![CDATA[nestedype_ofemplate.hh:14]]>
+                <![CDATA[nested_type_of_template.hh:14]]>
             </metadata>
         </field>
         <metadata key='cxxname'>
             <![CDATA[::ns::Context<int>::Parameter]]>
         </metadata>
         <metadata key='source_file_line'>
-            <![CDATA[nestedype_ofemplate.hh:12]]>
+            <![CDATA[nested_type_of_template.hh:12]]>
         </metadata>
     </compound>
     <compound name='/ns/Context&lt;/int32&gt;' size='4'>
         <field name='params' type='/ns/Context&lt;/int32&gt;/Parameter' offset='0'>
             <metadata key='source_file_line'>
-                <![CDATA[nestedype_ofemplate.hh:16]]>
+                <![CDATA[nested_type_of_template.hh:16]]>
             </metadata>
         </field>
         <metadata key='cxxname'>
             <![CDATA[::ns::Context<int>]]>
         </metadata>
         <metadata key='source_file_line'>
-            <![CDATA[nestedype_ofemplate.hh:9]]>
+            <![CDATA[nested_type_of_template.hh:9]]>
         </metadata>
     </compound>
     <container name='/std/vector&lt;/ns/Context&lt;/int32&gt;/Parameter&gt;' of='/ns/Context&lt;/int32&gt;/Parameter' size='24' kind='/std/vector'>
@@ -36,14 +36,14 @@
     <compound name='/Instanciator' size='24'>
         <field name='field' type='/std/vector&lt;/ns/Context&lt;/int32&gt;/Parameter&gt;' offset='0'>
             <metadata key='source_file_line'>
-                <![CDATA[nestedype_ofemplate.hh:23]]>
+                <![CDATA[nested_type_of_template.hh:23]]>
             </metadata>
         </field>
         <metadata key='cxxname'>
             <![CDATA[::Instanciator]]>
         </metadata>
         <metadata key='source_file_line'>
-            <![CDATA[nestedype_ofemplate.hh:20]]>
+            <![CDATA[nested_type_of_template.hh:20]]>
         </metadata>
     </compound>
 </typelib>

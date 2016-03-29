@@ -16,6 +16,30 @@ module ModelKit::Types
                     setup_loader 'castxml'
                 end
 
+                # libstdc++ in GCC 5 and above have strings of 32 bytes, before
+                # of 8. This is detected as a failure in the tests
+                def test_cxx_common_strings
+                    native_sizes = ['/std/string', '/std/wstring', '/strings/S1', '/strings/S2']
+                    super do |reg, xml|
+                        xml.root.elements.to_a.each do |node|
+                            if native_sizes.include?(node.attributes['name'])
+                                node.attributes['size'] = reg.get(node.attributes['name']).size
+                            end
+                        end
+                    end
+                end
+
+                def test_cxx_common_NamedVector
+                    native_sizes = ['/std/string', '/std/wstring']
+                    super do |reg, xml|
+                        xml.root.elements.to_a.each do |node|
+                            if native_sizes.include?(node.attributes['name'])
+                                node.attributes['size'] = reg.get(node.attributes['name']).size
+                            end
+                        end
+                    end
+                end
+
                 include CXX_GCCXML_Common
             end
 

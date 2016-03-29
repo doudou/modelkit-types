@@ -6,12 +6,12 @@
   <numeric name="/int32" category="sint" size="4" >
   
   </numeric>
-  <opaque name="/templates/C1&lt;/float64&gt;" size="0" >
+  <opaque name="/templates/C1&lt;/double&gt;" size="0" >
   <metadata key="cxxname"><![CDATA[::templates::C1<double>]]></metadata>
 <metadata key="source_file_line"><![CDATA[templates.hh:9]]></metadata>
 
   </opaque>
-  <opaque name="/templates/C1&lt;/float32&gt;" size="0" >
+  <opaque name="/templates/C1&lt;/float&gt;" size="0" >
   <metadata key="cxxname"><![CDATA[::templates::C1<float>]]></metadata>
 <metadata key="source_file_line"><![CDATA[templates.hh:19]]></metadata>
 

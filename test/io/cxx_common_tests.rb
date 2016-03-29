@@ -24,6 +24,15 @@ module ModelKit::Types
                 end
             end
 
+            def type_xml_without_metadata(type)
+                xml = type.to_xml
+                to_remove = xml.elements.to_a('//metadata')
+                to_remove.each do |el|
+                    el.parent.delete_element(el)
+                end
+                xml.to_s
+            end
+
             def assert_equivalent_types(expected_type, actual_type, error_message)
                 if expected_type != actual_type
                     pp = PP.new(error_message)
@@ -31,17 +40,18 @@ module ModelKit::Types
                     pp.breakable
                     pp.text "Expected: "
                     pp.breakable
-                    pp.text expected_type.to_xml
+                    pp.text(type_xml_without_metadata(expected_type))
                     pp.breakable
                     pp.text "Actual: "
                     pp.breakable
-                    pp.text actual_type.to_xml
+                    pp.text(type_xml_without_metadata(actual_type))
+                    pp.flush
                     flunk(error_message)
                 end
 
                 expected_type.metadata.each do |key, expected_metadata|
                     if !actual_type.metadata.include?(key)
-                        flunk("#{actual_type.name} was expected to have a metadata value for #{key} equal to #{expected_metadata}, but does not have any")
+                        flunk("#{actual_type.name} was expected to have a metadata value for #{key} equal to #{expected_metadata.to_a}, but does not have any")
                     end
                     if key == 'source_file_line' # resolve paths relatively to the test dir
                         expected_metadata = expected_metadata.map do |path|
@@ -50,7 +60,7 @@ module ModelKit::Types
                     end
                     actual_metadata = actual_type.metadata.get(key).to_set
                     if actual_metadata != expected_metadata.to_set
-                        flunk("#{actual_type.name} was expected to have a metadata value for #{key} equal to #{expected_metadata}, but it is equal to #{actual_metadata.to_a}")
+                        flunk("#{actual_type.name} was expected to have a metadata value for #{key} equal to #{expected_metadata.to_a}, but it is equal to #{actual_metadata.to_a}")
                     end
                 end
             end
@@ -70,9 +80,8 @@ module ModelKit::Types
                     opaques  = "#{prefix}.opaques"
                     tlb      = "#{prefix}.tlb"
                     next if !File.file?(tlb)
-                    next if !File.file?(tlb)
 
-                    define_method "test_cxx_common_#{basename}" do
+                    define_method "test_cxx_common_#{basename}" do |&block|
                         reg = Registry.new
                         if File.file?(opaques)
                             reg.import(opaques, 'tlb')
@@ -82,7 +91,9 @@ module ModelKit::Types
                         importer_specific_tlb = "#{tlb}.#{loader_name}"
                         has_specific_tlb = File.file?(importer_specific_tlb)
 
-                        expected = Registry.from_xml(File.read(tlb))
+                        xml = REXML::Document.new(File.read(tlb))
+                        block.call(reg, xml) if block
+                        expected = Registry.from_xml(xml)
                         assert_registry_match(expected, reg, require_equivalence: !has_specific_tlb)
 
                         if has_specific_tlb
@@ -151,27 +162,27 @@ module ModelKit::Types
 
             def test_import_template_of_container
                 reg = Registry.import File.join(cxx_test_dir, 'template_of_container.h'), 'c', cxx_importer: loader
-                assert reg.include?('/BaseTemplate</std/vector</double>>'), "cannot find /BaseTemplate</std/vector</double>>, vectors in registry: #{reg.map(&:name).grep(/vector/).sort.join(", ")}"
+                assert reg.include?('/BaseTemplate</std/vector</float64>>'), "cannot find /BaseTemplate</std/vector</float64>>, vectors in registry: #{reg.map(&:name).grep(/vector/).sort.join(", ")}"
             end
 
             def test_import_documentation_parsing_handles_opening_bracket_and_struct_definition_on_different_lines
                 reg = Registry.import File.join(cxx_test_dir, 'documentation_with_struct_and_opening_bracket_on_different_lines.h'), 'c', cxx_importer: loader
-                assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc')
+                assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
 
             def test_import_documentation_parsing_handles_spaces_between_opening_bracket_and_struct_definition
                 reg = Registry.import File.join(cxx_test_dir, 'documentation_with_space_between_struct_and_opening_bracket.h'), 'c', cxx_importer: loader
-                assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc')
+                assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
 
             def test_import_documentation_parsing_handles_opening_bracket_and_struct_definition_on_the_same_line
                 reg = Registry.import File.join(cxx_test_dir, 'documentation_with_struct_and_opening_bracket_on_the_same_line.h'), 'c', cxx_importer: loader
-                assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc')
+                assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
 
             def test_import_supports_utf8
                 reg = Registry.import File.join(cxx_test_dir, 'documentation_utf8.h'), 'c', cxx_importer: loader
-                assert_equal ["this is a \u9999 multiline with \u1290 unicode characters"], reg.get('/DocumentedType').metadata.get('doc')
+                assert_equal ["this is a \u9999 multiline with \u1290 unicode characters"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
         end
     end

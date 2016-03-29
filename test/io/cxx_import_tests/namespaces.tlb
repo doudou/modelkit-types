@@ -6,9 +6,9 @@
   <numeric name="/int32" category="sint" size="4" >
   
   </numeric>
-  <numeric name="/int8" category="sint" size="1" >
+  <character name="/char" size="1" >
   
-  </numeric>
+  </character>
   <compound name="/N1/N2/S1" size="24" >
     <field name="A" type="/int32" offset="0">
     
@@ -16,7 +16,7 @@
     <field name="B" type="/float64" offset="8">
     
     </field>
-    <field name="C" type="/int8" offset="16">
+    <field name="C" type="/char" offset="16">
     
     </field>
   <metadata key="cxxname"><![CDATA[::N1::N2::S1]]></metadata>

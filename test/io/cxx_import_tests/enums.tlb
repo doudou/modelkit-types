@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <typelib>
-  <enum name="/enums/E1" >
+  <enum name="/enums/E1" size='4'>
     <value symbol="E1_VAL1" value="42"/>
     <value symbol="E1_VAL2" value="43"/>
     <value symbol="E1_VAL3" value="44"/>
@@ -9,7 +9,7 @@
 <metadata key="source_file_line"><![CDATA[enums.hh:9]]></metadata>
 
   </enum>
-  <enum name="/enums/E2" >
+  <enum name="/enums/E2" size='4'>
     <value symbol="E2_VAL1" value="0"/>
     <value symbol="E2_VAL2" value="1"/>
     <value symbol="E2_VAL3" value="2"/>
@@ -18,7 +18,7 @@
 <metadata key="source_file_line"><![CDATA[enums.hh:16]]></metadata>
 
   </enum>
-  <alias name="/enums/E2" source="/enums/E2"/>
+  <alias name="/enums/E2_t" source="/enums/E2"/>
   <compound name="/enums/S2" size="4" >
     <field name="A" type="/enums/E2" offset="0">
     
@@ -49,12 +49,12 @@
 <metadata key="source_file_line"><![CDATA[enums.hh:24]]></metadata>
 
   </compound>
-  <enum name="/std/float_round_style" >
+  <enum name="/std/float_round_style" size='4'>
     <value symbol="round_indeterminate" value="-1"/>
-    <value symbol="roundo_nearest" value="1"/>
-    <value symbol="roundoward_infinity" value="2"/>
-    <value symbol="roundoward_neg_infinity" value="3"/>
-    <value symbol="roundoward_zero" value="0"/>
+    <value symbol="round_to_nearest" value="1"/>
+    <value symbol="round_toward_infinity" value="2"/>
+    <value symbol="round_toward_neg_infinity" value="3"/>
+    <value symbol="round_toward_zero" value="0"/>
   <metadata key="cxxname"><![CDATA[::std::float_round_style]]></metadata>
 
   </enum>

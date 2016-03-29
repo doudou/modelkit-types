@@ -50,7 +50,7 @@ module ModelKit::Types
                     @required_files[full_path] = nil
                 end
                 @id_to_node = Hash.new
-                @name_to_nodes = Hash.new { |h, k| h[k] = Array.new }
+                @name_to_nodes = Hash.new
                 @virtual_members = Set.new
 
                 @bases = Hash.new { |h, k| h[k] = Array.new }
@@ -87,7 +87,8 @@ module ModelKit::Types
                 id_to_node[child_node['id']] = child_node
                 @current_node = child_node
                 if (child_node_name = child_node['name'])
-                    name_to_nodes[GCCXMLLoader.cxx_to_typelib(child_node_name)] << child_node
+                    node_name = GCCXMLLoader.cxx_to_typelib(child_node_name)
+                    (name_to_nodes[node_name] ||= Array.new) << child_node
                 end
 
                 if name == "Typedef"
@@ -175,63 +176,36 @@ module ModelKit::Types
                 @registry = Registry.new
             end
 
-            def self.template_tokenizer(name)
-                CXX.template_tokenizer(name)
-            end
+            def normalize_type_name(name, resolve: false)
+                if resolve && (node = find_node_by_name(name)) && node.name != 'Namespace'
+                    return resolve_type_definition(node)
+                end
 
-            # Parses the ModelKit::Types or C++ type name +name+ and returns basename,
-            # template_arguments
-            def self.parse_template(name)
-                CXX.parse_template(name)
-            end
+                namespace, basename = ModelKit::Types.split_typename(name)
+                if (namespace != '/') && (namespace = normalize_type_name(namespace[0..-2], resolve: true))
+                    name = "#{namespace}/#{basename}"
+                end
 
-            def self.collect_template_arguments(tokens)
-                CXX.collect_template_arguments(tokens)
-            end
-
-            def typelib_to_cxx(name)
-                tokens = GCCXMLLoader.template_tokenizer(name)
-                tokens.each do |tk|
-                    case tk
-                    when /[<,>]/, /^\d/
+                type_name, template_args = ModelKit::Types.parse_template(name, full_name: true)
+                normalized_args = template_args.map do |arg|
+                    if arg =~ /^[-=\d]/
+                        arg
                     else
-                        tk.gsub!('/', '::')
+                        normalize_type_name(arg, resolve: true)
                     end
                 end
 
-                name = tokens.join("").gsub('<::', '<').
-                    gsub(',::', ',').
-                    gsub(',([^\s])', ', \1')
-                if name[0, 2] == "::"
-                    name[2..-1]
-                else
-                    name
-                end
-            end
-
-            def cxx_to_typelib(name)
-                self.class.cxx_to_typelib(name)
-            end
-
-            def normalize_type_name(name)
-                registry.build(name).name
-            rescue NotFound
-                tokens = CXX.template_tokenizer(name)
-                new_name = self.class.tokenized_cxx_to_typelib(tokens) do |n|
-                    begin
-                        registry.build(n).name
-                    rescue NotFound
-                        if node = find_node_by_name(n)
-                            resolve_type_definition(node) || n
-                        else n
-                        end
-                    end
+                if resolve && (node = find_node_by_name(type_name)) && node.name != 'Namespace'
+                    normalized_base_name = resolve_type_definition(node)
+                elsif type_name =~ /^(.*)((?:\[\d+\])+)$/
+                    element_name, suffix = $1.strip, $2
+                    normalized_base_name = "#{normalize_type_name(element_name, resolve: true)}#{suffix}"
                 end
 
-                if new_name == name
-                    name
+                if normalized_args.empty?
+                    normalized_base_name || type_name
                 else
-                    normalize_type_name(new_name)
+                    "#{normalized_base_name || type_name}<#{normalized_args.join(",")}>"
                 end
             end
 
@@ -239,7 +213,7 @@ module ModelKit::Types
                 name = name.gsub('::', '/')
                 name = name.gsub('> >', '>>')
 
-                tokens = CXX.template_tokenizer(name)
+                tokens = ModelKit::Types.typename_tokenizer(name)
                 tokenized_cxx_to_typelib(tokens)
             end
 
@@ -257,16 +231,14 @@ module ModelKit::Types
                             end
                         end
                         result[-1] = "#{result[-1]}<#{args.join(",")}>"
-                    elsif tk[0, 1] != "/" && tk !~ /^[-+\d]/
-                        result << "/#{tk}"
                     else
                         result << tk
                     end
                 end
-                result = result.join("")
-                if result[0, 1] != "/" && result !~ /^[-+\d]/
-                    result = "/#{result}"
+                if result[0] != "/" && result[0] !~ /^[-+\d]/
+                    result.unshift '/'
                 end
+                result = result.join("")
                 result
             end
 
@@ -341,7 +313,8 @@ module ModelKit::Types
                     name = "/#{name}"
                     break if ns == '/'
                     ns   = ns[0..-2]
-                    candidates = info.name_to_nodes[ns].find_all { |n| NAMESPACE_NODE_TYPES.include?(n.name) }
+                    candidates = (info.name_to_nodes[ns] || Array.new).
+                        find_all { |n| NAMESPACE_NODE_TYPES.include?(n.name) }
                     if !context
                         context = candidates.to_a.first
                     else
@@ -366,11 +339,12 @@ module ModelKit::Types
                     return
                 else
                     name = node['name']
-                    name = name.gsub(/0x0+/, '')
+                    name = name.gsub(/0x0+/, '').
+                        gsub(/\s\+\[/, '[')
                     if !cxx
                         # Convert to typelib conventions, and remove the leading
                         # slash
-                        name = cxx_to_typelib(name)[1..-1]
+                        name = GCCXMLLoader.cxx_to_typelib(name)[1..-1]
                     elsif name == '::'
                         return ['']
                     end
@@ -395,7 +369,11 @@ module ModelKit::Types
 
             def resolve_node_typelib_name(id_or_node)
                 if parts = resolve_node_name_parts(id_or_node, cxx: false)
-                    parts.join("/")
+                    result = parts.join("/")
+                    if !result.start_with?('/')
+                        "/#{result}"
+                    else result
+                    end
                 end
             end
 
@@ -450,15 +428,13 @@ module ModelKit::Types
                     spec << 'volatile'
                 end
                 if name = resolve_type_id(xmlnode['type'])
-                    qualified_name = "#{name} #{spec.join(" ")}"
-                    id_to_name[xmlnode['id']] = qualified_name
-                    return qualified_name, name
+                    return "#{name} #{spec.join(" ")}", registry.get(name)
                 end
             end
 
             def source_file_for(xmlnode)
-                if file = info.id_to_node[xmlnode['file']]['name']
-                    File.realpath(file)
+                if file = info.id_to_node[xmlnode['file']]
+                    File.realpath(file['name'])
                 end
             rescue Errno::ENOENT
                 File.expand_path(file)
@@ -499,244 +475,301 @@ module ModelKit::Types
                     type.metadata.add('source_file_line', file)
                 end
             end
+            
+            def resolve_container_definition(xmlnode, typelib_name, type_name, template_args)
+                # This is known as a container
+                contained_type = template_args[0]
+                if !registry.include?(contained_type)
+                    contained_node = find_node_by_name(contained_type)
+                    if !contained_node
+                        contained_node = find_node_by_name(contained_type)
+                        raise "Internal error: cannot find definition for #{contained_type}, element of #{typelib_name}"
+                    end
+                    if ignored?(contained_node["id"])
+                        return ignore(xmlnode, "ignoring #{typelib_name} as its element type #{contained_type} is ignored as well")
+                    elsif !resolve_type_definition(contained_node)
+                        return ignore(xmlnode, "ignoring #{typelib_name} as its element type #{contained_type} is ignored as well")
+                    end
+                end
+                registry.create_container type_name, template_args[0], size: (Integer(xmlnode['size']) / 8)
+            end
+            
+            def resolve_compound_definition(xmlnode, typelib_name, type_name, template_args)
+                if xmlnode['incomplete'] == '1'
+                    return ignore(xmlnode, "ignoring incomplete type #{typelib_name}")
+                end
+
+                member_ids = (xmlnode['members'] || '').split(" ")
+                member_ids.each do |id|
+                    if info.virtual_members.include?(id)
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has virtual methods")
+                    end
+                end
+
+                # Make sure that we can digest it. Forbidden are: non-public members
+                base_classes = info.bases[xmlnode['id']].map do |child_node|
+                    if child_node['virtual'] != '0'
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has virtual base classes")
+                    elsif child_node['access'] != 'public'
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has private base classes")
+                    end
+                    if base_type_name = resolve_type_id(child_node['type'])
+                        base_type = registry.get(base_type_name)
+                        [base_type, Integer(child_node['offset'] || '0')]
+                    else
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has ignored base classes")
+                    end
+                end
+
+                fields = member_ids.map do |member_id|
+                    if field_node = info.id_to_node[member_id]
+                        if field_node.name == "Field"
+                            field_node
+                        end
+                    end
+                end.compact
+
+                if fields.empty? && base_classes.all? { |type, _| type.empty? }
+                    return ignore(xmlnode, "ignoring the empty struct/class #{typelib_name}")
+                end
+
+                normalized_name = normalize_type_name(typelib_name)
+                # If we have a recursive construct, where a nested type is used
+                # as a field for the parent type, normalize_type_name will
+                # resolve both the parent and the nested type.
+                #
+                # We need to register the id-to-name mapping here before
+                # resolving the fields so that we don't get an infinite
+                # recursion, and we must check whether the type we're trying to
+                # define has not been defined already because of the recursion.
+                if registry.include?(normalized_name)
+                    return registry.get(normalized_name)
+                end
+                id_to_name[xmlnode['id']] = normalized_name
+
+                field_defs = fields.map do |field|
+                    if field['access'] != 'public'
+                        return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is private")
+                    elsif field_type_name = resolve_type_id(field['type'])
+                        [field['name'], field_type_name, Integer(field['offset']) / 8, field['line']]
+                    else
+                        ignored_type_name = id_to_name[field['type']]
+                        if ignored_type_name
+                            return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is of the ignored type #{ignored_type_name}")
+                        else
+                            return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is of an anonymous type")
+                        end
+                    end
+                end
+
+                # See comment above
+                id_to_name.delete(xmlnode['id'])
+
+                type = registry.create_compound(normalized_name, Integer(xmlnode['size']) / 8) do |c|
+                    base_classes.each do |base_type, base_offset|
+                        base_type.each_field do |name, type|
+                            offset = base_type.offset_of(name)
+                            c.add(name, type, offset: base_offset + offset)
+                        end
+                    end
+
+                    field_defs.each do |field_name, field_type, field_offset, field_line|
+                        c.add(field_name, field_type, offset: field_offset)
+                    end
+                end
+                base_classes.each do |base_type, _|
+                    type.metadata.add('base_classes', base_type.name)
+                    base_type.each_field do |name, _|
+                        base_type.get(name).metadata.get('source_file_line').each do |file_line|
+                            type.get(name).metadata.add('source_file_line', file_line)
+                        end
+                    end
+                end
+                if file = source_file_for(xmlnode)
+                    field_defs.each do |field_name, _, _, field_line|
+                        type.get(field_name).metadata.set('source_file_line', "#{file}:#{field_line}")
+                    end
+                end
+                type
+            end
+            
+            def resolve_fundamental_definition(xmlnode, typelib_name)
+                # See to alias it to the modelkit normalized name
+                if typelib_name =~ /int|short|char/
+                    basename =
+                        if typelib_name =~ /unsigned/ then "/uint"
+                        else "/int"
+                        end
+                    registry.get("#{basename}#{xmlnode['size']}")
+                elsif typelib_name =~ /float|double/
+                    registry.get("/float#{xmlnode['size']}")
+                else
+                    return ignore(xmlnode, "unknown fundamental type #{typelib_name}")
+                end
+            end
+
+            def resolve_typedef_definition(xmlnode, typelib_name)
+                if !(pointed_to_type = resolve_type_id(xmlnode['type']))
+                    return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to #{id_to_name[xmlnode['type']]} which is ignored")
+                end
+                registry.get(pointed_to_type)
+            end
+
+            def resolve_array_definition(xmlnode)
+                # Find the pointed-to-type that has a typelib name
+                element_xmlnode = xmlnode
+                suffixes = []
+                while !element_xmlnode['name']
+                    suffixes.unshift(element_xmlnode['max'])
+                    element_xmlnode = node_from_id(element_xmlnode['type'])
+                end
+                typelib_name = "#{resolve_node_typelib_name(element_xmlnode)}[#{suffixes.map(&:to_s).join("][")}]"
+
+                if !(pointed_to_type = resolve_type_id(xmlnode['type']))
+                    return ignore(xmlnode)
+                end
+
+                value = xmlnode["max"]
+                if value =~ /^(\d+)u?$/
+                    size = Integer($1) + 1
+                else
+                    raise "expected NUMBER (for castxml) or NUMBERu (for gccxml) for the 'max' attribute of an array definition, but got \'#{value}\'"
+                end
+                array_type = registry.create_array(pointed_to_type, size)
+                array_type.metadata.set('cxxname', "#{array_type.deference.metadata.get('cxxname')}[#{size}]")
+                return typelib_name, array_type
+            end
+
+            def resolve_enum_definition(xmlnode, typelib_name)
+                normalized_name = normalize_type_name(typelib_name)
+                registry.create_enum(normalized_name) do |e|
+                    info.enum_values[xmlnode['id']].each do |enum_value|
+                        e.add(enum_value["name"], Integer(enum_value['init']))
+                    end
+                end
+            end
 
             def resolve_type_definition(xmlnode)
                 kind = xmlnode.name
                 id   = xmlnode['id']
-                if name = id_to_name[id]
-                    return name
-                end
 
-                if kind == "PointerType"
-                    if pointed_to_type = resolve_type_id(xmlnode['type'])
-                        pointed_to_name = (id_to_name[id] = "#{pointed_to_type}*")
-                        pointer_type = registry.build(pointed_to_name)
-                        pointer_type.metadata.set('cxxname', "#{pointer_type.deference.metadata.get('cxxname')}*")
-                        return pointed_to_name
-                    else return ignore(xmlnode)
-                    end
-                elsif kind == "ArrayType"
-                    if pointed_to_type = resolve_type_id(xmlnode['type'])
-                        value = xmlnode["max"]
-                        if value =~ /^(\d+)u?$/
-                            size = Integer($1) + 1
-                        else
-                            raise "expected NUMBER (for castxml) or NUMBERu (for gccxml) for the 'max' attribute of an array definition, but got \'#{value}\'"
-                        end
-                        array_typename = (id_to_name[id] = "#{pointed_to_type}[#{size}]")
-                        array_type = registry.create_array(pointed_to_type, size)
-                        array_type.metadata.set('cxxname', "#{array_type.deference.metadata.get('cxxname')}[#{size}]")
-                        return array_typename
-                    else return ignore(xmlnode)
-                    end
-                elsif kind == "CvQualifiedType"
-                    qualified_name, name = resolve_qualified_type(xmlnode)
-                    if qualified_name
-                        registry.create_alias(qualified_name, name)
-                        return name
-                    else return
-                    end
+                if typelib_name = id_to_name[id]
+                    return typelib_name
                 end
-
-                if !(name = resolve_node_typelib_name(xmlnode))
-                    return
-                elsif name =~ /gccxml_workaround/
-                    return
-                elsif registry.include?(name)
-                    type = registry.get(name)
-                    cxxname = resolve_node_cxx_name(xmlnode)
-                    if name == type.name
-                        set_source_file(type, xmlnode)
-                        type.metadata.set 'cxxname', cxxname
-                    end
-                    return id_to_name[id] = type.name
-                elsif kind != "Typedef" && name =~ /\/__\w+$/
-                    # This is defined as private STL/Compiler implementation
-                    # structures. Just ignore it
-                    return ignore(xmlnode)
-                end
-                cxxname = resolve_node_cxx_name(xmlnode)
-
-                normalized_name = normalize_type_name(name)
-                id_to_name[id]  = normalized_name
 
                 access_specifier = xmlnode['access']
                 if access_specifier && (access_specifier != 'public')
-                    return ignore(xmlnode, "ignoring #{name} as it has a non-public access specifier: #{access_specifier}")
+                    return ignore(xmlnode, "ignoring #{typelib_name} as it has a non-public access specifier: #{access_specifier}")
                 end
 
-                if kind == "Struct" || kind == "Class"
-                    type_name, template_args = CXX.parse_template(name)
-                    if type_name == "/std/string"
-                        # This is internally known to typelib
-                    elsif registry.has_container_model?(type_name)
-                        # This is known as a container
-                        contained_type = template_args[0]
-                        if !registry.include?(contained_type)
-                            contained_node = find_node_by_name(contained_type)
-                            if !contained_node
-                                contained_node = find_node_by_name(contained_type)
-                                raise "Internal error: cannot find definition for #{contained_type}, element of #{name}"
-                            end
-                            if ignored?(contained_node["id"])
-                                return ignore(xmlnode, "ignoring #{name} as its element type #{contained_type} is ignored as well")
-                            elsif !resolve_type_definition(contained_node)
-                                return ignore(xmlnode, "ignoring #{name} as its element type #{contained_type} is ignored as well")
-                            end
-                        end
+                typelib_name = resolve_node_typelib_name(xmlnode)
 
-                        type = registry.create_container type_name, template_args[0]
-                        type.metadata.set('cxxname', cxxname)
-                        set_source_file(type, xmlnode)
-                        if name != type.name
-                            registry.create_alias(name, type.name)
-                        end
-                        id_to_name[id] = normalized_name = type.name
-                    else
-                        # Make sure that we can digest it. Forbidden are: non-public members
-                        base_classes = info.bases[xmlnode['id']].map do |child_node|
-                            if child_node['virtual'] != '0'
-                                return ignore(xmlnode, "ignoring #{name}, it has virtual base classes")
-                            elsif child_node['access'] != 'public'
-                                return ignore(xmlnode, "ignoring #{name}, it has private base classes")
-                            end
-                            if base_type_name = resolve_type_id(child_node['type'])
-                                base_type = registry.get(base_type_name)
-                                [base_type, Integer(child_node['offset'] || '0')]
-                            else
-                                return ignore(xmlnode, "ignoring #{name}, it has ignored base classes")
-                            end
-                        end
-
-                        if xmlnode['incomplete'] == '1'
-                            return ignore(xmlnode, "ignoring incomplete type #{name}")
-                        end
-
-                        member_ids = (xmlnode['members'] || '').split(" ")
-                        member_ids.each do |id|
-                            if info.virtual_members.include?(id)
-                                return ignore(xmlnode, "ignoring #{name}, it has virtual methods")
-                            end
-                        end
-
-                        fields = member_ids.map do |member_id|
-                            if field_node = info.id_to_node[member_id]
-                                if field_node.name == "Field"
-                                    field_node
-                                end
-                            end
-                        end.compact
-                        if fields.empty? && base_classes.all? { |type, _| type.empty? }
-                            return ignore(xmlnode, "ignoring the empty struct/class #{name}")
-                        end
-
-                        field_defs = fields.map do |field|
-                            if field['access'] != 'public'
-                                return ignore(xmlnode, "ignoring #{name} since its field #{field['name']} is private")
-                            elsif field_type_name = resolve_type_id(field['type'])
-                                [field['name'], field_type_name, Integer(field['offset']) / 8, field['line']]
-                            else
-                                ignored_type_name = id_to_name[field['type']]
-                                if ignored_type_name
-                                    return ignore(xmlnode, "ignoring #{name} since its field #{field['name']} is of the ignored type #{ignored_type_name}")
-                                else
-                                    return ignore(xmlnode, "ignoring #{name} since its field #{field['name']} is of an anonymous type")
-                                end
-                            end
-                        end
-                        type = registry.create_compound(normalized_name, Integer(xmlnode['size']) / 8) do |c|
-                            base_classes.each do |base_type, base_offset|
-                                base_type.each_field do |name, type|
-                                    offset = base_type.offset_of(name)
-                                    c.add(name, type, base_offset + offset)
-                                end
-                            end
-
-                            field_defs.each do |field_name, field_type, field_offset, field_line|
-                                c.add(field_name, field_type, field_offset)
-                            end
-                        end
-                        type.metadata.set('cxxname', cxxname)
-                        if name != normalized_name
-                            registry.create_alias(name, normalized_name)
-                        end
-                        set_source_file(type, xmlnode)
-                        base_classes.each do |base_type, _|
-                            type.metadata.add('base_classes', base_type.name)
-                            base_type.each_field do |name, _|
-                                base_type.field_metadata[name].get('source_file_line').each do |file_line|
-                                    type.field_metadata[name].add('source_file_line', file_line)
-                                end
-                            end
-                        end
-                        if file = source_file_for(xmlnode)
-                            field_defs.each do |field_name, _, _, field_line|
-                                type.field_metadata[field_name].set('source_file_line', "#{file}:#{field_line}")
-                            end
-                        end
+                if kind == "PointerType"
+                    return ignore(xmlnode, "pointer types are not supported")
+                elsif kind == "ArrayType"
+                    typelib_name, resolved_type = resolve_array_definition(xmlnode)
+                elsif kind == "CvQualifiedType"
+                    typelib_name, resolved_type = resolve_qualified_type(xmlnode)
+                elsif !typelib_name || (typelib_name =~ /gccxml_workaround/)
+                    return
+                elsif registry.include?(typelib_name)
+                    resolved_type = registry.get(typelib_name)
+                    if resolved_type.metadata.get('opaque_is_typedef').include?('1')
+                        return resolved_type.name
                     end
-                elsif kind == "FundamentalType"
-                    if !registry.include?(name)
-                        return ignore(xmlnode, "unknown fundamental type #{name}")
-                    end
+                elsif kind != "Typedef" && typelib_name =~ /\/__\w+$/
+                    # This is defined as private STL/Compiler implementation
+                    # structures. Just ignore it
+                    return ignore(xmlnode)
                 elsif kind == "Typedef"
-                    if !(pointed_to_type = resolve_type_id(xmlnode['type']))
-                        return ignore(xmlnode, "cannot create the #{name} typedef, as it points to #{id_to_name[xmlnode['type']]} which is ignored")
+                    resolved_type   = resolve_typedef_definition(xmlnode, typelib_name)
+                    normalized_name = normalize_type_name(typelib_name)
+                    if !ModelKit::Types.basename(normalized_name).start_with?("__")
+                        register_permanent_alias(normalized_name)
                     end
-
-                    pointed_to_name = registry.get(pointed_to_type).name
-
-                    if name != pointed_to_name
-                        registry.create_alias(name, pointed_to_name)
-                    end
-                    if (normalized_name != pointed_to_name)
-                        registry.create_alias(normalized_name, pointed_to_name)
-                        if !ModelKit::Types.basename(normalized_name).start_with?("__")
-                            register_permanent_alias(normalized_name, registry.get(pointed_to_type))
-                        end
-                    end
-                    # Always resolve the typedef as the type it is pointing to
-                    id_to_name[id] = pointed_to_name
-
-                elsif kind == "Enumeration"
-                    type = registry.create_enum(normalized_name) do |e|
-                        info.enum_values[id].each do |enum_value|
-                            e.add(enum_value["name"], Integer(enum_value['init']))
-                        end
-                    end
-                    type.metadata.set('cxxname', cxxname)
-                    if name != normalized_name
-                        registry.create_alias(name, normalized_name)
-                    end
-                    set_source_file(type, xmlnode)
                 else
-                    return ignore(xmlnode, "ignoring #{name} as it is of the unsupported GCCXML type #{kind}, XML node is #{xmlnode}")
+                    if kind == "Struct" || kind == "Class"
+                        type_name, template_args = ModelKit::Types.parse_template(typelib_name, full_name: true)
+                        if registry.has_container_model?(type_name)
+                            resolved_type = resolve_container_definition(xmlnode, typelib_name, type_name, template_args)
+                        else
+                            resolved_type = resolve_compound_definition(xmlnode, typelib_name, type_name, template_args)
+                        end
+                    elsif kind == "FundamentalType"
+                        if !registry.include?(typelib_name)
+                            resolved_type = resolve_fundamental_definition(xmlnode, typelib_name)
+                        end
+
+                    elsif kind == "Enumeration"
+                        resolved_type = resolve_enum_definition(xmlnode, typelib_name)
+                    else
+                        return ignore(xmlnode, "ignoring #{typelib_name} as it is of the unsupported GCCXML type #{kind}, XML node is #{xmlnode}")
+                    end
                 end
 
-
-                normalized_name
+                if !resolved_type
+                    return
+                elsif normalized_name = id_to_name[xmlnode['id']]
+                    return normalized_name
+                end
+                
+                if !normalized_name
+                    normalized_name = resolved_type.name
+                end
+                if kind != "Typedef"
+                    set_source_file(resolved_type, xmlnode)
+                    cxxname ||= resolve_node_cxx_name(xmlnode)
+                    if cxxname
+                        resolved_type.metadata.set 'cxxname', cxxname
+                    end
+                    if align = xmlnode['align']
+                        resolved_type.metadata.set 'cxx:align', align
+                    end
+                end
+                if typelib_name != resolved_type.name
+                    registry.create_alias typelib_name, resolved_type
+                end
+                if (normalized_name != typelib_name) && (normalized_name != resolved_type.name)
+                    registry.create_alias normalized_name, resolved_type
+                end
+                id_to_name[id] = normalized_name
             end
 
             def find_node_by_name(typename, node_type: nil)
-                if node = info.name_to_nodes[typename].first
-                    return node
+                if nodes = info.name_to_nodes[typename]
+                    return nodes.first
                 else
                     basename, context = resolve_namespace_of(typename)
                     return if !context
-                    info.name_to_nodes[basename].
-                        find do |node|
+                    if nodes = info.name_to_nodes[basename]
+                        nodes.find do |node|
                             (node['context'].to_s == context) &&
                                 (!node_type || (node.name == node_type))
                         end
+                    end
                 end
             end
 
             def resolve_std_string
-                if node = find_node_by_name('/std/string', node_type: 'Typedef')
-                    type_node = node_from_id(node["type"].to_s)
-                    full_name = resolve_node_typelib_name(type_node)
-                    registry.create_alias full_name, '/std/string'
-                    registry.get('/std/string').metadata.set 'cxxname', '::std::string'
+                [['/std/string', '/char'], ['/std/wstring', '/wchar_t']].each do |string_t_name, char_t_name|
+                    if node = find_node_by_name(string_t_name, node_type: 'Typedef')
+                        type_node = node_from_id(node["type"].to_s)
+                        full_name = resolve_node_typelib_name(type_node)
+                        string_t = registry.create_container BasicString,
+                            registry.get(char_t_name),
+                            size: (Integer(type_node['size']) / 8),
+                            typename: string_t_name
+                        registry.create_alias full_name, string_t
+
+                        # We also need to workaround a problem in castxml, where
+                        # vectors of string only refer to the first parameter
+                        # of the string template.
+                        registry.create_alias "/std/basic_string<#{char_t_name}>", string_t
+
+                        registry.get(string_t_name).metadata.
+                            set('cxxname', string_t_name.gsub('/', '::'))
+                        id_to_name[node['id']] = string_t.name
+                    end
                 end
             end
 
@@ -751,17 +784,25 @@ module ModelKit::Types
                 # First do typedefs. Search for the typedefs that are named like our
                 # type, if we find one, alias it
                 opaques.dup.each do |opaque_name|
-                    if node = find_node_by_name(opaque_name, node_type: 'Typedef')
-                        type_node = node_from_id(node["type"].to_s)
-                        full_name = resolve_node_typelib_name(type_node)
-                        normalized_name = normalize_type_name(full_name)
+                    if opaque_node = find_node_by_name(opaque_name, node_type: 'Typedef')
+                        type_node = node_from_id(opaque_node["type"].to_s)
+                        type_typelib_name = resolve_node_typelib_name(type_node)
+                        type_normalized_name = normalize_type_name(type_typelib_name)
+                        opaque_t     = registry.get(opaque_name)
+                        normalized_name = opaque_t.name
 
-                        opaques << full_name << normalized_name
-                        opaque_t = registry.get(opaque_name)
-                        set_source_file(opaque_t, node)
+                        opaques << type_typelib_name << type_normalized_name
+                        set_source_file(opaque_t, opaque_node)
                         opaque_t.metadata.set('opaque_is_typedef', '1')
-                        registry.create_alias full_name, opaque_name
-                        registry.create_alias normalized_name, opaque_name
+                        if cxxname = resolve_node_cxx_name(opaque_node)
+                            opaque_t.metadata.set('cxxname', cxxname)
+                        end
+                        id_to_name[opaque_node['id']] = normalized_name
+
+                        registry.create_alias type_normalized_name, normalized_name
+                        if type_typelib_name != type_normalized_name
+                            registry.create_alias type_typelib_name, normalized_name
+                        end
                     end
                 end
             end
@@ -812,10 +853,6 @@ module ModelKit::Types
             IGNORED_NODES = %w{Method OperatorMethod Destructor Constructor Function OperatorFunction}.to_set
 
             def load(required_files, xml)
-                @registry = Registry.new
-                base_registry = @registry.dup
-                @permanent_aliases = Set.new
-
                 @info = GCCXMLInfo.new(required_files)
                 info.parse(xml)
 
@@ -826,8 +863,11 @@ module ModelKit::Types
                     all_typedefs.concat(info.typedefs_per_file[file_id])
                 end
 
+                @registry = Registry.new
                 # Resolve the real name of '/std/string'
                 resolve_std_string
+                base_registry = @registry.dup
+                @permanent_aliases = Set.new
 
                 if !opaques.empty?
                     # We MUST emit the opaque definitions before calling
@@ -859,20 +899,20 @@ module ModelKit::Types
                             type.metadata.set('doc', doc)
                         end
                     end
-                    if type.respond_to?(:field_metadata)
-                        type.field_metadata.each do |field_name, md|
-                            if location = md.get('source_file_line').first
+                    if type <= CompoundType
+                        type.each do |field|
+                            if location = field.metadata.get('source_file_line').first
                                 file, line = location.split(':')
                                 line = Integer(line)
                                 if doc = GCCXMLLoader.parse_cxx_documentation_before(source_file_content(file), line)
-                                    md.set('doc', doc)
+                                    field.metadata.set('doc', doc)
                                 end
                             end
                         end
                     end
                 end
 
-                filtered_registry = Registry.new
+                filtered_registry = ModelKit::Types::Registry.new
                 registry.each do |t|
                     if !base_registry.include?(t.name)
                         filtered_registry.merge(t.minimal_registry(with_aliases: false))
@@ -893,8 +933,7 @@ module ModelKit::Types
                 permanent_aliases.include?(name)
             end
 
-            def register_permanent_alias(name, type)
-                registry.create_alias(name, type.name)
+            def register_permanent_alias(name)
                 permanent_aliases << name
             end
 
@@ -941,7 +980,7 @@ module ModelKit::Types
                 required_files.map do |file|
                     Tempfile.open('typelib_gccxml') do |io|
                         if !system(*cmdline, '-o', io.path, file)
-                            raise ArgumentError, "gccxml returned an error while parsing #{file} with call #{cmdline.join(' ')} "
+                            raise ArgumentError, "castxml returned an error while parsing #{file} with call #{cmdline.join(' ')}"
                         end
                         io.open
                         io.read
@@ -967,7 +1006,7 @@ module ModelKit::Types
                 Tempfile.open('typelib_gccxml') do |io|
                     cmdline << "-fxml=#{io.path}"
                     if !system(*cmdline)
-                        raise ArgumentError, "gccxml returned an error while parsing #{file}"
+                        raise ArgumentError, "gccxml returned an error while parsing #{file} with call #{cmdline.join(' ')}"
                     end
                     [io.read]
                 end
@@ -991,7 +1030,6 @@ module ModelKit::Types
                 raw_xml.each do |xml|
                     converter = GCCXMLLoader.new
                     converter.opaques = registry_opaques.dup | opaques.to_set
-                    converter.opaques |= opaques.to_set
                     gccxml_registry = converter.load(required_files, xml)
                     registry.merge(gccxml_registry)
                 end

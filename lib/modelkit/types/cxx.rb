@@ -9,17 +9,6 @@ require 'modelkit/types/cxx/registry'
 # IO::CXXImporter
 module ModelKit::Types
     module CXX
-        def self.parse_template(name)
-            tokens = template_tokenizer(name)
-
-            type_name = tokens.shift
-            arguments = collect_template_arguments(tokens)
-            arguments.map! do |arg|
-                arg.join("")
-            end
-            return type_name, arguments
-        end
-
         def self.collect_template_arguments(tokens)
             level = 0
             arguments = []
@@ -58,25 +47,6 @@ module ModelKit::Types
             end
 
             return arguments
-        end
-
-        def self.template_tokenizer(name)
-            suffix = name
-            result = []
-            while !suffix.empty?
-                suffix =~ /^([^<,>]*)/
-                match = $1.strip
-                if !match.empty?
-                    result << match
-                end
-                char   = $'[0, 1]
-                suffix = $'[1..-1]
-
-                break if !suffix
-
-                result << char
-            end
-            result
         end
     end
 end

@@ -126,6 +126,24 @@ describe ModelKit::Types do
             assert_raises(ModelKit::Types::InvalidTypeNameError) { ModelKit::Types.validate_typename("s") }
             assert_raises(ModelKit::Types::InvalidTypeNameError) { ModelKit::Types.validate_typename(":blabla") }
         end
+        it "accepts type names starting with an underscore" do
+            ModelKit::Types.validate_typename "/standard/__1/StandardClass"
+        end
+        it "accepts positive integers as first argument in templates" do
+            ModelKit::Types.validate_typename "/Test<2>"
+        end
+        it "accepts negative integers as first argument in templates" do
+            ModelKit::Types.validate_typename "/Test<-2>"
+        end
+        it "accepts positive integers as followup argument in templates" do
+            ModelKit::Types.validate_typename "/Test</double,2>"
+        end
+        it "accepts negative integers as followup argument in templates" do
+            ModelKit::Types.validate_typename "/Test</double,-2>"
+        end
+        it "accepts nested types with a template in the middle" do
+            ModelKit::Types.validate_typename "/ns/Context</int>/Parameter"
+        end
     end
 
     describe ".parse_template" do

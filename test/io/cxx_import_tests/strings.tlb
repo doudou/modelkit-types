@@ -1,29 +1,33 @@
 <?xml version="1.0"?>
 <typelib>
-  <numeric name="/int32" category="sint" size="4" >
-  
-  </numeric>
-  <numeric name="/int8" category="sint" size="1" >
-  
-  </numeric>
-  <container  name="/std/string" of="/int8" size="8" kind="/std/string" >
-  <metadata key="cxxname"><![CDATA[::std::string]]></metadata>
+    <character name="/wchar_t" size="4" >
 
-  </container>
-  <compound name="/strings/C3" size="12" >
-    <field name="arr" type="/int32[3]" offset="0">
-    
-    </field>
-  <metadata key="cxxname"><![CDATA[::strings::C3]]></metadata>
-<metadata key="source_file_line"><![CDATA[strings.hh:19]]></metadata>
+    </character>
+    <character name="/char" size="1" >
 
-  </compound>
-  <compound name="/strings/S1" size="8" >
-    <field name="myS" type="/std/string" offset="0">
-    
-    </field>
-  <metadata key="cxxname"><![CDATA[::strings::S1]]></metadata>
-<metadata key="source_file_line"><![CDATA[strings.hh:8]]></metadata>
-
-  </compound>
+    </character>
+    <container  name="/std/wstring" of="/wchar_t" size="8" kind="/std/basic_string" >
+        <metadata key="cxxname"><![CDATA[::std::wstring]]></metadata>
+    </container>
+    <container  name="/std/string" of="/char" size="8" kind="/std/basic_string" >
+        <metadata key="cxxname"><![CDATA[::std::string]]></metadata>
+    </container>
+    <compound name="/strings/C3" size="12" >
+        <field name="arr" type="/wchar_t[3]" offset="0">
+        </field>
+        <metadata key="cxxname"><![CDATA[::strings::C3]]></metadata>
+        <metadata key="source_file_line"><![CDATA[strings.hh:19]]></metadata>
+    </compound>
+    <compound name="/strings/S1" size="8" >
+        <field name="myS" type="/std/string" offset="0">
+        </field>
+        <metadata key="cxxname"><![CDATA[::strings::S1]]></metadata>
+        <metadata key="source_file_line"><![CDATA[strings.hh:8]]></metadata>
+    </compound>
+    <compound name="/strings/S2" size="8" >
+        <field name="W" type="/std/wstring" offset="0">
+        </field>
+        <metadata key="cxxname"><![CDATA[::strings::S2]]></metadata>
+        <metadata key="source_file_line"><![CDATA[strings.hh:14]]></metadata>
+    </compound>
 </typelib>

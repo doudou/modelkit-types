@@ -2,48 +2,48 @@
 <typelib>
     <numeric name='/int32' category='sint' size='4'>
     </numeric>
-    <compound name='/nestedypes/Outside' size='4'>
+    <compound name='/nested_types/Outside' size='4'>
         <field name='b' type='/int32' offset='0'>
             <metadata key='source_file_line'>
-                <![CDATA[nestedype.hh:10]]>
+                <![CDATA[nested_type.hh:10]]>
             </metadata>
         </field>
         <metadata key='cxxname'>
-            <![CDATA[::nestedypes::Outside]]>
+            <![CDATA[::nested_types::Outside]]>
         </metadata>
         <metadata key='source_file_line'>
-            <![CDATA[nestedype.hh:4]]>
+            <![CDATA[nested_type.hh:4]]>
         </metadata>
     </compound>
-    <compound name='/nestedypes/Outside/Inside' size='4'>
+    <compound name='/nested_types/Outside/Inside' size='4'>
         <field name='a' type='/int32' offset='0'>
             <metadata key='source_file_line'>
-                <![CDATA[nestedype.hh:8]]>
+                <![CDATA[nested_type.hh:8]]>
             </metadata>
         </field>
         <metadata key='cxxname'>
-            <![CDATA[::nestedypes::Outside::Inside]]>
+            <![CDATA[::nested_types::Outside::Inside]]>
         </metadata>
         <metadata key='source_file_line'>
-            <![CDATA[nestedype.hh:6]]>
+            <![CDATA[nested_type.hh:6]]>
         </metadata>
     </compound>
-    <container name='/std/vector&lt;/nestedypes/Outside/Inside&gt;' of='/nestedypes/Outside/Inside' size='24' kind='/std/vector'>
+    <container name='/std/vector&lt;/nested_types/Outside/Inside&gt;' of='/nested_types/Outside/Inside' size='24' kind='/std/vector'>
         <metadata key='cxxname'>
-            <![CDATA[::std::vector<nestedypes::Outside::Inside, std::allocator<nestedypes::Outside::Inside> >]]>
+            <![CDATA[::std::vector<nested_types::Outside::Inside, std::allocator<nested_types::Outside::Inside> >]]>
         </metadata>
     </container>
-    <compound name='/nestedypes/User' size='24'>
-        <field name='vector' type='/std/vector&lt;/nestedypes/Outside/Inside&gt;' offset='0'>
+    <compound name='/nested_types/User' size='24'>
+        <field name='vector' type='/std/vector&lt;/nested_types/Outside/Inside&gt;' offset='0'>
             <metadata key='source_file_line'>
-                <![CDATA[nestedype.hh:15]]>
+                <![CDATA[nested_type.hh:15]]>
             </metadata>
         </field>
         <metadata key='cxxname'>
-            <![CDATA[::nestedypes::User]]>
+            <![CDATA[::nested_types::User]]>
         </metadata>
         <metadata key='source_file_line'>
-            <![CDATA[nestedype.hh:13]]>
+            <![CDATA[nested_type.hh:13]]>
         </metadata>
     </compound>
 </typelib>
