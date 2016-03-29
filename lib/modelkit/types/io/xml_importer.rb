@@ -31,8 +31,12 @@ module ModelKit::Types
                             update_enum(builder, element)
                         end
                     when "container"
+                        container_model_name = element.attributes['kind']
+                        if !registry.has_container_model?(container_model_name)
+                            registry.create_container_model(container_model_name)
+                        end
                         type = registry.create_container(
-                            element.attributes['kind'],
+                            container_model_name,
                             element.attributes['of'],
                             typename: typename,
                             **type_options(element))

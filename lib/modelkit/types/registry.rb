@@ -578,6 +578,14 @@ module ModelKit::Types
             recorder.build
         end
 
+        def create_container_model(name)
+            ModelKit::Types.validate_typename(name)
+            container_model = Class.new(ContainerType)
+            container_model.name = name
+            register_container_model(container_model)
+            container_model
+        end
+
         # Creates a new container type on this registry
         #
         # @param [String] container_model the name of the container type
