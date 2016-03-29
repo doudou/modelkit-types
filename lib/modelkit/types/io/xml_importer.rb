@@ -70,11 +70,6 @@ module ModelKit::Types
                     merge(type_options(node))
             end
 
-            def container_options(node, registry)
-                Hash[deference: registry.build(node.attributes['of'])].
-                    merge(type_options(node))
-            end
-
             def update_compound(builder, node, registry)
                 node.each_element 'field' do |field_node|
                     field = builder.add(
