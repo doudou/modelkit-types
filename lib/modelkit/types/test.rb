@@ -56,9 +56,15 @@ module ModelKit::Types
         end
 
         def find_in_path(name)
-            ENV['PATH'].split(':').each do |p|
-                if File.file?(full_path = File.join(p, name))
-                    return full_path
+            if name.start_with?('/')
+                if File.file?(name)
+                    return name
+                end
+            else
+                ENV['PATH'].split(':').each do |p|
+                    if File.file?(full_path = File.join(p, name))
+                        return full_path
+                    end
                 end
             end
             nil

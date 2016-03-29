@@ -10,7 +10,7 @@ module ModelKit::Types
                 include CXXCommonTests
 
                 before do
-                    if !find_in_path('castxml')
+                    if !find_in_path(CXX::GCCXMLLoader.castxml_binary_name)
                         skip("castxml not installed")
                     end
                     setup_loader 'castxml'

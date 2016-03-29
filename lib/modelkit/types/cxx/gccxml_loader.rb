@@ -961,8 +961,9 @@ module ModelKit::Types
             end
 
             def self.castxml_binary_name
-                return "castxml"
+                ENV['CASTXML'] || 'castxml'
             end
+
             # Runs castxml on the provided file and with the given options, and
             # return the Nokogiri::XML object representing the result
             #

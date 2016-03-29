@@ -7,7 +7,15 @@ rvm:
   - 2.3.0
 script:
     - bundle exec rake test
+before_install:
+    - git clone https://github.com/castxml/castxml
+    - cd castxml ; cmake . ; make
+env:
+    CASTXML=$TRAVIS_BUILD_DIR/castxml/bin/castxml
+
 addons:
     apt:
         packages:
-            gccxml
+            - gccxml
+            - libclang-3.6-dev
+            - cmake
