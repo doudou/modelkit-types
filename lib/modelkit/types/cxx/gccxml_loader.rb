@@ -620,7 +620,7 @@ module ModelKit::Types
                 element_xmlnode = xmlnode
                 suffixes = []
                 while !element_xmlnode['name']
-                    suffixes.unshift(element_xmlnode['max'])
+                    suffixes.unshift(element_xmlnode['max'].gsub(/u$/, ''))
                     element_xmlnode = node_from_id(element_xmlnode['type'])
                 end
                 typelib_name = "#{resolve_node_typelib_name(element_xmlnode)}[#{suffixes.map(&:to_s).join("][")}]"
