@@ -49,7 +49,7 @@ module ModelKit::Types
                     when 'character'
                         type = registry.create_character(typename, **type_options(element))
                     when "alias"
-                        type = registry.create_alias(typename, registry.get(element.attributes['source']))
+                        type = registry.create_alias(typename, registry.build(element.attributes['source']))
                         next
                     else
                         raise Invalid, "don't know about the element #{element.name}"
