@@ -97,7 +97,7 @@ module ModelKit::Types
 
             def load_metadata(element, metadata)
                 element.each_element 'metadata' do |meta|
-                    metadata.add meta.attributes['key'], meta.text
+                    metadata.add meta.attributes['key'], meta.cdatas.first.to_s
                 end
             end
         end
