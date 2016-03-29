@@ -1,4 +1,5 @@
 require 'modelkit/types/test'
+require 'pp'
 
 module ModelKit::Types
     module Models

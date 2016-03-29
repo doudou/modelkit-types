@@ -494,10 +494,6 @@ module ModelKit::Types
             end
             
             def resolve_compound_definition(xmlnode, typelib_name, type_name, template_args)
-                if xmlnode['incomplete'] == '1'
-                    return ignore(xmlnode, "ignoring incomplete type #{typelib_name}")
-                end
-
                 member_ids = (xmlnode['members'] || '').split(" ")
                 member_ids.each do |id|
                     if info.virtual_members.include?(id)
@@ -662,7 +658,9 @@ module ModelKit::Types
 
                 typelib_name = resolve_node_typelib_name(xmlnode)
 
-                if kind == "PointerType"
+                if xmlnode['incomplete'] == '1'
+                    return ignore(xmlnode, "ignoring incomplete type #{typelib_name}")
+                elsif kind == "PointerType"
                     return ignore(xmlnode, "pointer types are not supported")
                 elsif kind == "ArrayType"
                     typelib_name, resolved_type = resolve_array_definition(xmlnode)
