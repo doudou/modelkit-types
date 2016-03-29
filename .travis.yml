@@ -9,6 +9,7 @@ rvm:
 script:
     - bundle exec rake test
 before_install:
+    - gem install bundler
     - sudo apt-get install gccxml
 sudo: required
 dist: trusty
