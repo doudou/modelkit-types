@@ -1,1 +1,1 @@
-require './test/io/test_gccxml_loader'
+require './test/io/test_cxx_importer'
