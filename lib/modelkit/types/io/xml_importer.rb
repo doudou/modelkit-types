@@ -41,9 +41,9 @@ module ModelKit::Types
                     when "type"
                         type = registry.create_type(typename, **type_options(element))
                     when 'opaque'
-                        type = registry.create_type(typename, opaque: true, **type_options(element))
+                        type = registry.create_type(typename, **type_options(element, opaque: true))
                     when 'null'
-                        type = registry.create_type(typename, null: true, **type_options(element))
+                        type = registry.create_type(typename, **type_options(element, null: true))
                     when 'character'
                         type = registry.create_character(typename, **type_options(element))
                     when "alias"
@@ -58,10 +58,10 @@ module ModelKit::Types
                 registry
             end
 
-            def type_options(node)
+            def type_options(node, **overrides)
                 Hash[size: Integer(node.attributes['size'] || '0'),
                      opaque: node.attributes['opaque'] == '1',
-                     null: node.attributes['null'] == '1']
+                     null: node.attributes['null'] == '1'].merge(overrides)
             end
 
             def numeric_options(node)
