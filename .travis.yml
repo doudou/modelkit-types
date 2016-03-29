@@ -1,16 +1,19 @@
 sudo: false
 language: ruby
 rvm:
-  - 2.0.0
-  - 2.1.6
-  - 2.2.4
-  - 2.3.0
-  - jruby-9.0.5.0
+    # - 2.0.0
+    # - 2.1.6
+    # - 2.2.4
+    # - 2.3.0
+    - jruby-9.0.5.0
 script:
     - bundle exec rake test
 before_install:
+    - cat .jrubyrc $HOME/.jrubyrc
     - gem install bundler
     - sudo apt-get install gccxml
+env:
+    JRUBY_OPTS: ""
 sudo: required
 dist: trusty
 
