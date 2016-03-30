@@ -42,7 +42,7 @@ module ModelKit::Types
                 end
             end
 
-            STORED_TAGS = %w{Namespace Typedef Enumeration Struct Class ArrayType FundamentalType PointerType CvQualifiedType}
+            STORED_TAGS = %w{Namespace Typedef Enumeration Struct Class ArrayType FundamentalType PointerType ReferenceType CvQualifiedType}
 
             def initialize(required_files)
                 @required_files = Hash.new
@@ -155,6 +155,15 @@ module ModelKit::Types
             # @see {ignore}
             attr_reader :ignore_message
 
+            # The names of the ignored types
+            #
+            # Ignored types do not go through the whole type resolution, and
+            # therefore do not end up having their name stored in {#id_to_name}.
+            # However, in warning messages, we want to mention them.
+            #
+            # So, when we ignore a type, store its name for future reference
+            attr_reader :ignored_type_names
+
             # The registry that is being filled by parsing GCCXML output
             attr_reader :registry
 
@@ -174,6 +183,7 @@ module ModelKit::Types
                 @id_to_name_parts   = Hash.new
                 @id_to_name   = Hash.new
                 @ignore_message = Hash.new
+                @ignored_type_names = Hash.new
                 @source_file_contents = Hash.new
                 @permanent_aliases = Set.new
                 @registry = Registry.new
@@ -198,9 +208,7 @@ module ModelKit::Types
                     end
                 end
 
-                if resolve && (node = find_node_by_name(type_name)) && node.name != 'Namespace'
-                    normalized_base_name = resolve_type_definition(node)
-                elsif type_name =~ /^(.*)((?:\[\d+\])+)$/
+                if type_name =~ /^(.*)((?:\[\d+\])+)$/
                     element_name, suffix = $1.strip, $2
                     normalized_base_name = "#{normalize_type_name(element_name, resolve: true)}#{suffix}"
                 end
@@ -307,7 +315,24 @@ module ModelKit::Types
                            id_or_node
                        end
 
-                if !node['name']
+                if node.name == 'PointerType' || node.name == 'ReferenceType'
+                    if parts = resolve_node_name_parts(node['type'])
+                        if node.name == 'PointerType'
+                            parts.last << '*'
+                        else
+                            parts.last << '&'
+                        end
+                    end
+                    return parts
+                elsif node.name == 'CvQualifiedType'
+                    if parts = resolve_node_name_parts(node['type'])
+                        spec = []
+                        spec << 'const' if node['const'] == '1'
+                        spec << 'volatile' if node['volatile'] == "1"
+                        parts.last << " #{spec.join(" ")}" if !spec.empty?
+                    end
+                    return parts
+                elsif !node['name']
                     return
                 else
                     name = node['name']
@@ -351,7 +376,7 @@ module ModelKit::Types
 
             def resolve_type_id(id)
                 id = id.to_str
-                if ignored?(id.to_str)
+                if ignored?(id)
                     nil
                 elsif name = id_to_name[id]
                     name
@@ -366,11 +391,15 @@ module ModelKit::Types
                 end
             end
 
+            def ignored_type_name(id)
+                ignored_type_names[id]
+            end
+
             def ignored?(id)
                 ignore_message.has_key?(id.to_str)
             end
 
-            def ignore(xmlnode, msg = nil)
+            def ignore(xmlnode, msg = nil, name: nil)
                 if msg
                     if file = file_context(xmlnode)
                         warn("#{file}: #{msg}")
@@ -378,7 +407,9 @@ module ModelKit::Types
                         warn(msg)
                     end
                 end
-                ignore_message[xmlnode['id']] = msg
+                id = xmlnode['id']
+                ignored_type_names[id] = name
+                ignore_message[id] = msg
                 nil
             end
 
@@ -397,6 +428,9 @@ module ModelKit::Types
                 end
                 if name = resolve_type_id(xmlnode['type'])
                     return "#{name} #{spec.join(" ")}", registry.get(name)
+                else
+                    typelib_name = "#{ignored_type_name(xmlnode['type'])} #{spec.join(" ")}"
+                    return ignore(xmlnode, "ignoring qualified type #{typelib_name} as its underlying type is ignored", name: typelib_name)
                 end
             end
 
@@ -413,7 +447,7 @@ module ModelKit::Types
                     source_file_contents[file]
                 else
                     if File.file?(file)
-                        source_file_contents[file] = File.readlines(file, :encoding => 'utf-8')
+                        source_file_contents[file] = File.readlines(file, encoding: 'utf-8')
                     else
                         source_file_contents[file] = nil
                     end
@@ -450,13 +484,12 @@ module ModelKit::Types
                 if !registry.include?(contained_type)
                     contained_node = find_node_by_name(contained_type)
                     if !contained_node
-                        contained_node = find_node_by_name(contained_type)
                         raise "Internal error: cannot find definition for #{contained_type}, element of #{typelib_name}"
                     end
-                    if ignored?(contained_node["id"])
-                        return ignore(xmlnode, "ignoring #{typelib_name} as its element type #{contained_type} is ignored as well")
+                    if ignored?(contained_node_id = contained_node["id"])
+                        return ignore(xmlnode, "ignoring #{typelib_name} as its element type #{ignored_type_name(contained_node_id)} is ignored as well", name: typelib_name)
                     elsif !resolve_type_definition(contained_node)
-                        return ignore(xmlnode, "ignoring #{typelib_name} as its element type #{contained_type} is ignored as well")
+                        return ignore(xmlnode, "ignoring #{typelib_name} as its element type #{contained_type} is ignored as well", name: typelib_name)
                     end
                 end
                 registry.create_container type_name, template_args[0], size: (Integer(xmlnode['size']) / 8)
@@ -466,22 +499,22 @@ module ModelKit::Types
                 member_ids = (xmlnode['members'] || '').split(" ")
                 member_ids.each do |id|
                     if info.virtual_members.include?(id)
-                        return ignore(xmlnode, "ignoring #{typelib_name}, it has virtual methods")
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has virtual methods", name: typelib_name)
                     end
                 end
 
                 # Make sure that we can digest it. Forbidden are: non-public members
                 base_classes = info.bases[xmlnode['id']].map do |child_node|
                     if child_node['virtual'] != '0'
-                        return ignore(xmlnode, "ignoring #{typelib_name}, it has virtual base classes")
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has virtual base classes", name: typelib_name)
                     elsif child_node['access'] != 'public'
-                        return ignore(xmlnode, "ignoring #{typelib_name}, it has private base classes")
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has private base classes", name: typelib_name)
                     end
                     if base_type_name = resolve_type_id(child_node['type'])
                         base_type = registry.get(base_type_name)
                         [base_type, Integer(child_node['offset'] || '0')]
                     else
-                        return ignore(xmlnode, "ignoring #{typelib_name}, it has ignored base classes")
+                        return ignore(xmlnode, "ignoring #{typelib_name}, it has ignored base class #{ignored_type_name(child_node['type'])}", name: typelib_name)
                     end
                 end
 
@@ -494,7 +527,7 @@ module ModelKit::Types
                 end.compact
 
                 if fields.empty? && base_classes.all? { |type, _| type.empty? }
-                    return ignore(xmlnode, "ignoring the empty struct/class #{typelib_name}")
+                    return ignore(xmlnode, "ignoring the empty struct/class #{typelib_name}", name: typelib_name)
                 end
 
                 normalized_name = normalize_type_name(typelib_name)
@@ -513,15 +546,15 @@ module ModelKit::Types
 
                 field_defs = fields.map do |field|
                     if field['access'] != 'public'
-                        return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is private")
+                        return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is private", name: typelib_name)
                     elsif field_type_name = resolve_type_id(field['type'])
                         [field['name'], field_type_name, Integer(field['offset']) / 8, field['line']]
                     else
-                        ignored_type_name = id_to_name[field['type']]
+                        ignored_type_name = ignored_type_name(field['type'])
                         if ignored_type_name
-                            return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is of the ignored type #{ignored_type_name}")
+                            return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is of the ignored type #{ignored_type_name}", name: typelib_name)
                         else
-                            return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is of an anonymous type")
+                            return ignore(xmlnode, "ignoring #{typelib_name} since its field #{field['name']} is of an anonymous type", name: typelib_name)
                         end
                     end
                 end
@@ -567,13 +600,17 @@ module ModelKit::Types
                 elsif typelib_name =~ /float|double/
                     registry.get("/float#{xmlnode['size']}")
                 else
-                    return ignore(xmlnode, "unknown fundamental type #{typelib_name}")
+                    return ignore(xmlnode, "unknown fundamental type #{typelib_name}", name: typelib_name)
                 end
             end
 
             def resolve_typedef_definition(xmlnode, typelib_name)
                 if !(pointed_to_type = resolve_type_id(xmlnode['type']))
-                    return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to #{id_to_name[xmlnode['type']]} which is ignored")
+                    if name = ignored_type_name(xmlnode['type'])
+                        return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to #{ignored_type_name} which is ignored", name: typelib_name)
+                    else
+                        return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to an anonymous type", name: typelib_name)
+                    end
                 end
                 registry.get(pointed_to_type)
             end
@@ -620,17 +657,19 @@ module ModelKit::Types
                     return typelib_name
                 end
 
+                typelib_name = resolve_node_typelib_name(xmlnode)
+
                 access_specifier = xmlnode['access']
                 if access_specifier && (access_specifier != 'public')
                     return ignore(xmlnode, "ignoring #{typelib_name} as it has a non-public access specifier: #{access_specifier}")
                 end
 
-                typelib_name = resolve_node_typelib_name(xmlnode)
-
                 if xmlnode['incomplete'] == '1'
-                    return ignore(xmlnode, "ignoring incomplete type #{typelib_name}")
+                    return ignore(xmlnode, "ignoring incomplete type #{typelib_name}", name: typelib_name)
                 elsif kind == "PointerType"
-                    return ignore(xmlnode, "pointer types are not supported")
+                    return ignore(xmlnode, "ignoring pointer type #{typelib_name}", name: typelib_name)
+                elsif kind == "ReferenceType"
+                    return ignore(xmlnode, "ignoring reference type #{typelib_name}", name: typelib_name)
                 elsif kind == "ArrayType"
                     typelib_name, resolved_type = resolve_array_definition(xmlnode)
                 elsif kind == "CvQualifiedType"

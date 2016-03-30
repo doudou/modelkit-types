@@ -25,15 +25,20 @@ namespace negative {
         int A;
     };
     class B : public pureVirtual {
-        virtual void F() {};
+        int B;
     };
     class virtualClass {
         virtual void F();
         int A;
     };
     class C : public virtualClass {
-        virtual void F();
         int B;
+    };
+
+    // Compound with an ignored field
+    class D {
+        public:
+            C field;
     };
 
     // anonymous structs and classes don't have a canonical name, so we cannot reference them later by name.
