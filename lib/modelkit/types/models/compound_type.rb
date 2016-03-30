@@ -59,7 +59,12 @@ module ModelKit::Types
             end
 
             def casts_to?(type)
-                super || (f = fields.first && f.type == type)
+                if super
+                    true
+                elsif field_entry = fields.first
+                    field = field_entry.last
+                    field.offset == 0 && field.type.casts_to?(type)
+                end
             end
 
 	    # Called by the extension to initialize the subclass

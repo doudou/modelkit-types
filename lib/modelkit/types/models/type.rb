@@ -489,6 +489,8 @@ module ModelKit::Types
             def apply_resize(typemap)
             end
 
+            # Returns true if this type's backing buffer can also be interpreted
+            # as a value of a different type
             def casts_to?(type)
                 self == type
             end
