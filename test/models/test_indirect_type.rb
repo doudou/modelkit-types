@@ -3,6 +3,12 @@ require 'modelkit/types/test'
 module ModelKit::Types
     module Models
         describe IndirectType do
+            it "has a name" do
+                assert_equal "ModelKit::Types::IndirectType", ModelKit::Types::IndirectType.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::IndirectType.metadata
+            end
             describe "#new_submodel" do
                 it "sets the type's deference property" do
                     t0 = ModelKit::Types::Type.new_submodel

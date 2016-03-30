@@ -6,9 +6,9 @@ module ModelKit::Types
             # Length of the array, in the number of elements
             attr_accessor :length
 
-            def initialize_base_class
+            def self.extend_object(obj)
                 super
-                self.name = "ModelKit::Types::ArrayType"
+                obj.name = "ModelKit::Types::ArrayType"
             end
 
             def ==(other)

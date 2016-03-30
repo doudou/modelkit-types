@@ -8,6 +8,13 @@ module ModelKit::Types
                 @enum_t = ModelKit::Types::EnumType.new_submodel(typename: 'Test')
             end
 
+            it "has a name" do
+                assert_equal "ModelKit::Types::EnumType", ModelKit::Types::EnumType.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::EnumType.metadata
+            end
+
             describe "#add" do
                 it "adds a new symbol/value pair to the enum" do
                     enum_t.add :TEST0, 10

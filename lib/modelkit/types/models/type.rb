@@ -417,8 +417,10 @@ module ModelKit::Types
                 model
             end
 
-            def initialize_base_class
-                @name = nil
+            def self.extend_object(obj)
+                super
+                obj.instance_variable_set :@metadata, MetaData.new
+                obj.instance_variable_set :@name, nil
             end
 
             def apply_resize(typemap)

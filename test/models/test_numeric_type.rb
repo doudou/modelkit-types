@@ -3,6 +3,13 @@ require 'modelkit/types/test'
 module ModelKit::Types
     module Models
         describe NumericType do
+            it "has a name" do
+                assert_equal "ModelKit::Types::NumericType", ModelKit::Types::NumericType.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::NumericType.metadata
+            end
+
             describe "#new_submodel" do
                 it "stores the name property" do
                     float_t = ModelKit::Types::NumericType.new_submodel(typename: '/Test')

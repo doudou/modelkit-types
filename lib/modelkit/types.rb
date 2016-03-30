@@ -422,29 +422,3 @@ module ModelKit::Types
     end
     @@typelib_plugin_path = nil
 end
-
-# Finally, set guard types on the root classes
-module ModelKit::Types
-    class Type
-        initialize_base_class
-    end
-    class NumericType
-        initialize_base_class
-    end
-    class EnumType
-        initialize_base_class
-    end
-    class CompoundType
-        initialize_base_class
-    end
-    class ContainerType
-        initialize_base_class
-    end
-    class ArrayType
-        initialize_base_class
-    end
-    class IndirectType
-        initialize_base_class
-    end
-end
-

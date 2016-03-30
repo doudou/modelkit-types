@@ -3,9 +3,9 @@ module ModelKit::Types
         module ContainerType
             include IndirectType
 
-            def initialize_base_class
+            def self.extend_object(obj)
                 super
-                self.name = "ModelKit::Types::ContainerType"
+                obj.name = "ModelKit::Types::ContainerType"
             end
 
             # The type of container

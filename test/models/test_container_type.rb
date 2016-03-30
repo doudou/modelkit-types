@@ -3,6 +3,12 @@ require 'modelkit/types/test'
 module ModelKit::Types
     module Models
         describe ContainerType do
+            it "has a name" do
+                assert_equal "ModelKit::Types::ContainerType", ModelKit::Types::ContainerType.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::ContainerType.metadata
+            end
             describe "#new_submodel" do
                 it "sets fixed_buffer_size to false" do
                     element_t = ModelKit::Types::Type.new_submodel

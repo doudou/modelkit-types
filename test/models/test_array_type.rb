@@ -3,6 +3,13 @@ require 'modelkit/types/test'
 module ModelKit::Types
     module Models
         describe ArrayType do
+            it "has a name" do
+                assert_equal "ModelKit::Types::ArrayType", ModelKit::Types::ArrayType.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::ArrayType.metadata
+            end
+
             describe "#to_h" do
                 attr_reader :array_t, :element_t
                 before do

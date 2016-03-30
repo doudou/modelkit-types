@@ -3,6 +3,12 @@ require 'modelkit/types/test'
 module ModelKit::Types
     module Models
         describe Type do
+            it "has a name" do
+                assert_equal "ModelKit::Types::Type", ModelKit::Types::Type.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::Type.metadata
+            end
             describe "#new_submodel" do
                 it "inherits the registry by default" do
                     assert_same ModelKit::Types::Type.new_submodel.registry, ModelKit::Types::Type.registry

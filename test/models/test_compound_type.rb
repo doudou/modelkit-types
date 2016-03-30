@@ -10,6 +10,13 @@ module ModelKit::Types
                 @compound_t = ModelKit::Types::CompoundType.new_submodel(typename: '/compound_t', size: 10)
             end
 
+            it "has a name" do
+                assert_equal "ModelKit::Types::CompoundType", ModelKit::Types::CompoundType.name
+            end
+            it "has a metadata object" do
+                assert ModelKit::Types::CompoundType.metadata
+            end
+
             describe "#add" do
                 it "adds a field to #fields" do
                     compound_t.add 'f0', field_t

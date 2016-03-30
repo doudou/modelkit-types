@@ -111,9 +111,9 @@ module ModelKit::Types
                 end
             end
 
-            def initialize_base_class
+            def self.extend_object(obj)
                 super
-                self.name = "ModelKit::Types::NumericType"
+                obj.name = "ModelKit::Types::NumericType"
             end
         end
     end

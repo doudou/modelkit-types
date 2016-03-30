@@ -34,8 +34,6 @@ module ModelKit::Types
             @__buffer = buffer
         end
 
-        @metadata = MetaData.new
-
         # Returns a new Type instance that contains the same value, but using a
         # different type object
         #

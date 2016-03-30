@@ -9,9 +9,9 @@ module ModelKit::Types
             # Mapping from a symbol to the numerical value it represents
             attr_reader :symbol_to_value
 
-            def initialize_base_class
+            def self.extend_object(obj)
                 super
-                self.name = "ModelKit::Types::EnumType"
+                obj.name = "ModelKit::Types::EnumType"
             end
 
             def ==(other)
