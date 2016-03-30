@@ -287,6 +287,35 @@ module ModelKit::Types
                     refute_equal c0, c1
                 end
             end
+
+            describe "#casts_to?" do
+                attr_reader :subject, :field_t
+                before do
+                    @subject = ModelKit::Types::CompoundType.new_submodel
+                    @field_t = ModelKit::Types::Type.new_submodel
+                end
+
+                it "returns true if given a type towards which its first field can cast to" do
+                    subject.add 'f', field_t, offset: 0
+                    test_t = flexmock
+                    flexmock(field_t).should_receive(:casts_to?).with(test_t).and_return(true)
+                    assert subject.casts_to?(test_t)
+                end
+
+                it "returns false if given the type of its first field when the field is at a nonzero offset" do
+                    subject.add 'f', field_t, offset: 1
+                    test_t = flexmock
+                    flexmock(field_t).should_receive(:casts_to?).with(test_t).and_return(true)
+                    assert !subject.casts_to?(test_t)
+                end
+
+                it "returns false if given a type its first field cannot be cast to" do
+                    subject.add 'f', field_t, offset: 0
+                    test_t = flexmock
+                    flexmock(field_t).should_receive(:casts_to?).with(test_t).and_return(false)
+                    assert !subject.casts_to?(test_t)
+                end
+            end
         end
     end
 end
