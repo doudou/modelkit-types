@@ -36,6 +36,13 @@ namespace stdvector {
       public:
         myvec v[2];
     };
+
+    // Ignored vector type
+    class Ignored { int field; };
+    class IgnoredC {
+        public:
+            std::vector<Ignored> field;
+    };
 }
 
 #endif /*TEST_HEADER_DATA_STDVECTOR_H*/
