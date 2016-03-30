@@ -374,26 +374,56 @@ module ModelKit::Types
             # Allocates a new ModelKit::Types object that is initialized from the information
             # given in the passed string
             #
-            # The options given here have to be exactly the same than the ones
-            # given to #to_byte_array
+            # Unlike {#from_buffer!}, the buffer is validated against the type's
+            # requirements (size, ...)
+            #
+            # Unlike with {#wrap}, the value has its own buffer
             # 
             # @param [String] buffer
-            # @option options [Boolean] accept_pointers (false) whether pointers, when
-            #   present, should cause an exception to be raised or simply
-            #   ignored
-            # @option options [Boolean] accept_opaques (false) whether opaques, when
-            #   present, should cause an exception to be raised or simply
-            #   ignored
-            # @option options [Boolean] merge_skip_copy (true) whether padding
-            #   bytes should be marshalled as well when adjacent to non-padding
-            #   bytes, to reduce CPU load at the expense of I/O. When set to
-            #   false, padding bytes are removed completely.
-            # @option options [Boolean] remove_trailing_skips (true) whether
-            #   padding bytes at the end of the value should be marshalled or
-            #   not.
             # @return [ModelKit::Types::Type]
-            def from_buffer(string, options = Hash.new)
-                new.from_buffer(string, options)
+            def from_buffer(buffer)
+                wrap(buffer.dup)
+            end
+
+            # Allocates a new ModelKit::Types object that is initialized from the information
+            # given in the passed string, without validating the buffer
+            #
+            # Unlike with {#wrap}, the value has its own buffer
+            # 
+            # @param [String] buffer
+            # @return [ModelKit::Types::Type]
+            def from_buffer!(buffer)
+                wrap!(buffer.dup)
+            end
+
+            # Give access to the value from within a buffer through a Type instance
+            #
+            # Unlike {#from_buffer}, it does not copy the buffer
+            def wrap(buffer)
+                validate_buffer(buffer)
+                wrap!(buffer)
+            end
+
+            # Give access to the value from within a buffer through a Type
+            # instance, without validating the provided buffer
+            #
+            # Unlike {#from_buffer}, it does not copy the buffer
+            def wrap!(buffer)
+                value = allocate
+                value.initialize_subtype
+                value.reset_buffer(buffer)
+                value
+            end
+
+            # Validate that the given buffer could be used to back a value for
+            # self
+            #
+            # It is expected to raise {InvalidBuffer} or one of its subclasses
+            # if the buffer is invalid.
+            #
+            # The default implementation does nothing. This must be overloaded
+            # in the Type submodels.
+            def validate_buffer(buffer)
             end
 
             # Creates a ModelKit::Types wrapper that gives access to the memory

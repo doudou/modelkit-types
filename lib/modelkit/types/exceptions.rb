@@ -83,4 +83,8 @@ module ModelKit::Types
     # receiver (for a type operation), but passing a type from a different
     # registry
     class NotFromThisRegistryError < ArgumentError; end
+
+    # Exception raised when a type is being setup with a buffer which does not
+    # match the type's requirements
+    class InvalidBuffer < ArgumentError; end
 end

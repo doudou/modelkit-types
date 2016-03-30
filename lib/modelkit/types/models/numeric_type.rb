@@ -7,6 +7,8 @@ module ModelKit::Types
             attr_predicate :integer?, true
             # Whether this represents a signed or unsigned integer
             attr_predicate :unsigned?, true
+            # The code for Array#pack that encodes/decodes values of this type
+            attr_accessor :pack_code
 
             DEFAULT_TYPENAMES =
                 Hash[[true, true] => '/uint',
@@ -23,11 +25,12 @@ module ModelKit::Types
 
                 submodel.integer = integer
                 submodel.unsigned = unsigned
-                pack_code = submodel.pack_code
-                if submodel.integer?
-                    convert_to_ruby(Numeric) { |value| value.buffer.unpack(pack_code).first }
-                else
-                    convert_to_ruby(Float) { |value| value.buffer.unpack(pack_code).first }
+                submodel.pack_code = submodel.compute_pack_code
+            end
+
+            def validate_buffer(buffer)
+                if buffer.size != size
+                    raise InvalidBuffer, "expected buffer to be of size #{size}, but is of size #{buffer.size}"
                 end
             end
 
@@ -100,7 +103,7 @@ module ModelKit::Types
             # Returns the Array#pack code that matches this type
             #
             # The endianness is the one of the local OS
-            def pack_code
+            def compute_pack_code
                 if integer?
                     INTEGER_PACK_CODES[[size, unsigned?, ModelKit::Types.big_endian?]]
                 else

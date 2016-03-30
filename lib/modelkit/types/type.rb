@@ -1,11 +1,38 @@
 module ModelKit::Types
     # Base class for all types
-    # Registry types are wrapped into subclasses of Type
-    # or other Type-derived classes (Array, Pointer, ...)
     #
-    # Value objects are wrapped into instances of these classes
+    # Value objects are instances of Type's subclasses. Type itself is mostly
+    # abstract
     class Type
         extend Models::Type
+
+        # The buffer containing the encoded data
+        #
+        # @return [String]
+        attr_reader :__buffer
+
+        def initialize
+            initialize_subtype
+        end
+
+        # Initialization method in which subtypes should do the type-specific
+        # initialization
+        #
+        # In some cases (namely, Models::Type#from_buffer and
+        # Models::Type#wrap), the type {#initialize} method is not called
+        # because the value is already initialized. However,
+        # {#initialize_subtype} is still called.
+        def initialize_subtype
+        end
+
+        # Sets {#__buffer} to the given value
+        #
+        # This should in general not validate the buffer. Validation must be
+        # provided at the type level by overloading
+        # {Models::Type#validate_buffer}.
+        def reset_buffer(buffer)
+            @__buffer = buffer
+        end
 
         @metadata = MetaData.new
 
@@ -124,41 +151,12 @@ module ModelKit::Types
 	    end
         end
 
-	# Returns a PointerType object which points to +self+. Note that
-	# to_ptr.deference == self
-        def to_ptr
-            pointer = self.class.to_ptr.wrap(@ptr.to_ptr)
-	    pointer.instance_variable_set(:@points_to, self)
-	    pointer
-        end
-	
-	def to_s # :nodoc:
-	    if respond_to?(:to_str)
-		to_str
-	    elsif ! (ruby_value = to_ruby).eql?(self)
-		ruby_value.to_s
-	    else
-                raw_to_s
-	    end
-	end
-
-        def raw_to_s
-            "#<#{self.class.name}: 0x#{address.to_s(16)} ptr=0x#{@ptr.zone_address.to_s(16)}>"
-        end
-
-	def pretty_print(pp) # :nodoc:
-	    pp.text to_s
-	end
-
-        # Get the memory pointer for self
-        #
-        # @return [MemoryZone]
-        def to_memory_ptr; @ptr end
-
-	def is_a?(typename); self.class.is_a?(typename) end
-
         def inspect
-            raw_to_s + ": " + to_simple_value.inspect
+            to_s
+        end
+
+        def to_s
+            "#<#{self.class}: buffer=0x#{__buffer.object_id.to_s(16)} size=#{__buffer.size}>"
         end
 
         # Returns a representation of this type only into simple Ruby values,
