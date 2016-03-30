@@ -130,8 +130,10 @@ module ModelKit::Types
 
             describe "#pretty_print" do
                 it "does not raise" do
-                    compound_t.add 'f', field_t, offset: 10
-                    PP.pp(compound_t, StringIO.new)
+                    field = compound_t.add 'f', field_t, offset: 10
+                    field.metadata.set('doc', 'documentation string')
+                    pp = PP.new('')
+                    compound_t.pretty_print(pp, verbose: true)
                 end
             end
 

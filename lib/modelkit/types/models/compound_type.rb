@@ -311,7 +311,7 @@ module ModelKit::Types
                 end
             end
 
-            def pretty_print(pp, verbose = false) # :nodoc:
+            def pretty_print(pp, verbose: false) # :nodoc:
                 super(pp)
                 pp.text ' '
                 pretty_print_common(pp) do |field|
@@ -327,7 +327,7 @@ module ModelKit::Types
                         pp.text " <"
                     end
                     pp.nest(2) do
-                        field.type.pretty_print(pp, false)
+                        field.type.pretty_print(pp, verbose: false)
                     end
                     pp.text '>'
                 end

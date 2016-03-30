@@ -114,7 +114,7 @@ module ModelKit::Types
                 info
             end
 
-            def pretty_print(pp, verbose = false) # :nodoc:
+            def pretty_print(pp, verbose: false) # :nodoc:
                 super
 		pp.text '{'
                 pp.nest(2) do
