@@ -7,6 +7,8 @@ require './test/test_specialization_manager'
 require './test/test_typestore'
 require './test/suite_models'
 require './test/suite_io'
+require './test/suite_cxx'
+
 require './test/test_type'
 require './test/test_numeric_type'
 

@@ -50,7 +50,7 @@ module ModelKit::Types
                         type = registry.create_alias(typename, registry.build(element.attributes['source']))
                         next
                     else
-                        raise Invalid, "don't know about the element #{element.name}"
+                        raise ImportError, "don't know about the element #{element.name}"
                     end
 
                     load_metadata(element, type.metadata)

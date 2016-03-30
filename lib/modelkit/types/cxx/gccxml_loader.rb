@@ -103,7 +103,7 @@ module ModelKit::Types
                 lines.shift
                 root_tag = lines.shift
                 if root_tag !~ /<GCC_XML/
-                    raise RuntimeError, "the provided XML input does not look like a GCCXML output (expected a root GCC_XML tag but got #{root_tag.chomp})"
+                    raise ImportError, "the provided XML input does not look like a GCCXML output (expected a root GCC_XML tag but got #{root_tag.chomp})"
                 end
 
                 lines.each do |l|

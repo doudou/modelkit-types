@@ -24,6 +24,17 @@ module ModelKit::Types
                 test_t = import_type '/test', '<typelib><null name="/test" /></typelib>'
                 assert test_t.null?
             end
+
+            it "raises ImportError when finding an unknown tag" do
+                assert_raises(ImportError) do
+                    import_type '/test', '<typelib><unknown name="/bla" /></typelib>'
+                end
+            end
+
+            it "only considers the CDATA tags contents when importing metadata" do
+                test_t = import_type '/test', '<typelib><numeric name="/test" size="10">\n<metadata key="test">\n     <![CDATA[value]]></metadata></numeric></typelib>'
+                assert_equal ['value'], test_t.metadata.get('test').to_a
+            end
         end
     end
 end

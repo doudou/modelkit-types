@@ -2,8 +2,6 @@ module ModelKit::Types
     class NotFound < ArgumentError; end
     class FieldNotFound < NotFound; end
 
-    class InvalidTypeNameError < ArgumentError; end
-
     class UnknownFileTypeError < ArgumentError; end
     class DuplicateTypeNameError < ArgumentError; end
     class InvalidTypeNameError < ArgumentError; end
@@ -38,6 +36,8 @@ module ModelKit::Types
 
     class DuplicateFieldError < RuntimeError; end
 
+    # Exceptions raised when a failure happened during import
+    class ImportError < RuntimeError; end
 
     # Base class for all errors related to trying to merge registries that
     # cannot be merged together
