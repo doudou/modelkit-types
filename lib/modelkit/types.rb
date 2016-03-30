@@ -50,10 +50,6 @@ module ModelKit::Types
     extend Logger::Root('ModelKit::Types', Logger::WARN)
 
     class << self
-	# If true (the default), ModelKit::Types will load its type plugins. Otherwise,
-        # it will not
-        attr_predicate :load_plugins, true
-
         # Controls whether ModelKit::Types should issue warnings when helper methods
         # (such as the field accessor methods in
         # {Typelib::Models::CompoundType}) cannot be defined because of clashes
@@ -65,7 +61,6 @@ module ModelKit::Types
         # Whether the local architecture is big endian
         attr_predicate :big_endian?
     end
-    @load_plugins = true
     @warn_about_helper_method_clashes = true
     @big_endian = ([1].pack("N") == [1].pack("I"))
 
@@ -294,44 +289,8 @@ module ModelKit::Types
         end
     end
 
-    def self.filter_methods_that_should_not_be_defined(on, reference_class, names, allowed_overloadings, msg_name, with_raw)
-        names.find_all do |n|
-        end
-    end
-
-    def self.define_method_if_possible(on, reference_class, name, allowed_overloadings = [], msg_name = nil, &block)
-        if !reference_class.method_defined?(name) || allowed_overloadings.include?(name)
-            on.send(:define_method, name, &block)
-            true
-        elsif warn_about_helper_method_clashes?
-            msg_name ||= "instances of #{reference_class.name}"
-            ModelKit::Types.warn "NOT defining #{name} on #{msg_name} as it would overload a necessary method"
-            false
-        end
-    end
-
     # Set of classes that have a #dup method but on which dup is forbidden
     DUP_FORBIDDEN = [TrueClass, FalseClass, Fixnum, Float, Symbol]
-
-    def self.load_plugins
-        if !ENV['TYPESTORE_RUBY_PLUGIN_PATH'] || (@@typestore_plugin_path == ENV['TYPESTORE_RUBY_PLUGIN_PATH'])
-            return
-        end
-
-        ENV['TYPESTORE_RUBY_PLUGIN_PATH'].split(':').each do |dir|
-            specific_file = File.join(dir, "typestore_plugin.rb")
-            if File.exists?(specific_file)
-                require specific_file
-            else
-                Dir.glob(File.join(dir, '*.rb')) do |file|
-                    require file
-                end
-            end
-        end
-
-        @@typestore_plugin_path = ENV['TYPESTORE_RUBY_PLUGIN_PATH'].dup
-    end
-    @@typestore_plugin_path = nil
 end
 
 # Type models
@@ -368,57 +327,3 @@ require 'modelkit/types/registry_export'
 require 'modelkit/types/io/xml_exporter'
 require 'modelkit/types/io/xml_importer'
 
-module ModelKit::Types
-    # Proper copy of a value to another. +to+ and +from+ do not have to be from the
-    # same registry, as long as the types can be casted into each other
-    #
-    # @return [Type] the target value
-    def self.copy(to, from)
-        if to.invalidated?
-            raise TypeError, "cannot copy, the target has been invalidated"
-        elsif from.invalidated?
-            raise TypeError, "cannot copy, the source has been invalidated"
-        end
-
-        if to.respond_to?(:invalidate_changes_from_converted_types)
-            to.invalidate_changes_from_converted_types
-        end
-        if from.respond_to?(:apply_changes_from_converted_types)
-            from.apply_changes_from_converted_types
-        end
-
-        to.allocating_operation do
-            do_copy(to, from)
-        end
-    end
-
-    def self.compare(a, b)
-        if a.respond_to?(:apply_changes_from_converted_types)
-            a.apply_changes_from_converted_types
-        end
-        if b.respond_to?(:apply_changes_from_converted_types)
-            b.apply_changes_from_converted_types
-        end
-        a.to_byte_array == b.to_byte_array
-    end
-
-    def self.load_plugins
-        if !ENV['TYPELIB_RUBY_PLUGIN_PATH'] || (@@typelib_plugin_path == ENV['TYPELIB_RUBY_PLUGIN_PATH'])
-            return
-        end
-
-        ENV['TYPELIB_RUBY_PLUGIN_PATH'].split(':').each do |dir|
-            specific_file = File.join(dir, "typelib_plugin.rb")
-            if File.exists?(specific_file)
-                require specific_file
-            else
-                Dir.glob(File.join(dir, '*.rb')) do |file|
-                    require file
-                end
-            end
-        end
-
-        @@typelib_plugin_path = ENV['TYPELIB_RUBY_PLUGIN_PATH'].dup
-    end
-    @@typelib_plugin_path = nil
-end

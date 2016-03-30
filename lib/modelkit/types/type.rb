@@ -62,60 +62,7 @@ module ModelKit::Types
 	end
         alias clone dup
 
-        # Reinitializes this value to match marshalled data
-        #
-        # @param [String] string the buffer with marshalled data
-        def from_buffer(string, **options)
-            from_buffer_direct(string, *Type.validate_layout_options(**options))
-        end
-
-        # "Raw" version of {#from_buffer}
-        #
-        # This is a version of #from_buffer without named parameters. It is
-        # provided mainly for libraries that are unmarshalling a lot of
-        # modelkit/types samples, to remove the overhead of option validation
-        def from_buffer_direct(string, accept_pointers = false, accept_opaques = false, merge_skip_copy = true, remove_trailing_skips = true)
-            allocating_operation do
-                do_from_buffer(string, 
-                               accept_pointers,
-                               accept_opaques,
-                               merge_skip_copy,
-                               remove_trailing_skips)
-            end
-            self
-        end
-
         # Returns a string whose content is a marshalled representation of the memory
-        # hold by +obj+
-        #
-        # @example marshalling and unmarshalling a value. {Type.from_buffer} can
-        #   create the value back from the marshalled data. If non-default
-        #   options are given to {#to_byte_array}, the same options must be used
-        #   in from_buffer.
-        #
-        #   marshalled_data = result.to_byte_array
-        #   value = my_registry.get('/base/Type').from_buffer(marshalled_data)
-        # 
-        # @option options [Boolean] accept_pointers (false) whether pointers, when
-        #   present, should cause an exception to be raised or simply
-        #   ignored
-        # @option options [Boolean] accept_opaques (false) whether opaques, when
-        #   present, should cause an exception to be raised or simply
-        #   ignored
-        # @option options [Boolean] merge_skip_copy (true) whether padding
-        #   bytes should be marshalled as well when adjacent to non-padding
-        #   bytes, to reduce CPU load at the expense of I/O. When set to
-        #   false, padding bytes are removed completely.
-        # @option options [Boolean] remove_trailing_skips (true) whether
-        #   padding bytes at the end of the value should be marshalled or
-        #   not.
-        def to_byte_array(**options)
-            do_byte_array(**Type.validate_layout_options(options))
-        end
-
-        def typestore_initialize
-        end
-
         # hold by self
         def to_byte_array
             __buffer.dup

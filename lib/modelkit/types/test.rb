@@ -22,7 +22,6 @@ if ENV['TEST_DEBUG'] == '1'
 end
 
 require 'modelkit/types'
-ModelKit::Types.load_plugins = false
 
 if ENV['TEST_ENABLE_PRY'] != '0'
     begin
