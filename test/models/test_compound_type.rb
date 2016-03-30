@@ -29,6 +29,41 @@ module ModelKit::Types
                     field_t = ModelKit::Types::Type.new_submodel registry: Registry.new
                     assert_raises(NotFromThisRegistryError) { compound_t.add 'f0', field_t }
                 end
+                it "does not set #fixed_buffer_size to false if the field is of fixed size" do
+                    compound_t.add 'f0', field_t
+                    assert compound_t.fixed_buffer_size?
+                end
+                it "does not reset #fixed_buffer_size once it is false" do
+                    flexmock(field_t).should_receive(:fixed_buffer_size?).and_return(false)
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', ModelKit::Types::Type.new_submodel
+                    assert !compound_t.fixed_buffer_size?
+                end
+                it "sets #fixed_buffer_size to false if the field is of variable size" do
+                    flexmock(field_t).should_receive(:fixed_buffer_size?).and_return(false)
+                    compound_t.add 'f0', field_t
+                    assert !compound_t.fixed_buffer_size?
+                end
+                it "sets #contains_opaques if the new field is an opaque" do
+                    flexmock(field_t).should_receive(:opaque?).and_return(true)
+                    compound_t.add 'f0', field_t
+                    assert compound_t.contains_opaques?
+                end
+                it "sets #contains_opaques if the new field contains opaques" do
+                    flexmock(field_t).should_receive(:contains_opaques?).and_return(true)
+                    compound_t.add 'f0', field_t
+                    assert compound_t.contains_opaques?
+                end
+                it "does not set #contains_opaques? for non-opaque fields" do
+                    compound_t.add 'f0', field_t
+                    assert !compound_t.contains_opaques?
+                end
+                it "does not reset #contains_opaques? once it is set" do
+                    flexmock(field_t).should_receive(:contains_opaques?).and_return(true)
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', ModelKit::Types::Type.new_submodel
+                    assert compound_t.contains_opaques?
+                end
             end
 
             describe "#empty?" do

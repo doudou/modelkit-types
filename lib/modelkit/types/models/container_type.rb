@@ -26,6 +26,8 @@ module ModelKit::Types
             def setup_submodel(submodel, random_access: false, deference: nil, registry: self.registry, typename: nil, size: 0, opaque: false, null: false)
                 super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)
 
+                submodel.fixed_buffer_size = false
+
                 if random_access
                     submodel.include RandomAccessContainer
                 end

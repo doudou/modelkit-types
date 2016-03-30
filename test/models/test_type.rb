@@ -29,6 +29,9 @@ module ModelKit::Types
                     assert_equal false, ModelKit::Types::Type.new_submodel(opaque: false).contains_opaques?
                     assert_equal true, ModelKit::Types::Type.new_submodel(opaque: true).contains_opaques?
                 end
+                it "sets fixed_buffer_size? by default" do
+                    assert ModelKit::Types::Type.new_submodel.fixed_buffer_size?
+                end
             end
             describe "#basename" do
                 it "calls ModelKit::Types.basename to extract the type's basename" do

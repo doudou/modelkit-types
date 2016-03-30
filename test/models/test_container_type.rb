@@ -3,6 +3,14 @@ require 'modelkit/types/test'
 module ModelKit::Types
     module Models
         describe ContainerType do
+            describe "#new_submodel" do
+                it "sets fixed_buffer_size to false" do
+                    element_t = ModelKit::Types::Type.new_submodel
+                    container_model = ModelKit::Types::ContainerType.new_submodel(typename: '/std/vector')
+                    container_t = container_model.new_submodel(typename: 'container', deference: element_t)
+                    assert !container_t.fixed_buffer_size?
+                end
+            end
             describe "#to_h" do
                 attr_reader :container_t, :element_t
                 before do

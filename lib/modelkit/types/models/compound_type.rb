@@ -141,6 +141,7 @@ module ModelKit::Types
                 field = Field.new(self, name, type, offset: offset)
                 fields[name] = field
                 self.contains_opaques = self.contains_opaques? || type.contains_opaques? || type.opaque?
+                self.fixed_buffer_size = self.fixed_buffer_size? && type.fixed_buffer_size?
                 self.contains_converted_types = self.contains_converted_types? || type.contains_converted_types? || type.needs_convertion_to_ruby?
                 if can_define_field_accessor_methods?(CompoundType, name)
                     define_raw_field_accessor_methods(name)

@@ -37,6 +37,18 @@ module ModelKit::Types
                     t  = ModelKit::Types::IndirectType.new_submodel(deference: t0)
                     assert t.contains_converted_types?
                 end
+                it "sets fixed_buffer_size? to true if the deference'd type has a fixed buffer size" do
+                    t0 = ModelKit::Types::Type.new_submodel(opaque: true)
+                    flexmock(t0).should_receive(:fixed_buffer_size?).and_return(true)
+                    t  = ModelKit::Types::IndirectType.new_submodel(deference: t0)
+                    assert t.fixed_buffer_size?
+                end
+                it "sets fixed_buffer_size? to false if the deference'd type does not have a fixed buffer size" do
+                    t0 = ModelKit::Types::Type.new_submodel(opaque: true)
+                    flexmock(t0).should_receive(:fixed_buffer_size?).and_return(false)
+                    t  = ModelKit::Types::IndirectType.new_submodel(deference: t0)
+                    assert !t.fixed_buffer_size?
+                end
             end
 
             describe "#validate_merge" do

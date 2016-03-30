@@ -28,8 +28,12 @@ module ModelKit::Types
             # itself
             attr_predicate :contains_opaques?, true
 
-            # Whether this type depends on types that have convertions to ruby
-            attr_predicate :contains_converted_types?, true
+            # Whether the in-buffer size of a value of this type depends on the
+            # content in the buffer (false) or not (true).
+            #
+            # In practice, this is false for containers and values that are
+            # composed of containers
+            attr_predicate :fixed_buffer_size?, true
 
             # @return [Integer] the size in bytes when stored in buffers
             attr_accessor :size
@@ -239,6 +243,7 @@ module ModelKit::Types
                 submodel.null = null
                 submodel.opaque = opaque
                 submodel.instance_variable_set(:@metadata, metadata.dup)
+                submodel.fixed_buffer_size = true
 
                 if registry
                     registry.specialization_manager.apply(submodel)
