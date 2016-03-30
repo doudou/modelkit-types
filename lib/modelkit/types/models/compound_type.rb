@@ -67,10 +67,10 @@ module ModelKit::Types
                 end
             end
 
-	    # Called by the extension to initialize the subclass
-	    # For each field, it creates getters and setters on 
-	    # the object, and a getter in the singleton class 
-	    # which returns the field type
+            # Called by the extension to initialize the subclass
+            # For each field, it creates getters and setters on 
+            # the object, and a getter in the singleton class 
+            # which returns the field type
             def setup_submodel(submodel, registry: self.registry, typename: nil, size: 0, opaque: false, null: false, &block)
                 super
 
@@ -106,10 +106,10 @@ module ModelKit::Types
             # Tests whether modelkit/types should define some accessor methods for
             # the given field on self
             def can_define_field_accessor_methods?(reference, name,
-                                     message: "instances of #{self.name}",
-                                     allowed_overloadings: Models::Type::ALLOWED_OVERLOADINGS,
-                                     with_raw: true,
-                                     silent: !warn_about_helper_method_clashes?)
+                                                   message: "instances of #{self.name}",
+                                                   allowed_overloadings: Models::Type::ALLOWED_OVERLOADINGS,
+                                                   with_raw: true,
+                                                   silent: !warn_about_helper_method_clashes?)
 
                 candidates = [name, "#{name}="]
                 if with_raw
@@ -230,7 +230,7 @@ module ModelKit::Types
                 fields.each_value(&block)
             end
 
-	    # @deprecated use {#each} instead
+            # @deprecated use {#each} instead
             #
             # Iterates on all fields
             #
@@ -239,7 +239,7 @@ module ModelKit::Types
             def each_field
                 return enum_for(__method__) if !block_given?
                 fields.each_value { |field| yield(field.name, field.type) } 
-	    end
+            end
 
             # Returns the description of a type using only simple ruby objects
             # (Hash, Array, Numeric and String).
@@ -301,20 +301,20 @@ module ModelKit::Types
                 self
             end
 
-	    def pretty_print_common(pp) # :nodoc:
+            def pretty_print_common(pp) # :nodoc:
                 pp.group(2, '{', '}') do
-		    pp.breakable
-                    
+                    pp.breakable
+
                     pp.seplist(each.to_a) do |field|
-			yield(*field)
+                        yield(*field)
                     end
                 end
-	    end
+            end
 
             def pretty_print(pp, verbose = false) # :nodoc:
-		super(pp)
-		pp.text ' '
-		pretty_print_common(pp) do |field|
+                super(pp)
+                pp.text ' '
+                pretty_print_common(pp) do |field|
                     if doc = field.metadata.get('doc').first
                         if pp_doc(pp, doc)
                             pp.breakable
@@ -326,11 +326,11 @@ module ModelKit::Types
                     else
                         pp.text " <"
                     end
-		    pp.nest(2) do
+                    pp.nest(2) do
                         field.type.pretty_print(pp, false)
-		    end
-		    pp.text '>'
-		end
+                    end
+                    pp.text '>'
+                end
             end
 
             # Apply a set of type-to-size mappings
