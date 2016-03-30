@@ -607,7 +607,7 @@ module ModelKit::Types
             def resolve_typedef_definition(xmlnode, typelib_name)
                 if !(pointed_to_type = resolve_type_id(xmlnode['type']))
                     if name = ignored_type_name(xmlnode['type'])
-                        return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to #{ignored_type_name} which is ignored", name: typelib_name)
+                        return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to #{name} which is ignored", name: typelib_name)
                     else
                         return ignore(xmlnode, "cannot create the #{typelib_name} typedef, as it points to an anonymous type", name: typelib_name)
                     end
