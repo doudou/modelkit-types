@@ -27,14 +27,6 @@ module ModelKit::Types
                 assert_equal ["/", "vector</wrappers/Matrix</double,3,1>>"], CXX::GCCXMLLoader.split_first_namespace("/vector</wrappers/Matrix</double,3,1>>")
                 assert_equal ["/nested_types/", "Outside/Inside"], CXX::GCCXMLLoader.split_first_namespace("/nested_types/Outside/Inside")
             end
-
-            def test_split_last_namespace
-                assert_equal ["/NS2/NS3/", 'Test'], CXX::GCCXMLLoader.split_last_namespace("/NS2/NS3/Test")
-                assert_equal ["/wrappers/Matrix</double,3,1>/", 'Scalar'], CXX::GCCXMLLoader.split_last_namespace("/wrappers/Matrix</double,3,1>/Scalar")
-                assert_equal ["/wrappers/Matrix</double,3,1>/Gaussian</double,3>/", 'Scalar'], CXX::GCCXMLLoader.split_last_namespace("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar")
-                assert_equal ["/std/", "vector</wrappers/Matrix</double,3,1>>"], CXX::GCCXMLLoader.split_last_namespace("/std/vector</wrappers/Matrix</double,3,1>>")
-                assert_equal ["/", "vector</wrappers/Matrix</double,3,1>>"], CXX::GCCXMLLoader.split_last_namespace("/vector</wrappers/Matrix</double,3,1>>")
-            end
         end
     end
 end

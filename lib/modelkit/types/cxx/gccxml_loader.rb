@@ -273,37 +273,6 @@ module ModelKit::Types
                 end
             end
 
-            def self.split_last_namespace(name)
-                basename = ""
-                typename = name.reverse
-                level = 0
-                while true
-                    next_marker = (typename =~ /[\/<>]/)
-                    if !next_marker
-                        basename << typename
-                        typename = ""
-                        break
-                    end
-
-                    basename << typename[0, next_marker]
-                    typename = typename[next_marker..-1]
-
-                    found_char = typename[0, 1]
-                    if found_char == '/'
-                        break if level == 0
-                    elsif found_char == '<'
-                        level += 1
-                    elsif found_char == '>'
-                        level -= 1
-                    end
-
-                    basename << found_char
-                    typename = typename[1..-1]
-                end
-
-                return typename.reverse, basename.reverse
-            end
-
             NAMESPACE_NODE_TYPES = %w{Namespace Struct Class}
 
             # Given a full ModelKit::Types type name, returns a [name, id] pair where +name+
