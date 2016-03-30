@@ -297,6 +297,11 @@ module ModelKit::Types
                     @field_t = ModelKit::Types::Type.new_submodel
                 end
 
+                it 'returns true if given itself' do
+                    subject.add 'f', field_t, offset: 0
+                    assert subject.casts_to?(subject)
+                end
+
                 it "returns true if given a type towards which its first field can cast to" do
                     subject.add 'f', field_t, offset: 0
                     test_t = flexmock
