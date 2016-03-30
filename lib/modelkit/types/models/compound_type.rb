@@ -97,15 +97,6 @@ module ModelKit::Types
             #   compound type
             attr_reader :fields
 
-            # Check if a value of this type can be used in place of a value of
-            # the given type
-            #
-            # In case of compound types, we check that either self, or the first
-            # element field is of the requested type
-	    def is_a?(type)
-                super || (!fields.empty? && fields.each_value.find { |f| f.offset == 0 && f.type.is_a?(type) })
-	    end
-
             # Controls whether {#can_overload_method} should warn if some
             # overloading are not allowed, or be silent about it
             #
