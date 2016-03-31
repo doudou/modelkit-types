@@ -89,6 +89,45 @@ module ModelKit::Types
                     t0.merge(t1)
                 end
             end
+            describe 'dependency management' do
+                subject { ModelKit::Types::Type.new_submodel }
+                it "returns an empty recursive dependency set" do
+                    assert_equal Set.new, subject.recursive_dependencies
+                end
+                it "adds direct dependencies through #add_direct_dependency" do
+                    subject.add_direct_dependency(t = ModelKit::Types::Type.new_submodel)
+                    assert_equal Set[t], subject.direct_dependencies
+                end
+                it "invalidates the cached recursive_dependencies set when a new direct dependency is added" do
+                    subject.direct_dependencies
+                    subject.add_direct_dependency(t = ModelKit::Types::Type.new_submodel)
+                    assert_equal Set[t], subject.direct_dependencies
+                end
+                it "recursively discovers dependencies in #recursive_dependencies" do
+                    t0, t1, *types = (0..7).map { ModelKit::Types::Type.new_submodel }
+                    t0.add_direct_dependency types[0]
+                    t0.add_direct_dependency types[1]
+                    t0.add_direct_dependency types[2]
+                    t1.add_direct_dependency types[3]
+                    t1.add_direct_dependency types[4]
+                    t1.add_direct_dependency types[5]
+                    subject.add_direct_dependency t0
+                    subject.add_direct_dependency t1
+                    assert_equal Set[t0, t1, *types], subject.recursive_dependencies
+                end
+                it "discovers the dependencies of a given type only once" do
+                    t0, t1, t2 = (0..2).map { ModelKit::Types::Type.new_submodel }
+                    t0.add_direct_dependency t2
+                    t1.add_direct_dependency t2
+                    subject.add_direct_dependency t0
+                    subject.add_direct_dependency t1
+                    flexmock(t2).should_receive(:direct_dependencies).once.and_return(Set.new)
+                    subject.recursive_dependencies
+                end
+                it "caches the result" do
+                    assert_same subject.recursive_dependencies, subject.recursive_dependencies
+                end
+            end
             describe "#validate_merge" do
                 it "passes for equivalent types" do
                     t0 = ModelKit::Types::Type.new_submodel(typename: 't', size: 10, opaque: false, null: true)

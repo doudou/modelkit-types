@@ -139,6 +139,8 @@ module ModelKit::Types
             # @see recursive_dependencies
             attr_reader :direct_dependencies
 
+            # Add type to the list of direct dependencies for this type, and
+            # invalidate the cached value for {#recursive_dependencies}
             def add_direct_dependency(type)
                 direct_dependencies << type
                 @recursive_dependencies = nil
@@ -147,21 +149,21 @@ module ModelKit::Types
             # Returns the set of all types that are needed to define self,
             # excluding self
             #
-            # @param [Set<Type>] set if given, the new types will be added to
-            #   this set. Otherwise, a new set is created. In both cases, the set is
-            #   returned
             # @return [Set<Type>]
             def recursive_dependencies
-                if !@recursive_dependencies
-                    @recursive_dependencies = Set.new
-                    direct_dependencies.each do |t|
-                        if !@recursive_dependencies.include?(t)
-                            @recursive_dependencies << t
-                            @recursive_dependencies.merge(t.recursive_dependencies)
-                        end
-                    end
+                if @recursive_dependencies
+                    return @recursive_dependencies
                 end
-                @recursive_dependencies
+
+                recursive_dependencies = Set.new
+                queue = direct_dependencies.to_a
+                while !queue.empty?
+                    t = queue.shift
+                    next if recursive_dependencies.include?(t)
+                    recursive_dependencies << t
+                    queue.concat(t.direct_dependencies.to_a)
+                end
+                @recursive_dependencies = recursive_dependencies
             end
 
             # Sets the containing registry for an unregisterd type
