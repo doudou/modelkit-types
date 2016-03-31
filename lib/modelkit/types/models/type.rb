@@ -192,39 +192,6 @@ module ModelKit::Types
                 submodel.fixed_buffer_size = true
             end
 
-            def validate_layout_options(accept_opaques: false, accept_pointers: false,
-                                        merge_skip_copy: true, remove_trailing_skips: true)
-                return accept_opaques, accept_pointers, merge_skip_copy, remove_trailing_skips
-            end
-
-            # Returns a representation of the MemoryLayout for this type.
-            #
-            # The generated layout can be changed by setting one or more
-            # following options:
-            #
-            # accept_opaques::
-            #   accept types with opaques. Fields/values that are opaques are
-            #   simply skipped. This is false by default: types with opaques are
-            #   generating an error.
-            # accept_pointers::
-            #   accept types with pointers. Fields/values that are pointer are
-            #   simply skipped. This is false by default: types with pointers
-            #   are generating an error.
-            # merge_skip_copy::
-            #   in a layout, zones that contain data are copied, while zones
-            #   that are there because of C++ padding rules are skipped. If this
-            #   is true (the default), consecutive copy/skips are merged into
-            #   one bigger copy, as doine one big memcpy() is probably more
-            #   efficient than skipping the few padding bytes. Set to false to
-            #   turn that off.
-            # remove_trailing_skips::
-            #   because of C/C++ padding rules, structures might contain
-            #   trailing bytes that don't contain information. If this option is
-            #   true (the default), these bytes are removed from the layout.
-            def memory_layout(**options)
-                do_memory_layout(*validate_layout_options(**options))
-            end
-
 	    # Returns the namespace part of the type's name.  If +separator+ is
 	    # given, the namespace components are separated by it, otherwise,
 	    # the default of ModelKit::Types::NAMESPACE_SEPARATOR is used. If nil is
@@ -264,9 +231,6 @@ module ModelKit::Types
 
 	    def to_s; "#<#{superclass.name}: #{name}>" end
             def inspect; to_s end
-
-	    # Returns the pointer-to-self type
-            def to_ptr; registry.build(name + "*") end
 
             # Given a markdown-formatted string, return what should be displayed
             # as text
@@ -362,34 +326,6 @@ module ModelKit::Types
             # in the Type submodels.
             def validate_buffer(buffer)
             end
-
-            # Creates a ModelKit::Types wrapper that gives access to the memory
-            # pointed-to by the given FFI pointer
-            #
-            # The returned ModelKit::Types object will not care about deallocating the
-            # memory
-            #
-            # @param [FFI::Pointer] ffi_ptr the memory address at which the
-            #   value is
-            # @return [Type] the ModelKit::Types object that gives access to the data
-            #   pointed-to by ffi_ptr
-            def from_ffi(ffi_ptr)
-                raise NotImplementedError
-                from_address(ffi_ptr.address)
-            end
-
-	    # Check if this type is a +typename+. If +typename+
-	    # is a string or a regexp, we match it against the type
-	    # name. Otherwise we call Class#<
-	    def is_a?(typename)
-		if typename.respond_to?(:to_str)
-		    typename.to_str === self.name
-		elsif Regexp === typename
-		    typename === self.name
-		else
-		    self <= typename
-		end
-	    end
 
             # @return [Registry] a registry that contains only the types needed
             #   to define this type
