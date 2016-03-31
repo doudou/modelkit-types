@@ -71,6 +71,10 @@ module ModelKit::Types
                     compound_t.add 'f1', ModelKit::Types::Type.new_submodel
                     assert compound_t.contains_opaques?
                 end
+                it "registers the field type as a direct dependency" do
+                    flexmock(compound_t).should_receive(:add_direct_dependency).with(field_t).once
+                    compound_t.add 'f', field_t
+                end
             end
 
             describe "#empty?" do
