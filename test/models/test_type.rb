@@ -9,34 +9,49 @@ module ModelKit::Types
             it "has a metadata object" do
                 assert ModelKit::Types::Type.metadata
             end
+
+            subject { ModelKit::Types::Type.new_submodel }
+
             describe "#new_submodel" do
                 it "inherits the registry by default" do
-                    assert_same ModelKit::Types::Type.new_submodel.registry, ModelKit::Types::Type.registry
+                    subject.registry = Registry.new
+                    assert_same subject.new_submodel.registry, subject.registry
                 end
-                it "overrides the default registry" do
+                it "overrides the parent's registry" do
+                    subject.registry = reg = Registry.new
                     registry = Registry.new
-                    assert_same registry, ModelKit::Types::Type.new_submodel(registry: registry).registry
+                    assert_same registry, subject.new_submodel(registry: registry).registry
                 end
                 it "sets #name to the provided type name" do
-                    assert_equal '/Test', ModelKit::Types::Type.new_submodel(typename: '/Test').name
+                    assert_equal '/Test', subject.new_submodel(typename: '/Test').name
                 end
                 it "sets #size to the provided type size" do
-                    assert_equal 10, ModelKit::Types::Type.new_submodel(size: 10).size
+                    assert_equal 10, subject.new_submodel(size: 10).size
                 end
                 it "sets #null? to the provided null option" do
-                    assert_equal false, ModelKit::Types::Type.new_submodel(null: false).null?
-                    assert_equal true, ModelKit::Types::Type.new_submodel(null: true).null?
+                    assert_equal false, subject.new_submodel(null: false).null?
+                    assert_equal true, subject.new_submodel(null: true).null?
                 end
                 it "sets #opaque? to the provided opaque option" do
-                    assert_equal false, ModelKit::Types::Type.new_submodel(opaque: false).opaque?
-                    assert_equal true, ModelKit::Types::Type.new_submodel(opaque: true).opaque?
+                    assert_equal false, subject.new_submodel(opaque: false).opaque?
+                    assert_equal true, subject.new_submodel(opaque: true).opaque?
                 end
                 it "sets #contains_opaques? to true if the type is opaque itself" do
-                    assert_equal false, ModelKit::Types::Type.new_submodel(opaque: false).contains_opaques?
-                    assert_equal true, ModelKit::Types::Type.new_submodel(opaque: true).contains_opaques?
+                    assert_equal false, subject.new_submodel(opaque: false).contains_opaques?
+                    assert_equal true, subject.new_submodel(opaque: true).contains_opaques?
                 end
                 it "sets fixed_buffer_size? by default" do
-                    assert ModelKit::Types::Type.new_submodel.fixed_buffer_size?
+                    assert subject.new_submodel.fixed_buffer_size?
+                end
+            end
+            describe "#registry=" do
+                it "sets the type's registry" do
+                    subject.registry = reg = Registry.new
+                    assert_same reg, subject.registry
+                end
+                it "can be used only once" do
+                    subject.registry = Registry.new
+                    assert_raises(ArgumentError) { subject.registry = Registry.new }
                 end
             end
             describe "#basename" do

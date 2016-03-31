@@ -189,7 +189,7 @@ module ModelKit::Types
             describe "marshalling and unmarshalling" do
                 it "marshals and unmarshals metadata" do
                     f = compound_t.add('f0', field_t, offset: 10)
-                    compound_t.register(Registry.new)
+                    Registry.new.register(compound_t)
                     f.metadata.set('k0', 'v0')
                     new_registry = ModelKit::Types::Registry.from_xml(compound_t.to_xml)
                     assert_equal [['k0', ['v0'].to_set]], new_registry.get('/compound_t').get('f0').metadata.each.to_a

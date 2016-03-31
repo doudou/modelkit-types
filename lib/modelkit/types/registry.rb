@@ -435,16 +435,19 @@ module ModelKit::Types
             attr_reader :type
             # The offset for the next field
             attr_reader :current_size
+            # The registry on which we build this type
+            attr_reader :registry
 
             def initialize(name, registry, **options)
                 @current_size = 0
+                @registry = registry
                 @type = CompoundType.new_submodel(typename: name, registry: registry, **options)
             end
             
             # Create the type on the underlying registry
             def build
                 type.size ||= current_size
-                type.register
+                registry.register(type)
             end
 
             def skip(count)
@@ -602,7 +605,7 @@ module ModelKit::Types
             container_t = container_model.
                 new_submodel(registry: self, typename: typename,
                              deference: element_type, size: size, **options)
-            container_t.register
+            register(container_t)
         end
 
         # Creates a new array type on this registry
@@ -624,24 +627,29 @@ module ModelKit::Types
             ModelKit::Types.validate_typename(typename)
             array_t = ArrayType.new_submodel(deference: element_type, typename: typename, registry: self,
                                    length: length, size: size, **options)
-            array_t.register
+            register(array_t)
         end
 
+        # @api private
+        #
         # Helper class to build new enumeration types
         class EnumBuilder
             # The type being built
             attr_reader :type
             # The value for the next symbol
             attr_reader :current_value
+            # The registry for which we build this enum
+            attr_reader :registry
 
             def initialize(name, registry, **options)
                 @current_value = 0
+                @registry = registry
                 @type = EnumType.new_submodel(typename: name, registry: registry, **options)
             end
             
             # Creates the new enum type on the registry
             def build
-                type.register
+                registry.register(type)
             end
 
             # Add a new symbol to this enum
