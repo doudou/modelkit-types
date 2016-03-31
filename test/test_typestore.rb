@@ -99,6 +99,9 @@ describe ModelKit::Types do
     end
 
     describe ".validate_typename" do
+        it "raises TypeError if the argument is not a string" do
+            assert_raises(TypeError) { ModelKit::Types.validate_typename(nil) }
+        end
         it "raises if alphabetic characters are found as array subscripts" do
             assert_raises(ModelKit::Types::InvalidTypeNameError) { ModelKit::Types.validate_typename("/int[e]") }
         end
