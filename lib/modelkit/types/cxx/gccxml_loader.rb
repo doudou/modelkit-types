@@ -1038,6 +1038,7 @@ module ModelKit::Types
                     gccxml_registry = converter.load(required_files, xml)
                     registry.merge(gccxml_registry)
                 end
+                registry
             end
 
             def self.preprocess(files, castxml: false, include_paths: Array.new, define: Array.new, **options)

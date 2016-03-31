@@ -84,7 +84,7 @@ module ModelKit::Types
                     define_method "test_cxx_common_#{basename}" do |&block|
                         reg = Registry.new
                         if File.file?(opaques)
-                            reg.import(opaques, 'tlb')
+                            reg.import(opaques, kind: 'tlb')
                         end
                         loader.import(file, registry: reg, **importer_options)
 
@@ -138,50 +138,50 @@ module ModelKit::Types
             end
 
             def test_import_virtual_methods
-                reg = Registry.import File.join(cxx_test_dir, 'virtual_methods.h'), 'c', cxx_importer: loader
+                reg = loader.import(File.join(cxx_test_dir, 'virtual_methods.h'))
                 assert !reg.include?('/Class')
             end
 
             def test_import_virtual_inheritance
-                reg = Registry.import File.join(cxx_test_dir, 'virtual_inheritance.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'virtual_inheritance.h')
                 assert reg.include?('/Base')
                 assert !reg.include?('/Derived')
             end
 
             def test_import_private_base_class
-                reg = Registry.import File.join(cxx_test_dir, 'private_base_class.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'private_base_class.h')
                 assert reg.include?('/Base')
                 assert !reg.include?('/Derived')
             end
 
             def test_import_ignored_base_class
-                reg = Registry.import File.join(cxx_test_dir, 'ignored_base_class.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'ignored_base_class.h')
                 assert !reg.include?('/Base')
                 assert !reg.include?('/Derived')
             end
 
             def test_import_template_of_container
-                reg = Registry.import File.join(cxx_test_dir, 'template_of_container.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'template_of_container.h')
                 assert reg.include?('/BaseTemplate</std/vector</float64>>'), "cannot find /BaseTemplate</std/vector</float64>>, vectors in registry: #{reg.map(&:name).grep(/vector/).sort.join(", ")}"
             end
 
             def test_import_documentation_parsing_handles_opening_bracket_and_struct_definition_on_different_lines
-                reg = Registry.import File.join(cxx_test_dir, 'documentation_with_struct_and_opening_bracket_on_different_lines.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'documentation_with_struct_and_opening_bracket_on_different_lines.h')
                 assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
 
             def test_import_documentation_parsing_handles_spaces_between_opening_bracket_and_struct_definition
-                reg = Registry.import File.join(cxx_test_dir, 'documentation_with_space_between_struct_and_opening_bracket.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'documentation_with_space_between_struct_and_opening_bracket.h')
                 assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
 
             def test_import_documentation_parsing_handles_opening_bracket_and_struct_definition_on_the_same_line
-                reg = Registry.import File.join(cxx_test_dir, 'documentation_with_struct_and_opening_bracket_on_the_same_line.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'documentation_with_struct_and_opening_bracket_on_the_same_line.h')
                 assert_equal ["this is a multiline\ndocumentation block"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
 
             def test_import_supports_utf8
-                reg = Registry.import File.join(cxx_test_dir, 'documentation_utf8.h'), 'c', cxx_importer: loader
+                reg = loader.import File.join(cxx_test_dir, 'documentation_utf8.h')
                 assert_equal ["this is a \u9999 multiline with \u1290 unicode characters"], reg.get('/DocumentedType').metadata.get('doc').to_a
             end
         end

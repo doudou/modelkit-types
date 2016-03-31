@@ -44,6 +44,7 @@ module ModelKit::Types
             # current C++ importer setting
             def self.import(path, registry: CXX::Registry.new, cxx_importer: loader, **options)
                 cxx_importer.import(path, registry: registry, **options)
+                registry
             end
 
             def self.preprocess(files, cxx_importer: loader, **options)

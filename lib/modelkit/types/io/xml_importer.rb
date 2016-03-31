@@ -5,13 +5,15 @@ module ModelKit::Types
         class XMLImporter
             class Invalid < RuntimeError; end
 
-            def self.import(path, registry: ModelKit::Types::Registry.new)
+            def self.import(path, registry: Registry.new)
                 new.import(path, registry: registry)
+                registry
             end
 
-            def import(path, registry: ModelKit::Types::Registry.new)
+            def import(path, registry: Registry.new)
                 document = REXML::Document.new(File.read(path))
                 from_xml(document, registry: registry)
+                registry
             end
 
             def from_xml(document, registry: ModelKit::Types::Registry.new)
