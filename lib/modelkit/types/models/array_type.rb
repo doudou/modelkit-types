@@ -24,17 +24,6 @@ module ModelKit::Types
                 super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)
 
                 submodel.length = length
-                convert_from_ruby Array do |value, expected_type|
-                    if value.size != expected_type.length
-                        raise ArgumentError, "expected an array of size #{expected_type.length}, got #{value.size}"
-                    end
-
-                    t = expected_type.new
-                    value.each_with_index do |el, i|
-                        t[i] = el
-                    end
-                    t
-                end
             end
 
             def copy_to(registry, **options)
@@ -75,12 +64,6 @@ module ModelKit::Types
                         deference.to_h_minimal(options)
                     end
                 info
-            end
-
-            # Used by {RubyMappingCustomization} to find out which
-            # specialization blocks apply to self
-            def ruby_convertion_candidates_on(ruby_mappings, name)
-                super + (ruby_mappings.from_array_basename[deference.name] || Array.new)
             end
         end
     end

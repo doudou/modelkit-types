@@ -55,17 +55,6 @@ module ModelKit::Types
             target_type.from_buffer(self.buffer)
         end
 
-        # Called internally to apply any change from a converted value to the
-        # underlying ModelKit::Types value
-        def apply_changes_from_converted_types
-        end
-
-        # Called internally to tell typelib that converted values should be
-        # updated next time from the underlying ModelKit::Types value
-        # underlying ModelKit::Types value
-        def invalidate_changes_from_converted_types
-        end
-
         # Creates a deep copy of this value.
         #
         # It is guaranteed that this value will be referring to a different
@@ -123,32 +112,15 @@ module ModelKit::Types
         #   padding bytes at the end of the value should be marshalled or
         #   not.
         def to_byte_array(**options)
-            apply_changes_from_converted_types
             do_byte_array(**Type.validate_layout_options(options))
         end
 
         def typestore_initialize
         end
 
-        def to_ruby
-            ModelKit::Types.to_ruby(self, self.class)
-        end
-
-	# Check for value equality
-        def ==(other)
-	    # If other is also a type object, we first
-	    # check basic constraints before trying conversion
-	    # to Ruby objects
-            if Type === other
-		return ModelKit::Types.compare(self, other)
-	    else
-                # +other+ is a Ruby type. Try converting +self+ to ruby and
-                # check for equality in Ruby objects
-		if (ruby_value = ModelKit::Types.to_ruby(self)).eql?(self)
-		    return false
-		end
-		other == ruby_value
-	    end
+        # hold by self
+        def to_byte_array
+            __buffer.dup
         end
 
         def inspect
@@ -189,14 +161,6 @@ module ModelKit::Types
         # (see Type#to_simple_value)
         def to_json_value(options = Hash.new)
             to_simple_value(Hash[:special_float_values => :nil].merge(options))
-        end
-
-        def to_ruby
-            @__typestore_converter.to_ruby(self)
-        end
-
-        def from_ruby(object)
-            @__typestore_converter.from_ruby(self, object)
         end
     end
 end

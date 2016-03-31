@@ -149,7 +149,6 @@ module ModelKit::Types
         def <<(value); push(value) end
 
         def pretty_print(pp)
-            apply_changes_from_converted_types
             index = 0
 	    pp.text '['
 	    pp.nest(2) do

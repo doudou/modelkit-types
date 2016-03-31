@@ -43,40 +43,6 @@ module ModelKit::Types
             # @return [Metadata]
             attr_reader :metadata
 
-            # Definition of the unique convertion that should be used to convert
-            # this type into a Ruby object
-            #
-            # The value is [ruby_class, options, block]. It is saved there only
-            # for convenience purposes, as it is not used by ModelKit::Types.to_ruby
-            #
-            # If nil, no convertions are set. ruby_class might be nil if no
-            # class has been specified
-            attr_accessor :convertion_to_ruby
-
-            # Definition of the convertions between Ruby objects to this
-            # ModelKit::Types type. It is used by ModelKit::Types.from_ruby.
-            #
-            # It is a mapping from a Ruby class K to a block which can convert a
-            # value of class K to the corresponding ModelKit::Types value
-            inherited_attribute(:convertion_from_ruby,  :convertions_from_ruby, map: true) { Hash.new }
-
-            # Returns whether one needs to call ModelKit::Types.to_ruby to convert this
-            # type to the type expected by the caller
-            #
-            # @return [Boolean]
-            def needs_convertion_to_ruby?
-                !!convertion_to_ruby
-            end
-
-            # Returns whether one needs to call ModelKit::Types.from_ruby to convert a
-            # value given to the API to something this type can understand
-            #
-            # @return [Boolean]
-            def needs_convertion_from_ruby?
-                each_convertion_from_ruby { return true }
-                false
-            end
-
             # Returns the description of a type using only simple ruby objects
             # (Hash, Array, Numeric and String).
             #
@@ -198,28 +164,6 @@ module ModelKit::Types
                 @recursive_dependencies
             end
 
-            # Extends this type class so that values get automatically converted
-            # to a plain Ruby type more suitable for its manipulation
-            #
-            # @param [Class] to the class into which self will be converted.
-            #   This is here for introspection/documentation reasons
-            # @yield called in the context of a Type instance and must return
-            #   the converted object
-            def convert_to_ruby(to = nil, &block)
-                self.convertion_to_ruby = [to, Hash[block: block]]
-            end
-
-            # Extends this type class to have be able to use the Ruby class +from+
-            # to initialize a value of type +self+
-            def convert_from_ruby(from, &block)
-                convertions_from_ruby[from] = lambda(&block)
-            end
-
-            # Returns an object that can be used to convert to/from ruby
-            def ruby_domain_converter
-                @ruby_domain_converter ||= RubyDomainConverter.build(self)
-            end
-
             # Sets the containing registry for an unregisterd type
             #
             # @raise [NotFromThisRegistryError] if the type is already
@@ -244,10 +188,6 @@ module ModelKit::Types
                 submodel.opaque = opaque
                 submodel.instance_variable_set(:@metadata, metadata.dup)
                 submodel.fixed_buffer_size = true
-
-                if registry
-                    registry.specialization_manager.apply(submodel)
-                end
             end
 
             # Register this type on a registry
@@ -479,16 +419,6 @@ module ModelKit::Types
 
             def initialize_base_class
                 @name = nil
-            end
-
-            def ruby_convertion_candidates_on(ruby_mappings, name: self.name)
-                candidates = (ruby_mappings.from_typename[name] || Array.new)
-                ruby_mappings.from_regexp.each do |matcher, registered|
-                    if matcher === name
-                        candidates.concat(registered)
-                    end
-                end
-                candidates
             end
 
             def apply_resize(typemap)

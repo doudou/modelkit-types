@@ -6,83 +6,14 @@ module ModelKit::Types
     class CompoundType < Type
         extend Models::CompoundType
 
-        convert_from_ruby Hash do |value, expected_type|
-            result = expected_type.new
-            result.set_hash(value)
-            result
-        end
-        convert_from_ruby Array do |value, expected_type|
-            result = expected_type.new
-            result.set_array(value)
-            result
-        end
-
-        module CustomConvertionsHandling
-            def invalidate_changes_from_converted_types
-                super()
-                self.class.converted_fields.each do |field_name|
-                    instance_variable_set("@#{field_name}", nil)
-                    if @fields[field_name]
-                        @fields[field_name].invalidate_changes_from_converted_types
-                    end
-                end
-            end
-
-            def apply_changes_from_converted_types
-                super()
-                self.class.converted_fields.each do |field_name|
-                    value = instance_variable_get("@#{field_name}")
-                    if !value.nil?
-                        if @fields[field_name]
-                            @fields[field_name].apply_changes_from_converted_types
-                        end
-                        set_field(field_name, value)
-                    end
-                end
-            end
-
-            def dup
-                new_value = super()
-                for field_name in self.class.converted_fields
-                    converted_value = instance_variable_get("@#{field_name}")
-                    if !converted_value.nil?
-                        # false, nil,  numbers can't be dup'ed
-                        if !DUP_FORBIDDEN.include?(converted_value.class)
-                            converted_value = converted_value.dup
-                        end
-                        instance_variable_set("@#{field_name}", converted_value)
-                    end
-                end
-                new_value
-            end
-        end
-
-        # Internal method used to initialize a compound from a hash
-        def set_hash(hash) # :nodoc:
-            hash.each do |field_name, field_value|
-                set_field(field_name, field_value)
-            end
-        end
-
-        # Internal method used to initialize a compound from an array. The array
-        # elements are supposed to be given in the field order
-        def set_array(array) # :nodoc:
-            fields = self.class.fields
-            array.each_with_index do |value, i|
-                set_field(fields[i][0], value)
-            end
-        end
-
 	# Initializes this object to the pointer +ptr+, and initializes it
 	# to +init+. Valid values for +init+ are:
 	# * a hash, in which case it is a { field_name => field_value } hash
 	# * an array, in which case the fields are initialized in order
 	# Note that a compound should be either fully initialized or not initialized
-        def typestore_initialize
+        def initialize_subtype
             super
-	    # A hash in which we cache Type objects for each of the structure fields
-	    @fields = Hash.new
-            @field_types = self.class.field_types
+            @__raw_fields = Hash.new
         end
 
         def raw_each_field
@@ -100,7 +31,6 @@ module ModelKit::Types
         end
 
 	def pretty_print(pp) # :nodoc:
-            apply_changes_from_converted_types
 	    self.class.pretty_print_common(pp) do |name, offset, type|
 		pp.text name
 		pp.text "="

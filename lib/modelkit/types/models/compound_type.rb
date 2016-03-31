@@ -142,48 +142,15 @@ module ModelKit::Types
                 fields[name] = field
                 self.contains_opaques = self.contains_opaques? || type.contains_opaques? || type.opaque?
                 self.fixed_buffer_size = self.fixed_buffer_size? && type.fixed_buffer_size?
-                self.contains_converted_types = self.contains_converted_types? || type.contains_converted_types? || type.needs_convertion_to_ruby?
                 if can_define_field_accessor_methods?(CompoundType, name)
-                    define_raw_field_accessor_methods(name)
-                    if type.contains_converted_types?
-                        define_converted_field_accessor_methods(name)
-                    else
-                        define_plain_field_accessor_methods(name)
+                    define_method(name) do
+                        @__fields[name] ||= get(name)
+                    end
+                    define_method("#{name}=") do |value|
+                        set(name, value)
                     end
                 end
                 field
-            end
-
-            def define_raw_field_accessor_methods(name)
-                define_method("raw_#{name}") do
-                    @__typestore_raw_fields[name] ||= raw_get(name)
-                end
-                define_method("raw_#{name}=") do |value|
-                    raw_set(name, value)
-                end
-            end
-
-            def define_plain_field_accessor_methods(name)
-                define_method(name) do
-                    @__typestore_raw_fields[name] ||= raw_get(name)
-                end
-                define_method("#{name}=") do |value|
-                    raw_set(name, value)
-                end
-            end
-
-            def define_converted_field_accessor_methods(name, type, converter)
-                define_method(name) do
-                    (@__typestore_fields[name] ||= converter.to_ruby(raw_get(name)))
-                end
-                define_method("#{name}=") do |value|
-                    if converted_field = @__typestore_fields[name]
-                        converted_field
-                    else
-                        raw_set(name, type_from_ruby[value, type])
-                        @__typestore_fields[name] = value
-                    end
-                end
             end
 
             # Returns true if this compound has no fields

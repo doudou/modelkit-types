@@ -337,9 +337,9 @@ end
 # Type models
 require 'metaruby'
 require 'modelkit/types/exceptions'
-require 'modelkit/types/ruby_specialization_mapping'
-require 'modelkit/types/type_specialization_module'
-require 'modelkit/types/specialization_manager'
+# require 'modelkit/types/ruby_specialization_mapping'
+# require 'modelkit/types/type_specialization_module'
+# require 'modelkit/types/specialization_manager'
 require 'modelkit/types/metadata'
 require 'modelkit/types/deep_copy_array'
 
@@ -368,39 +368,7 @@ require 'modelkit/types/registry_export'
 require 'modelkit/types/io/xml_exporter'
 require 'modelkit/types/io/xml_importer'
 
-class Class
-    def to_ruby(value)
-        value
-    end
-end
-
 module ModelKit::Types
-    def self.specialization_manager
-        @specialization_manager ||= SpecializationManager.new
-    end
-
-    def self.specialize_model(*args, **options, &block)
-        specialization_manager.specialize(*args, **options, &block)
-    end
-
-    def self.specialize(*args, **options, &block)
-        specialization_manager.specialize(*args, **options, &block)
-    end
-
-    def self.convert_to_ruby(*args, **options, &block)
-        specialization_manager.specialize(*args, **options, &block)
-    end
-
-    def self.convert_from_ruby(*args, **options, &block)
-        specialization_manager.specialize(*args, **options, &block)
-    end
-
-    # Generic method that converts a ModelKit::Types value into the corresponding Ruby
-    # value.
-    def self.to_ruby(value, original_type = nil)
-        (original_type || value.class).to_ruby(value)
-    end
-
     # Proper copy of a value to another. +to+ and +from+ do not have to be from the
     # same registry, as long as the types can be casted into each other
     #
@@ -432,42 +400,6 @@ module ModelKit::Types
             b.apply_changes_from_converted_types
         end
         a.to_byte_array == b.to_byte_array
-    end
-
-    # Initializes +expected_type+ from +arg+, where +arg+ can either be a value
-    # of expected_type, a value that can be casted into a value of
-    # expected_type, or a Ruby value that can be converted into a value of
-    # +expected_type+.
-    def self.from_ruby(arg, expected_type)      
-        if arg.respond_to?(:apply_changes_from_converted_types)
-            arg.apply_changes_from_converted_types
-        end
-
-        if arg.kind_of?(expected_type)
-            return arg
-        elsif arg.class < Type && arg.class.casts_to?(expected_type)
-            return arg.cast(expected_type)
-        elsif convertion = expected_type.convertions_from_ruby[arg.class]
-            converted = convertion.call(arg, expected_type)
-        elsif expected_type.respond_to?(:from_ruby)
-            converted = expected_type.from_ruby(arg)
-        else
-            if !(expected_type < NumericType) && !arg.kind_of?(expected_type)
-                if arg.class.name != expected_type.name
-                    raise UnknownConversionRequested.new(arg, expected_type), "types differ and there are not convertions from one to the other: #{arg.class.name} <-> #{expected_type.name}"
-                else
-                    raise ConversionToMismatchedType.new(arg, expected_type), "the types have the same name but different definitions: #{arg.class.name} <-> #{expected_type.name}"
-                end
-            end
-            converted = arg
-        end
-        if !(expected_type < NumericType) && !converted.kind_of?(expected_type)
-            raise RuntimeError, "invalid conversion of #{arg} to #{expected_type.name}"
-        end
-        if !converted.eql?(arg)
-            converted.apply_changes_from_converted_types
-        end
-        converted
     end
 
     def self.load_plugins

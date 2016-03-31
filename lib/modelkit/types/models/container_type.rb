@@ -31,17 +31,6 @@ module ModelKit::Types
                 if random_access
                     submodel.include RandomAccessContainer
                 end
-
-                submodel.convert_from_ruby Array do |value, expected_type|
-                    t = expected_type.new
-                    t.concat(value)
-                    t
-                end
-                submodel.convert_from_ruby DeepCopyArray do |value, expected_type|
-                    t = expected_type.new
-                    t.concat(value)
-                    t
-                end
             end
 
             def validate_merge(type)
@@ -84,10 +73,6 @@ module ModelKit::Types
                         end
                 end
                 info
-            end
-
-            def ruby_convertion_candidates_on(ruby_mappings, name)
-                super + (ruby_mappings.from_container_basename[container_model.name] || Array.new)
             end
         end
     end

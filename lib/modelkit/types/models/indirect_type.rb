@@ -13,7 +13,6 @@ module ModelKit::Types
                     submodel.add_direct_dependency(deference)
                     submodel.fixed_buffer_size = deference.fixed_buffer_size?
                     submodel.contains_opaques = deference.contains_opaques? || deference.opaque?
-                    submodel.contains_converted_types = deference.contains_converted_types? || deference.needs_convertion_to_ruby?
                 end
             end
 

@@ -37,17 +37,9 @@ module ModelKit::Types
         # @return [Hash<String,ContainerType>]
         attr_reader :container_models
 
-        # The object that manages class extensions as well as conversions
-        # to/from Ruby
-        #
-        # @return [SpecializationManager]
-        attr_reader :specialization_manager
-
-        def initialize(specialization_manager: ModelKit::Types.specialization_manager.dup)
+        def initialize
             @types = Hash.new
             @container_models = Hash.new
-            @specialization_manager = specialization_manager ||
-                SpecializationManager.new
         end
 
         def size
