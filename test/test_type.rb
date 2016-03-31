@@ -1,6 +1,6 @@
 require 'modelkit/types/test'
 module ModelKit::Types
-    describe NumericType do
+    describe Type do
         attr_reader :type
         before do
             @type = Type.new_submodel
