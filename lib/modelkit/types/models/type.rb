@@ -404,7 +404,8 @@ module ModelKit::Types
 
             def copy_to(registry, **options)
                 model = supermodel.new_submodel(
-                    registry: registry, typename: name, size: size, opaque: opaque?, null: null?, **options).register
+                    registry: registry, typename: name, size: size, opaque: opaque?, null: null?, **options)
+                registry.register(model)
                 model.metadata.merge(self.metadata)
                 model
             end
