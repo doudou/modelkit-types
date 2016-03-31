@@ -165,7 +165,7 @@ module ModelKit::Types
         #   point to types ending up in the minimal registry will be copied
         # @return [Registry] the registry that allows to define the
         #   named type
-	def minimal(type, with_aliases: true)
+        def minimal(type, with_aliases: true)
             type = validate_type_argument(type)
 
             result = Registry.new
@@ -177,7 +177,7 @@ module ModelKit::Types
                 end
             end
             result
-	end
+        end
 
         # Generates the smallest new registry that defines all types of self
         # except some
@@ -238,111 +238,62 @@ module ModelKit::Types
             base_module.reset_registry_export(self, block)
         end
 
-	# Returns the file type as expected by ModelKit::Types from 
-	# the extension of +file+ (see TYPE_BY_EXT)
-	#
-	# Raises RuntimeError if the file extension is unknown
+        # Returns the file type as expected by ModelKit::Types from 
+        # the extension of +file+ (see TYPE_BY_EXT)
+        #
+        # Raises RuntimeError if the file extension is unknown
         def self.guess_type(file)
-	    ext = File.extname(file)
+            ext = File.extname(file)
             if type = TYPE_BY_EXT[ext]
-		type
+                type
             else
                 raise UnknownFileTypeError, "Cannot guess file type for #{file}: unknown extension '#{ext}'"
             end
         end
 
-	# Format +option_hash+ to the form expected by do_import
-	# (Yes, I'm lazy and don't want to handles hashes in C)
-        def self.format_options(option_hash) # :nodoc:
-            option_hash.to_a.collect do |opt|
-                if opt[1].kind_of?(Array)
-                    if opt[1].first.kind_of?(Hash)
-                        [ opt[0].to_s, opt[1].map { |child| format_options(child) } ]
-                    else
-                        [ opt[0].to_s, opt[1].map { |child| child.to_s } ]
-                    end
-                elsif opt[1].kind_of?(Hash)
-                    [ opt[0].to_s, format_options(opt[1]) ]
-                else
-                    [ opt[0].to_s, opt[1].to_s ]
-                end
-            end
-        end
-
-        # Shortcut for
-        #   registry = Registry.new
-        #   registry.import(args)
-        #
-        # See Registry#import
-        def self.import(*args)
+        # Create a registry and import into it
+        def self.import(*args , **options)
             registry = Registry.new
-            registry.import(*args)
+            registry.import(*args, **options)
             registry
         end
 
-        # Returns the handler that will be used to import that file. It can
-        # either be a string, in which case we use a ModelKit::Types internal importer,
-        # or a Ruby object responding to 'call' in which case Registry#import
-        # will use that object to do the importing.
+        # Returns the handler that will be used to import that file.
+        #
+        # The return value is an object which responds to #import
         def self.import_handler_for(file, kind = 'auto')
-	    file = File.expand_path(file)
+            file = File.expand_path(file)
             if !kind || kind == 'auto'
                 kind    = Registry.guess_type(file)
             end
             if handler = IMPORT_TYPE_HANDLERS[kind]
                 return handler
             end
-            return kind
         end
 
-        # Imports the +file+ into this registry. +kind+ is the file format or
-        # nil, in which case the file format is guessed by extension (see
-        # TYPE_BY_EXT)
-	# 
-        # +options+ is an option hash. The Ruby bindings define the following
-        # specific options:
-	# merge:: 
-        #   merges +file+ into this repository. If this is false, an exception
-        #   is raised if +file+ contains types already defined in +self+, even
-        #   if the definitions are the same.
-	#
-	#     registry.import(my_path, 'auto', :merge => true)
-	#
-	# The Tlb importer has no options
-	#
-        # The C importer defines the following options: preprocessor:
+        # Imports the types defined in a file into this registry
         #
-	# define:: 
-        #   a list of VAR=VALUE or VAR options for cpp
-	#     registry.import(my_path, :define => ['PATH=/usr', 'NDEBUG'])
-	# include:: 
-        #   a list of path to add to cpp's search path
-	#     registry.import(my_path, :include => ['/usr', '/home/blabla/prefix/include'])
-	# rawflags:: 
-        #   flags to be passed as-is to cpp. For instance, the two previous
-        #   examples can be written
-	#
-	#   registry.import(my_path, 'auto',
-	#     :rawflags => ['-I/usr', '-I/home/blabla/prefix/include', 
-	#                  -DPATH=/usr', -DNDEBUG])
-	# debug::
-        #   if true, debugging information is outputted on stdout, and the
-        #   preprocessed output is kept.
-        #
-        # merge::
-        #   load the file into its own registry, and merge the result back into
-        #   this one. If it is not set, types defined in +file+ that are already
-        #   defined in +self+ will generate an error, even if the two
-        #   definitions are the same.
-	#
-        def import(file, kind = 'auto', **options)
-	    file = File.expand_path(file)
+        # @param [String] file the path to the file
+        # @param [String] kind the file type, or 'auto' to guess the type from
+        #   the file's extension
+        def import(file, kind: 'auto', **options)
+            file = File.expand_path(file)
             if handler = Registry.import_handler_for(file, kind)
                 return handler.import(file, registry: self, **options)
             else
                 raise ArgumentError, "no importer defined for #{file} (#{kind})"
             end
         end
+
+        # @deprecated use the exporter objects in {ModelKit::Types::IO} directly
+        def export(kind, **options)
+            if handler = EXPORT_TYPE_HANDLERS[kind]
+                return handler.export(self, **options)
+            else
+                raise ArgumentError, "no exporter defined for #{kind}"
+            end
+        end
+
 
         def each_type_topological
             return enum_for(__method__) if !block_given?
@@ -413,15 +364,6 @@ module ModelKit::Types
             end
         end
 
-        # @deprecated use the exporter objects in {ModelKit::Types::IO} directly
-	def export(kind, **options)
-            if handler = EXPORT_TYPE_HANDLERS[kind]
-                return handler.export(self, **options)
-            else
-                raise ArgumentError, "no exporter defined for #{kind}"
-            end
-	end
-
         # Export the registry into ModelKit::Types's own XML format
         #
         # @return [REXML::Document]
@@ -443,7 +385,7 @@ module ModelKit::Types
                 @registry = registry
                 @type = CompoundType.new_submodel(typename: name, registry: registry, **options)
             end
-            
+
             # Create the type on the underlying registry
             def build
                 type.size ||= current_size
@@ -479,6 +421,15 @@ module ModelKit::Types
             end
         end
 
+        # Create a new container model
+        def create_container_model(name)
+            ModelKit::Types.validate_typename(name)
+            container_model = Class.new(ContainerType)
+            container_model.name = name
+            register_container_model(container_model)
+            container_model
+        end
+
         # Registers the given class as a container type
         def register_container_model(type)
             ModelKit::Types.validate_typename(type.name)
@@ -490,28 +441,52 @@ module ModelKit::Types
 
         # Enumerate the available container kinds
         #
-        # @yieldparam [Model<Type>] the container base class
+        # @yieldparam [Models::ContainerType] the container base class
         def each_available_container_model(&block)
-            container_models.values.each(&block)
+            container_models.each_value(&block)
         end
 
+        # Tests whether a container model exists under this name
+        #
+        # @param [String] name the container model name
         def has_container_model?(name)
-            container_models.has_key?(name)
+            container_models.has_key?(name.to_str)
         end
 
+        # Returns the container base model with the given name, or nil
+        #
+        # @param [String] name the container model name
+        # @return [nil,Models::ContainerType] the container model or nil if no
+        #   container models exist under that name
+        # @see container_model_by_name
         def find_container_model_by_name(name)
             container_models[name.to_str]
         end
 
         # Returns the container base model with the given name
-        def container_model(name)
-            if type = container_models[name.to_s]
-                type
+        #
+        # @param [String] name the container model name
+        # @raise [NotFound] if there are no container models with the requested
+        #   name
+        # @see find_container_model_by_name
+        def container_model_by_name(name)
+            if model = find_container_model_by_name(name)
+                model
             else
                 raise NotFound, "#{self} has no container type named #{name}"
             end
         end
 
+        # Register a type in this registry
+        #
+        # @param [Models::Type] the type model
+        # @param [String] name the name under which the type should be
+        #   registered
+        #
+        # @raise DuplicateTypeNameError if a type is already registered under
+        #   the name
+        # @raise NotFromThisRegistryError if the type model is already
+        #   registered in another registry
         def register(type, name: type.name)
             ModelKit::Types.validate_typename(name)
             if types.has_key?(name)
@@ -524,34 +499,59 @@ module ModelKit::Types
             types[name] = type
         end
 
+        # Add a type from a different registry to this one
+        #
+        # @param [Models::Type] the type to be added
+        # @return [void]
+        def add(type)
+            if !type.registry.equal?(self)
+                merge(type.registry.minimal(type.name))
+            end
+            nil
+        end
+
+        # Create a new opaque object
+        #
+        # @return [Models::Type]
         def create_opaque(name, _size = 0, size: nil)
             size ||= _size
             register(Type.new_submodel(typename: name, registry: self, opaque: true, size: size))
         end
 
+        # Create a new opaque object on this registry
+        #
+        # @return [Models::Type]
         def create_null(name)
             register(Type.new_submodel(typename: name, registry: self, null: true))
         end
 
-        # Create a type of unspecified model (usually for nul/opaque types)
+        # Create a plain type object on this registry
+        #
+        # @return [Models::Type]
         def create_type(name, **options)
             register(Type.new_submodel(typename: name, registry: self, **options))
         end
 
+        # Create a character type object on this registry
+        #
+        # @return [Models::CharacterType]
         def create_character(name, **options)
             register(CharacterType.new_submodel(typename: name, registry: self, **options))
         end
 
+        # Create a numeric type object on this registry
+        #
+        # @return [Models::NumericType]
         def create_numeric(name, **options)
             register(NumericType.new_submodel(typename: name, registry: self, **options))
         end
 
-        # Creates a new compound type with the given name on this registry
+        # Creates a compound type object on this registry
         #
         # @yield [CompoundBuilder] the compound building helper, see below for
         #   examples. Only the #add method allows to set offsets. When no
         #   offsets are given, they are computed from the previous field.
-        # @return [Type] the type representation
+        # @return [Models::CompoundType]
         #
         # @example create a compound using #add
         #   registry.create_compound "/new/Compound" do |c|
@@ -572,28 +572,21 @@ module ModelKit::Types
             recorder.build
         end
 
-        def create_container_model(name)
-            ModelKit::Types.validate_typename(name)
-            container_model = Class.new(ContainerType)
-            container_model.name = name
-            register_container_model(container_model)
-            container_model
-        end
-
         # Creates a new container type on this registry
         #
-        # @param [String] container_model the name of the container type
+        # @param [String] container_model the name of the container model
         # @param [String,Type] element_type the type of the container elements,
         #   either as a type or as a type name
+        # @param [String,nil] typename the created type name. If nil, a default
+        #   name will be generated from the container model name and the element
+        #   type name
+        # @return [Models::ContainerType]
         #
         # @example create a new std::vector type
         #   registry.create_container "/std/vector", "/my/Container"
         def create_container(container_model, element_type, _size = nil, typename: nil, size: nil, **options)
             if container_model.respond_to?(:to_str)
-                container_model_name = container_model
-                if !(container_model = container_models[container_model])
-                    raise NotFound, "#{container_model_name} is not a valid container type name on #{self}"
-                end
+                container_model = container_model_by_name(container_model)
             end
             element_type = validate_type_argument(element_type)
 
@@ -606,6 +599,7 @@ module ModelKit::Types
                 new_submodel(registry: self, typename: typename,
                              deference: element_type, size: size, **options)
             register(container_t)
+            container_t
         end
 
         # Creates a new array type on this registry
@@ -613,6 +607,9 @@ module ModelKit::Types
         # @param [String,Type] base_type the type of the array elements,
         #   either as a type or as a type name
         # @param [Integer] length the number of elements in the array
+        # @param [String,nil] typename the created type name. If nil, a default
+        #   name will be generated from the element type name
+        # @return [Models::ArrayType]
         #
         # @example create a new array of 10 elements
         #   registry.create_array "/my/Container", 10
@@ -626,7 +623,7 @@ module ModelKit::Types
             size     ||= element_type.size * length
             ModelKit::Types.validate_typename(typename)
             array_t = ArrayType.new_submodel(deference: element_type, typename: typename, registry: self,
-                                   length: length, size: size, **options)
+                                             length: length, size: size, **options)
             register(array_t)
         end
 
@@ -646,7 +643,7 @@ module ModelKit::Types
                 @registry = registry
                 @type = EnumType.new_submodel(typename: name, registry: registry, **options)
             end
-            
+
             # Creates the new enum type on the registry
             def build
                 registry.register(type)
@@ -672,11 +669,11 @@ module ModelKit::Types
             end
         end
 
-        # Creates a new enum type with the given name on this registry
+        # Creates a new enum type on this registry
         #
         # @yield [EnumBuilder] the enum building helper. In both methods, if a
         #   symbol's value is not provided, it is computed as last_value + 1
-        # @return [Type] the type representation
+        # @return [Models::EnumType] the type representation
         #
         # @example create an enum using #add
         #   registry.create_enum "/new/Enum" do |c|
@@ -701,19 +698,15 @@ module ModelKit::Types
             recorder.build
         end
 
-        def validate_container_model_argument(type)
-            if type.respond_to?(:to_str)
-                if !(container_t = container_models[type.to_str])
-                    raise NotFound, "no container type #{type} in #{self}"
-                end
-                container_t
-            elsif type.registry != self
-                raise NotFromThisRegistryError, "#{type} is not from #{self}"
-            else
-                type
-            end
-        end
-
+        # @api private
+        #
+        # Helper method that validates a type argument
+        #
+        # It either resolves it from a string, or verifies that the type is
+        # indeed within the registry
+        #
+        # @raise NotFromThisRegistryError if the type is not a type object from
+        #   this registry
         def validate_type_argument(type)
             if type.respond_to?(:to_str)
                 get(type)
@@ -734,6 +727,10 @@ module ModelKit::Types
             register(validate_type_argument(old_type), name: new_name)
         end
 
+        # Enumerate all aliases defined on this registry
+        #
+        # @yieldparam [String,Nodels::Type]
+        # @return [void]
         def each_alias
             return enum_for(__method__) if !block_given?
             each(with_aliases: true) do |name, type|
@@ -741,6 +738,10 @@ module ModelKit::Types
             end
         end
 
+        # Returns the aliases existing for a given type
+        #
+        # @return [Array<String>] the list of aliases, not including the type's
+        #   actual name
         def aliases_of(type)
             all_names = types.keys.find_all do |name|
                 types[name] == type
@@ -749,14 +750,20 @@ module ModelKit::Types
             all_names
         end
 
+        # Remove all aliases from the registry
         def clear_aliases
             types.delete_if do |name, type|
                 name != type.name
             end
         end
 
+        # Returns a type from its name
+        #
+        # @param [String] typename the type name
+        # @return [Models::Type] the type model
+        # @raise [NotFound] if there are no types registered under that name
         def get(typename)
-            if type = types[typename]
+            if type = types[typename.to_str]
                 type
             else
                 raise NotFound, "no type #{typename} in #{self}"
@@ -764,6 +771,9 @@ module ModelKit::Types
         end
 
         # Build a derived type (array or container) from its canonical name
+        #
+        # Arrays are written `/typename[10]`, containers
+        # `/container_model</container_element_type>`
         def build(typename, size = nil)
             get(typename)
         rescue NotFound => e
@@ -808,14 +818,6 @@ module ModelKit::Types
                 raise e, "#{e.message}, and it cannot be built", e.backtrace
             end
         end
-
-        # Add a type from a different registry to this one
-        #
-        # @param [Class<ModelKit::Types::Type>] the type to be added
-        # @return [void]
-        def add(type)
-            merge(type.registry.minimal(type.name))
-            nil
-        end
     end
 end
+
