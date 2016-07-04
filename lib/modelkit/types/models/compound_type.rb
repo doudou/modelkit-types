@@ -82,8 +82,8 @@ module ModelKit::Types
                 model = super
                 fields.each do |field_name, field|
                     field_type =
-                        if registry.find_by_name(field.type.name) 
-                            registry.get(field.type.name)
+                        if existing_field_t = registry.find_by_name(field.type.name) 
+                            existing_field_t
                         else field.type.copy_to(registry)
                         end
 
