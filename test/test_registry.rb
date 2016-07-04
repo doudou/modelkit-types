@@ -157,6 +157,13 @@ module ModelKit::Types
             it "handles recursive resizes" do
                 assert_equal 84 * 10, compound_array_t.size
             end
+
+            it "raises InvalidSizeSpecifiedError if a given size is smaller than the type's minimum size" do
+                flexmock(int_t).should_receive(:apply_resize).and_return(256)
+                assert_raises(InvalidSizeSpecifiedError) do
+                    registry.resize(int_t => 128)
+                end
+            end
         end
 
         describe "#create_container" do
@@ -407,6 +414,32 @@ module ModelKit::Types
                     r0.create_alias '/Alias', t
                     assert_equal [t], r0.each.to_a
                 end
+            end
+        end
+
+        describe "#minimal" do
+            subject { Registry.new }
+            let(:type) { subject.create_type '/test' }
+
+            it "copies the type and its missing dependencies to the new registry" do
+                target_registry = nil
+                flexmock(type).should_receive(:copy_to).with(->(r) { !r.equal?(subject) && (target_registry = r) }).
+                    once.pass_thru
+                subject.minimal(type)
+            end
+
+            it "copies the aliases to the type if with_aliases is set" do
+                target_registry = nil
+                subject.create_alias '/alias', type
+                result = subject.minimal(type, with_aliases: true)
+                assert_equal '/test', result.get('/alias').name
+            end
+
+            it "does not copy the aliases to the type if with_aliases is false" do
+                target_registry = nil
+                subject.create_alias '/alias', type
+                result = subject.minimal(type, with_aliases: false)
+                assert !result.include?('/alias')
             end
         end
 

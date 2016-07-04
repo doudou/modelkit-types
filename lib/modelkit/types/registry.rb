@@ -353,7 +353,7 @@ module ModelKit::Types
                 min_size = t.apply_resize(typemap)
                 explicit_size = typemap[t]
                 if min_size && explicit_size && explicit_size < min_size
-                    raise InvalidSizeSpecifiedError, "#{explicit} specified as new size for #{t}, but this type has to be at least of size #{min_size}"
+                    raise InvalidSizeSpecifiedError, "#{explicit_size} specified as new size for #{t}, but this type has to be at least of size #{min_size}"
                 end
                 if explicit_size
                     t.size = explicit_size
