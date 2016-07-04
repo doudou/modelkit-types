@@ -1,6 +1,5 @@
 require 'modelkit/types/cxx'
 require 'modelkit/types/cxx/gccxml_loader'
-require 'modelkit/types/cxx/clang_loader'
 require 'modelkit/types/cxx/castxml_loader'
 
 module ModelKit::Types
