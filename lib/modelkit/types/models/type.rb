@@ -182,6 +182,7 @@ module ModelKit::Types
                 super(submodel, &block)
 
                 submodel.instance_variable_set(:@direct_dependencies, Set.new)
+                submodel.instance_variable_set(:@recursive_dependencies, Set.new)
                 submodel.contains_opaques = opaque
                 submodel.registry = registry
                 submodel.name = typename
