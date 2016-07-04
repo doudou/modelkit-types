@@ -105,7 +105,7 @@ module ModelKit::Types
         # 
         # (see Type#to_simple_value)
         def to_json_value(options = Hash.new)
-            to_simple_value(Hash[:special_float_values => :nil].merge(options))
+            to_simple_value(Hash[special_float_values: :nil].merge(options))
         end
     end
 end

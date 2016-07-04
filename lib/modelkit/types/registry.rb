@@ -424,7 +424,7 @@ module ModelKit::Types
         # Create a new container model
         def create_container_model(name)
             ModelKit::Types.validate_typename(name)
-            container_model = Class.new(ContainerType)
+            container_model = ContainerType.new_submodel
             container_model.name = name
             register_container_model(container_model)
             container_model
