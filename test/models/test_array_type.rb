@@ -51,6 +51,23 @@ module ModelKit::Types
                     assert_equal 10, t1.length
                 end
             end
+
+            describe "#casts_to?" do
+                attr_reader :array_t, :array_copy_t, :element_t
+                before do
+                    r0, r1 = Registry.new, Registry.new
+                    @element_t = r0.create_type '/Element'
+                    @array_t   = r0.create_array element_t, 10, typename: '/Test'
+                    @array_copy_t = array_t.copy_to(r1)
+                end
+
+                it "returns true for the same type model" do
+                    assert array_copy_t.casts_to?(array_t)
+                end
+                it "returns true for its element type" do
+                    assert array_copy_t.casts_to?(element_t)
+                end
+            end
         end
     end
 end

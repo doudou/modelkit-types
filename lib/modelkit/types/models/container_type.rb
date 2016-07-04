@@ -6,6 +6,7 @@ module ModelKit::Types
             def self.extend_object(obj)
                 super
                 obj.name = "ModelKit::Types::ContainerType"
+                obj.fixed_buffer_size = false
             end
 
             # The type of container
@@ -34,11 +35,10 @@ module ModelKit::Types
             end
 
             def validate_merge(type)
-                super
-
                 if container_model != type.container_model
                     raise MismatchingContainerModel, "#{self} and #{type} are not from the same container model"
                 end
+                super
             end
 
             def copy_to(registry, **options)

@@ -33,6 +33,8 @@ module ModelKit::Types
             #
             # In practice, this is false for containers and values that are
             # composed of containers
+            #
+            # @see buffer_size_at
             attr_predicate :fixed_buffer_size?, true
 
             # @return [Integer] the size in bytes when stored in buffers
@@ -93,6 +95,22 @@ module ModelKit::Types
             def contains?(type)
                 self <= type ||
                     recursive_dependencies.include?(type) || recursive_dependencies.any? { |t| t <= type }
+            end
+
+            # Returns the size of the value of type self at the given offset in
+            # the buffer
+            #
+            # Subclasses that have variable size in-buffer should reimplement
+            # this to handle it
+            #
+            # @raise NotImplementedError if fixed_buffer_size? is false, as in
+            #   this case the call should have been handled by the type's own
+            #   class
+            def buffer_size_at(buffer, offset)
+                if fixed_buffer_size?
+                    return size
+                else raise NotImplementedError, "#fixed_buffer_size? is false for #{self}, but the subclass did not handle #buffer_size_at as it should have"
+                end
             end
 
             def ==(other)

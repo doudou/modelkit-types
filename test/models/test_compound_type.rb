@@ -97,6 +97,16 @@ module ModelKit::Types
                 end
             end
 
+            describe "#[]" do
+                it "returns the type of the field" do
+                    field = compound_t.add('f0', field_t, offset: 10)
+                    assert_same field_t, compound_t['f0']
+                end
+                it "raises FieldNotFound if the field does not exist" do
+                    assert_raises(FieldNotFound) { compound_t.get('f0') }
+                end
+            end
+
             describe "#get" do
                 it "returns the field object" do
                     field = compound_t.add('f0', field_t, offset: 10)
@@ -181,6 +191,12 @@ module ModelKit::Types
                     pp = PP.new('')
                     compound_t.pretty_print(pp, verbose: true)
                 end
+                it "does not raise" do
+                    field = compound_t.add 'f', field_t, offset: 10
+                    field.metadata.set('doc', 'documentation string')
+                    pp = PP.new('')
+                    compound_t.pretty_print(pp, verbose: false)
+                end
             end
 
             describe "#direct_dependencies" do
@@ -235,14 +251,24 @@ module ModelKit::Types
             end
 
             describe "#copy_to" do
+                attr_reader :target_registry
+                before do
+                    @target_registry = Registry.new
+                end
+
                 it "copies the metadata over" do
                     f = compound_t.add('f0', field_t, offset: 0)
                     f.metadata.set('k', 'v')
-                    reg = Registry.new
-                    compound_t.copy_to(reg)
-                    other_t = reg.get('/compound_t')
+                    compound_t.copy_to(target_registry)
+                    other_t = target_registry.get('/compound_t')
                     other_f = other_t.get('f0')
                     assert_equal [['k', ['v'].to_set]], other_f.metadata.each.to_a
+                end
+                it "reuses an existing field type existing on the target" do
+                    target_field_t = field_t.copy_to(target_registry)
+                    compound_t.add('f0', field_t, offset: 0)
+                    target_t = compound_t.copy_to(target_registry)
+                    assert_same target_field_t, target_t.get('f0').type
                 end
             end
 

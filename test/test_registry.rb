@@ -16,6 +16,27 @@ module ModelKit::Types
             end
         end
 
+        describe "#size" do
+            it "returns the number of type names registered" do
+                assert_equal 1, registry.size
+                registry.create_type '/Test'
+                assert_equal 2, registry.size
+                registry.create_alias "/Alias", "/Test"
+                assert_equal 3, registry.size
+            end
+        end
+
+        describe "#dup" do
+            it "creates a copy of the whole registry" do
+                copy = registry.dup
+                refute_same copy, registry
+                copy.each(with_aliases: true) do |name, type|
+                    registry_type = registry.get(name)
+                    refute_same registry_type, type
+                    assert_equal registry_type, type
+                end
+            end
+        end
 
         describe ".guess_type" do
             it "raises UnknownFileTypeError if there is no importer associated with the file type" do

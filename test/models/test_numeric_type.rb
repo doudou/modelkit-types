@@ -118,6 +118,18 @@ module ModelKit::Types
                     assert_equal ufloat_t, float_t
                 end
             end
+
+            describe "#copy_to" do
+                it "copies the type" do
+                    numeric_t   = ModelKit::Types::NumericType.new_submodel integer: true, size: 4, unsigned: true
+                    target_registry = Registry.new
+                    target_t = numeric_t.copy_to(target_registry)
+                    assert target_t.integer?
+                    assert target_t.unsigned?
+                    assert_equal 4, target_t.size
+                    assert_equal "L<", target_t.pack_code
+                end
+            end
         end
     end
 end

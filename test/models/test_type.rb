@@ -196,6 +196,58 @@ module ModelKit::Types
                     assert_equal t1.metadata.to_hash, t0.metadata.to_hash
                 end
             end
+
+            describe "#pretty_print" do
+                attr_reader :type
+                before do
+                    registry = Registry.new
+                    @type = registry.create_type '/Test', opaque: true, null: false, size: 10
+                    type.metadata.set('doc', "a multiline\ndoc")
+                end
+                it "does not raise" do
+                    pp = PP.new('')
+                    type.pretty_print(pp, with_doc: true, verbose: true)
+                end
+            end
+
+            describe "#contains?" do
+                attr_reader :type
+                before do
+                    registry = Registry.new
+                    @type = registry.create_type '/Test', opaque: true, null: false, size: 10
+                end
+
+                it "returns true for self" do
+                    assert type.contains?(type)
+                end
+                it "returns true for a supermodel of self" do
+                    assert type.contains?(type.supermodel)
+                end
+                it "returns true for a recursive dependency of self" do
+                    flexmock(type).should_receive(:recursive_dependencies).and_return([klass = Class.new])
+                    assert type.contains?(klass)
+                end
+                it "returns true for a supermodel of a recursive dependency of self" do
+                    dependency = ModelKit::Types::Type.new_submodel
+                    sub = Class.new(dependency)
+                    flexmock(type).should_receive(:recursive_dependencies).and_return([sub])
+                    assert type.contains?(dependency)
+                end
+            end
+
+            describe "#buffer_size_at" do
+                it "returns the type's size if it is fixed-size" do
+                    type = ModelKit::Types::Type.new_submodel(size: 20)
+                    assert_equal 20, type.buffer_size_at("", 0)
+                end
+                it "raises NotImplementedError if it is variable-size" do
+                    type = ModelKit::Types::Type.new_submodel(size: 20)
+                    type.fixed_buffer_size = false
+                    assert_raises(NotImplementedError) do
+                        type.buffer_size_at("", 0)
+                    end
+                end
+            end
         end
     end
 end
