@@ -357,6 +357,13 @@ module ModelKit::Types
                 minimal_registry.to_xml
             end
 
+            # @api private
+            #
+            # Creates this type and possibly its dependencies in a target
+            # registry
+            #
+            # The method itself does minimal consistency checking. Use the
+            # registry-level {Registry#merge} instead.
             def copy_to(registry, **options)
                 model = supermodel.new_submodel(
                     registry: registry, typename: name, size: size, opaque: opaque?, null: null?, **options)
