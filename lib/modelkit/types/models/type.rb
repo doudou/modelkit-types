@@ -10,7 +10,7 @@ module ModelKit::Types
             allowed_overloadings |= allowed_overloadings.map(&:to_sym).to_set
             ALLOWED_OVERLOADINGS = allowed_overloadings.to_set
 
-	    # The ModelKit::Types::Registry this type belongs to
+            # The ModelKit::Types::Registry this type belongs to
             attr_reader :registry
 
             # Whether this is a null type, i.e. a type that cannot be actually used
@@ -211,13 +211,13 @@ module ModelKit::Types
                 submodel.fixed_buffer_size = true
             end
 
-	    # Returns the namespace part of the type's name.  If +separator+ is
-	    # given, the namespace components are separated by it, otherwise,
-	    # the default of ModelKit::Types::NAMESPACE_SEPARATOR is used. If nil is
-	    # used as new separator, no change is made either.
-	    def namespace(separator = ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading = false)
+            # Returns the namespace part of the type's name.  If +separator+ is
+            # given, the namespace components are separated by it, otherwise,
+            # the default of ModelKit::Types::NAMESPACE_SEPARATOR is used. If nil is
+            # used as new separator, no change is made either.
+            def namespace(separator = ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading = false)
                 ModelKit::Types.namespace(name, separator, remove_leading)
-	    end
+            end
 
             # Returns the basename part of the type's name, i.e. the type name
             # without the namespace part.
@@ -244,11 +244,11 @@ module ModelKit::Types
             #   type_t.full_name('::')
             #
             # will return the C++ name for the given type
-	    def full_name(separator = ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading = false)
-		namespace(separator, remove_leading) + basename(separator)
-	    end
+            def full_name(separator = ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading = false)
+                namespace(separator, remove_leading) + basename(separator)
+            end
 
-	    def to_s; "#<#{superclass.name}: #{name}>" end
+            def to_s; "#<#{superclass.name}: #{name}>" end
             def inspect; to_s end
 
             # Given a markdown-formatted string, return what should be displayed
@@ -288,8 +288,8 @@ module ModelKit::Types
                         pp.breakable
                     end
                 end
-		pp.text name 
-	    end
+                pp.text name 
+            end
 
             # Allocates a new ModelKit::Types object that is initialized from the information
             # given in the passed string
