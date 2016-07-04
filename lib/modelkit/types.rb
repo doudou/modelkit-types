@@ -273,26 +273,6 @@ module ModelKit::Types
         result
     end
 
-    def self.can_overload_method?(defined_on, reference, name,
-                                  message: "instances of #{reference_class.name}",
-                                  allowed_overloadings: Models::Type::ALLOWED_OVERLOADINGS,
-                                  with_raw: true)
-
-        candidates = [n, "#{n}="]
-        if with_raw
-            candidates.concat(["raw_#{n}", "raw_#{n}="])
-        end
-        candidates.all? do |method_name|
-            if !reference_class.method_defined?(method_name) || allowed_overloadings.include?(method_name)
-                true
-            elsif warn_about_helper_method_clashes?
-                msg_name ||= "instances of #{reference_class.name}"
-                ModelKit::Types.warn "NOT defining #{candidates.join(", ")} on #{msg_name} as it would overload a necessary method"
-                false
-            end
-        end
-    end
-
     # Set of classes that have a #dup method but on which dup is forbidden
     DUP_FORBIDDEN = [TrueClass, FalseClass, Fixnum, Float, Symbol]
 end
@@ -325,6 +305,7 @@ require 'modelkit/types/models/enum_type'
 require 'modelkit/types/enum_type'
 require 'modelkit/types/models/container_type'
 require 'modelkit/types/container_type'
+require 'modelkit/types/random_access_container'
 
 require 'modelkit/types/registry'
 require 'modelkit/types/registry_export'

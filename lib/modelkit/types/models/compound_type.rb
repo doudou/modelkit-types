@@ -97,34 +97,6 @@ module ModelKit::Types
             #   compound type
             attr_reader :fields
 
-            # Controls whether {#can_overload_method} should warn if some
-            # overloading are not allowed, or be silent about it
-            #
-            # This is true by default
-            attr_predicate :warn_about_helper_method_clashes?, true
-
-            # Tests whether modelkit/types should define some accessor methods for
-            # the given field on self
-            def can_define_field_accessor_methods?(reference, name,
-                                                   message: "instances of #{self.name}",
-                                                   allowed_overloadings: Models::Type::ALLOWED_OVERLOADINGS,
-                                                   with_raw: true,
-                                                   silent: !warn_about_helper_method_clashes?)
-
-                candidates = [name, "#{name}="]
-                if with_raw
-                    candidates.concat(["raw_#{name}", "raw_#{name}="])
-                end
-                candidates.all? do |method_name|
-                    if !reference.method_defined?(method_name) || allowed_overloadings.include?(method_name)
-                        true
-                    elsif !silent
-                        ModelKit::Types.warn "NOT defining #{candidates.join(", ")} on #{message} as it would overload a necessary method"
-                        false
-                    end
-                end
-            end
-
             # Adds a field to this type
             def add(name, type, offset: nil)
                 name = name.to_str
@@ -142,14 +114,6 @@ module ModelKit::Types
                 fields[name] = field
                 self.contains_opaques = self.contains_opaques? || type.contains_opaques? || type.opaque?
                 self.fixed_buffer_size = self.fixed_buffer_size? && type.fixed_buffer_size?
-                if can_define_field_accessor_methods?(CompoundType, name)
-                    define_method(name) do
-                        @__fields[name] ||= get(name)
-                    end
-                    define_method("#{name}=") do |value|
-                        set(name, value)
-                    end
-                end
                 field
             end
 
