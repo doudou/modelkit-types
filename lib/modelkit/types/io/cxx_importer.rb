@@ -39,6 +39,8 @@ module ModelKit::Types
                 end
             end
 
+            @loader = nil
+
             # Loads a C++ file and imports it in the given registry, based on the
             # current C++ importer setting
             def self.import(path, registry: CXX::Registry.new, cxx_importer: loader, **options)
