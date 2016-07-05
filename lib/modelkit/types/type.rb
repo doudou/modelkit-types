@@ -12,6 +12,7 @@ module ModelKit::Types
         attr_reader :__buffer
 
         def initialize
+            @__buffer = Buffer.new("\x0" * self.class.size)
             initialize_subtype
         end
 

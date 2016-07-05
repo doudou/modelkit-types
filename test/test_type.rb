@@ -25,6 +25,13 @@ module ModelKit::Types
                 assert_equal ret, type.from_buffer!(buffer)
             end
         end
+
+        describe ".new" do
+            it "initializes the type with a buffer of zeroes" do
+                type_t = Type.new_submodel(size: 10)
+                assert_equal ("\x0" * 10), type_t.new.__buffer.to_str
+            end
+        end
     end
 end
 
