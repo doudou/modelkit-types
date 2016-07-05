@@ -50,7 +50,7 @@ module ModelKit::Types
             if !self.class.casts_to?(target_type)
                 raise ArgumentError, "cannot cast #{self} to #{target_type}"
             end
-            target_type.from_buffer(self.buffer)
+            target_type.wrap!(self.__buffer)
         end
 
         # Creates a deep copy of this value.
@@ -58,7 +58,7 @@ module ModelKit::Types
         # It is guaranteed that this value will be referring to a different
         # memory zone than +self+
 	def dup
-            self.class.from_buffer(to_byte_array)
+            self.class.from_buffer(__buffer)
 	end
         alias clone dup
 
@@ -74,6 +74,25 @@ module ModelKit::Types
 
         def to_s
             "#<#{self.class}: buffer=0x#{__buffer.object_id.to_s(16)} size=#{__buffer.size}>"
+        end
+
+        # Copy the value of self into another value
+        #
+        # This method validates the type equality. Use {#copy_to!} to bypass the
+        # (potentially expensive) test
+        def copy_to(target)
+            if self.class != target.class
+                raise IncompatibleTypes, "cannot copy #{self} to #{target.class}"
+            end
+            copy_to!(target)
+        end
+
+        # Copy the value of self into another value without typechecking
+        #
+        # This method does not validate the type equality. Use {#copy_to} for
+        # safety (i.e. if the check has not been done already by other means)
+        def copy_to!(target)
+            __buffer.copy_to(target.__buffer)
         end
 
         # Returns a representation of this type only into simple Ruby values,

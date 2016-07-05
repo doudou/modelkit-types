@@ -292,6 +292,7 @@ require 'modelkit/types/exceptions'
 # require 'modelkit/types/specialization_manager'
 require 'modelkit/types/metadata'
 require 'modelkit/types/deep_copy_array'
+require 'modelkit/types/buffer'
 
 require 'modelkit/types/models/path'
 require 'modelkit/types/models/accessor'

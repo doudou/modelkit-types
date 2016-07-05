@@ -9,6 +9,8 @@ require './test/suite_models'
 require './test/suite_io'
 require './test/suite_cxx'
 
+require './test/test_buffer'
 require './test/test_type'
 require './test/test_numeric_type'
+require './test/test_array_type'
 

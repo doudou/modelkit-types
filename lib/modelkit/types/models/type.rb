@@ -297,12 +297,12 @@ module ModelKit::Types
             # Unlike {#from_buffer!}, the buffer is validated against the type's
             # requirements (size, ...)
             #
-            # Unlike with {#wrap}, the value has its own buffer
+            # Unlike with {#wrap}, the returned value gets its own backing buffer
             # 
-            # @param [String] buffer
+            # @param [#to_types_buffer] buffer
             # @return [ModelKit::Types::Type]
             def from_buffer(buffer)
-                wrap(buffer.dup)
+                wrap(buffer.to_str.dup.to_types_buffer)
             end
 
             # Allocates a new ModelKit::Types object that is initialized from the information
@@ -313,13 +313,14 @@ module ModelKit::Types
             # @param [String] buffer
             # @return [ModelKit::Types::Type]
             def from_buffer!(buffer)
-                wrap!(buffer.dup)
+                wrap!(buffer.to_str.dup.to_types_buffer)
             end
 
             # Give access to the value from within a buffer through a Type instance
             #
             # Unlike {#from_buffer}, it does not copy the buffer
             def wrap(buffer)
+                buffer = buffer.to_types_buffer
                 validate_buffer(buffer)
                 wrap!(buffer)
             end
@@ -329,6 +330,7 @@ module ModelKit::Types
             #
             # Unlike {#from_buffer}, it does not copy the buffer
             def wrap!(buffer)
+                buffer = buffer.to_types_buffer
                 value = allocate
                 value.initialize_subtype
                 value.reset_buffer(buffer)
