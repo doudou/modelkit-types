@@ -71,28 +71,32 @@ module ModelKit::Types
     # without the namespace part.
     #
     # See also Type.basename
-    def self.basename(name, separator = NAMESPACE_SEPARATOR)
-        return split_typename(name, separator).last
+    def self.basename(name, separator: NAMESPACE_SEPARATOR)
+        return split_typename(name, separator: separator).last
     end
 
     # Returns the namespace part of +name+.  If +separator+ is
     # given, the namespace components are separated by it, otherwise,
     # the default of ModelKit::Types::NAMESPACE_SEPARATOR is used. If nil is
     # used as new separator, no change is made either.
-    def self.namespace(name, separator = NAMESPACE_SEPARATOR, remove_leading = false)
-        return split_typename(name, separator, remove_leading).first
+    def self.namespace(name, separator: NAMESPACE_SEPARATOR, remove_leading: false)
+        return split_typename(name, separator: separator, remove_leading: remove_leading).first
     end
 
     # Splits a typename into its namespace and basename
     #
     # @return [(String,String)] the type's basename and 
-    def self.split_typename(name, separator = NAMESPACE_SEPARATOR, remove_leading = false)
-        parts = typename_parts(name, separator)
+    def self.split_typename(name, separator: NAMESPACE_SEPARATOR, remove_leading: false)
+        parts = typename_parts(name, separator: separator)
         basename = parts.pop
 
         ns = parts.join(separator)
         if ns.empty?
-            return separator, basename
+            if remove_leading
+                return '', basename
+            else
+                return separator, basename
+            end
         elsif !remove_leading
             return "#{separator}#{ns}#{separator}", basename
         else
@@ -104,9 +108,9 @@ module ModelKit::Types
     #
     # @return [Array<String>] each string is a namespace leading to the
     #   basename. The last element is the basename itself
-    def self.typename_parts(name, separator = NAMESPACE_SEPARATOR)
+    def self.typename_parts(name, separator: NAMESPACE_SEPARATOR)
         tokens = typename_tokenizer(name)
-        build_typename_parts(tokens, namespace_separator: separator)
+        build_typename_parts(tokens, separator: separator)
     end
 
     # Splits a type basename into its main name and (possible) template
@@ -124,7 +128,7 @@ module ModelKit::Types
                 return basename, []
             end
         else
-            raise ArgumentError, "#{type_basename} does not look like a valid typename"
+            raise InvalidTypeNameError, "#{type_basename} does not look like a valid typename"
         end
 
         arguments = []
@@ -143,6 +147,9 @@ module ModelKit::Types
             if tk == '<'
                 level += 1
             elsif tk == '>'
+                if level == 0
+                    raise InvalidTypeNameError, "found > without matching opening <"
+                end
                 level -= 1
             end
         end
@@ -222,7 +229,7 @@ module ModelKit::Types
         raise e, "#{name} is not a valid#{' absolute' if absolute} type name: #{e.message}", e.backtrace
     end
 
-    def self.build_typename_parts(tokens, namespace_separator: NAMESPACE_SEPARATOR)
+    def self.build_typename_parts(tokens, separator: NAMESPACE_SEPARATOR)
         level = 0
         parts = []
         current = []
@@ -235,7 +242,7 @@ module ModelKit::Types
                         current = []
                     end
                 else
-                    current << namespace_separator
+                    current << separator
                 end
             when "<"
                 level += 1

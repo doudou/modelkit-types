@@ -35,7 +35,7 @@ module ModelKit::Types
         end
 
         # (see Type#to_simple_value)
-        def to_simple_value(special_float_values: nil)
+        def to_simple_value(pack_simple_arrays: true, special_float_values: nil)
             v = to_ruby
             return v if !special_float_values
             return v if self.class.integer?
@@ -56,6 +56,10 @@ module ModelKit::Types
                 end
             else raise ArgumentError, ":special_float_values can only either be :string or :nil, found #{special_float_values.inspect}"
             end
+        end
+
+        def pretty_print(pp)
+            pp.text to_ruby.to_s
         end
     end
 end

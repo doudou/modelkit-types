@@ -87,4 +87,10 @@ module ModelKit::Types
     # Exception raised when a type is being setup with a buffer which does not
     # match the type's requirements
     class InvalidBuffer < ArgumentError; end
+
+    # Exception raised when trying an operation that requires two values to be
+    # of the same type
+    #
+    # E.g. {Type#copy_to}
+    class IncompatibleTypes < RuntimeError; end
 end

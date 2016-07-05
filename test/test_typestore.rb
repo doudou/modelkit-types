@@ -20,19 +20,19 @@ describe ModelKit::Types do
 
         describe "changing the namespace separator" do
             it "handles simple cases" do
-                assert_equal %w{NS2 NS3 Test}, ModelKit::Types.typename_parts("/NS2/NS3/Test", '::')
+                assert_equal %w{NS2 NS3 Test}, ModelKit::Types.typename_parts("/NS2/NS3/Test", separator: '::')
             end
             it "handles template patterns as namespaces" do
                 assert_equal %w{wrappers Matrix<::double,3,1> Scalar},
-                    ModelKit::Types.typename_parts("/wrappers/Matrix</double,3,1>/Scalar", '::')
+                    ModelKit::Types.typename_parts("/wrappers/Matrix</double,3,1>/Scalar", separator: '::')
             end
             it "handles template recursive templates as namespaces" do
                 assert_equal %w{wrappers Matrix<::double,3,1> Gaussian<::double,3> Scalar},
-                    ModelKit::Types.typename_parts("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar", '::')
+                    ModelKit::Types.typename_parts("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar", separator: '::')
             end
             it "handles recursive templates as type basename" do
                 assert_equal %w{std vector<::wrappers::Matrix<::double,3,1>>},
-                    ModelKit::Types.typename_parts("/std/vector</wrappers/Matrix</double,3,1>>", '::')
+                    ModelKit::Types.typename_parts("/std/vector</wrappers/Matrix</double,3,1>>", separator: '::')
             end
         end
     end
@@ -56,20 +56,28 @@ describe ModelKit::Types do
             assert_equal '/', ModelKit::Types.namespace('/Test')
         end
 
+        it "returns an empty namespace for root types if remove_leading is true" do
+            assert_equal '', ModelKit::Types.namespace('/Test', remove_leading: true)
+        end
+
+        it "returns the namespace without the leading separator if remove_leading is true" do
+            assert_equal "std/", ModelKit::Types.namespace("/std/vector</wrappers/Matrix</double,3,1>>", remove_leading: true)
+        end
+
         describe "changing the namespace separator" do
             it "handles simple cases" do
-                assert_equal "::NS2::NS3::", ModelKit::Types.namespace("/NS2/NS3/Test", '::')
+                assert_equal "::NS2::NS3::", ModelKit::Types.namespace("/NS2/NS3/Test", separator: '::')
             end
             it "handles template patterns as namespaces" do
                 assert_equal"::wrappers::Matrix<::double,3,1>::",
-                    ModelKit::Types.namespace("/wrappers/Matrix</double,3,1>/Scalar", '::')
+                    ModelKit::Types.namespace("/wrappers/Matrix</double,3,1>/Scalar", separator: '::')
             end
             it "handles template recursive templates as namespaces" do
                 assert_equal "::wrappers::Matrix<::double,3,1>::Gaussian<::double,3>::",
-                    ModelKit::Types.namespace("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar", '::')
+                    ModelKit::Types.namespace("/wrappers/Matrix</double,3,1>/Gaussian</double,3>/Scalar", separator: '::')
             end
             it "handles recursive templates as type basename" do
-                assert_equal "::std::", ModelKit::Types.namespace("/std/vector</wrappers/Matrix</double,3,1>>", '::')
+                assert_equal "::std::", ModelKit::Types.namespace("/std/vector</wrappers/Matrix</double,3,1>>", separator: '::')
             end
         end
     end
@@ -91,7 +99,7 @@ describe ModelKit::Types do
         end
         it "handles recursive templates as type basename with namespace change" do
             assert_equal "vector<::wrappers::Matrix<::double,3,1>>",
-                ModelKit::Types.basename("/std/vector</wrappers/Matrix</double,3,1>>", '::')
+                ModelKit::Types.basename("/std/vector</wrappers/Matrix</double,3,1>>", separator: '::')
         end
         it "handles root types" do
             assert_equal 'Test', ModelKit::Types.basename('/Test')
@@ -147,6 +155,36 @@ describe ModelKit::Types do
         it "accepts nested types with a template in the middle" do
             ModelKit::Types.validate_typename "/ns/Context</int>/Parameter"
         end
+        it "raises InvalidTypeNameError if finding a closing template marker without an opening marker" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.validate_typename "/std/Parameter</int>>"
+            end
+        end
+        it "raises InvalidTypeNameError if finding an opening template marker unbalanced by a closing marker" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.validate_typename "/std/Parameter</int"
+            end
+        end
+        it "raises InvalidTypeNameError if finding a < followed by an unexpected character" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.validate_typename "/std/Parameter<int>"
+            end
+        end
+        it "raises InvalidTypeNameError if finding a / followed by an unexpected character" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.validate_typename "/std/Parameter/</int>"
+            end
+        end
+        it "raises InvalidTypeNameError if finding a , followed by an unexpected character" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.validate_typename "/std/Parameter</int,i>"
+            end
+        end
+        it "raises InvalidTypeNameError if finding a > followed by an unexpected character" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.validate_typename "/std/Parameter</int>a"
+            end
+        end
     end
 
     describe ".parse_template" do
@@ -161,6 +199,19 @@ describe ModelKit::Types do
         end
         it "parses recursive template arguments" do
             assert_equal ["base",['10', '20<foo>', 'test<foo,test<bar>>']], ModelKit::Types.parse_template("base<10,20<foo>,test<foo,test<bar>>>")
+        end
+        it "can handle a full name if full_name is true" do
+            assert_equal ["/std/base",['10', '20<foo>', 'test<foo,test<bar>>']], ModelKit::Types.parse_template("/std/base<10,20<foo>,test<foo,test<bar>>>", full_name: true)
+        end
+        it "raises InvalidTypeNameError if a template open marker is not closed" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.parse_template("invalid<typename")
+            end
+        end
+        it "raises InvalidTypeNameError if there are too many template groups closing markers" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) do
+                ModelKit::Types.parse_template("invalid</typename>>")
+            end
         end
     end
 end

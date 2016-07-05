@@ -23,6 +23,38 @@ module ModelKit::Types
                 assert_equal ['v0', 'v1'].to_set, metadata.get('k')
             end
         end
+        describe "#[]=" do
+            it "resets all existing values" do
+                metadata = MetaData.new
+                metadata.add('k', 'v0')
+                metadata['k'] = 'v'
+                assert_equal ['v'].to_set, metadata.get('k')
+            end
+        end
+        describe "#keys" do
+            it "returns all the metadata keys" do
+                metadata = MetaData.new
+                assert_equal [], metadata.keys
+                metadata.add('k0', 'v0')
+                assert_equal ['k0'], metadata.keys
+                metadata.add('k1', 'v0')
+                assert_equal ['k0', 'k1'], metadata.keys
+            end
+        end
+        describe "#pretty_print" do
+            it "displays the metadata" do
+                metadata = MetaData.new
+                metadata.add('k0', 'v0')
+                metadata.add('k1', 'v1', 'v2')
+                assert_equal <<-EOTEXT, PP.pp(metadata, '')
+k0: v0
+k1:
+- v1
+- v2
+                EOTEXT
+
+            end
+        end
         describe "#include?" do
             it "returns true for an empty entry" do
                 metadata = MetaData.new

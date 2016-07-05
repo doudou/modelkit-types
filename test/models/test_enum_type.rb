@@ -97,6 +97,38 @@ module ModelKit::Types
                     assert_raises(MismatchingEnumSymbolsError) { enum_t.validate_merge(other_t) }
                 end
             end
+            describe "#copy_to" do
+                it "copies the symbol-to-value mappings to the new type" do
+                    registry = Registry.new
+                    enum_t = registry.create_enum '/Test' do |e|
+                        e.add :TEST, 10
+                        e.add :TEST1, 20
+                    end
+                    target_registry = Registry.new
+                    target_registry.merge(registry)
+                    target_t = target_registry.get('/Test')
+                    assert_equal Hash[TEST: 10, TEST1: 20], target_t.symbol_to_value
+                end
+            end
+            describe "#pretty_print" do
+                it "pretty-prints itself without values if verbose is false" do
+                    enum_t.add :TEST, 10
+                    enum_t.add :TEST1, 20
+                    result = PP.singleline_pp(enum_t, "")
+                    assert_equal "Test { TEST, TEST1 }", result
+                end
+                it "does proper multi-line formatting" do
+                    enum_t.add :TEST, 10
+                    enum_t.add :TEST1, 20
+                    result = PP.pp(enum_t, "", 10)
+                    assert_equal <<-EOTEXT, result
+Test {
+  TEST,
+  TEST1
+}
+                    EOTEXT
+                end
+            end
         end
     end
 end
