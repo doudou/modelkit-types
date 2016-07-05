@@ -103,9 +103,9 @@ module ModelKit::Types
             # Returns the Array#pack code that matches this type
             #
             # The endianness is the one of the local OS
-            def compute_pack_code
-                if integer?
-                    INTEGER_PACK_CODES[[size, unsigned?, ModelKit::Types.big_endian?]]
+            def compute_pack_code(size: self.size, integer: self.integer?, unsigned: self.unsigned?)
+                if integer
+                    INTEGER_PACK_CODES[[size, unsigned, ModelKit::Types.big_endian?]]
                 else
                     FLOAT_PACK_CODES[[size, ModelKit::Types.big_endian?]]
                 end

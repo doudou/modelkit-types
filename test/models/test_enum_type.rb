@@ -14,6 +14,9 @@ module ModelKit::Types
             it "has a metadata object" do
                 assert ModelKit::Types::EnumType.metadata
             end
+            it "is of fixed buffer size" do
+                assert ModelKit::Types::EnumType.new_submodel.fixed_buffer_size?
+            end
 
             describe "#add" do
                 it "adds a new symbol/value pair to the enum" do

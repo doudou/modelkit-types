@@ -93,4 +93,8 @@ module ModelKit::Types
     #
     # E.g. {Type#copy_to}
     class IncompatibleTypes < RuntimeError; end
+
+    # Exception raised by {EnumType} when trying to interpret a symbol or value
+    # that is not within the enumeration
+    class InvalidEnumValue < RuntimeError; end
 end
