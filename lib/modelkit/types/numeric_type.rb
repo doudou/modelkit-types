@@ -10,11 +10,6 @@ module ModelKit::Types
         # The size of the numeric in bytes
         attr_reader :__size
 
-        def initialize
-            super
-            @__buffer = "\x0" * __size
-        end
-
         def initialize_subtype
             @__pack_code = self.class.pack_code
             @__size = self.class.size

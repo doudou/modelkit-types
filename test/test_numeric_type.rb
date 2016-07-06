@@ -23,6 +23,7 @@ module ModelKit::Types
         it "sets and gets the value" do
             value = int_t.new
             value.from_ruby(324553)
+            assert_kind_of Buffer, value.__buffer
             assert_equal 324553, value.to_ruby
         end
 
