@@ -92,9 +92,12 @@ module ModelKit::Types
     # of the same type
     #
     # E.g. {Type#copy_to}
-    class IncompatibleTypes < RuntimeError; end
+    class InvalidCopy < RuntimeError; end
 
     # Exception raised by {EnumType} when trying to interpret a symbol or value
     # that is not within the enumeration
     class InvalidEnumValue < RuntimeError; end
+
+    # Exception raised by {Type#cast} when attempting to cast to an invalid type
+    class InvalidCast < RuntimeError; end
 end

@@ -12,8 +12,8 @@ module ModelKit::Types
         attr_reader :__buffer
 
         def initialize
-            @__buffer = Buffer.new("\x0" * self.class.size)
             initialize_subtype
+            reset_buffer(Buffer.new("\x0" * self.class.size))
         end
 
         # Initialization method in which subtypes should do the type-specific
@@ -49,24 +49,27 @@ module ModelKit::Types
         # different threads without proper locking.
         def cast(target_type)
             if !self.class.casts_to?(target_type)
-                raise ArgumentError, "cannot cast #{self} to #{target_type}"
+                raise InvalidCast, "cannot cast #{self} to #{target_type}"
             end
-            target_type.wrap!(self.__buffer)
+            size = target_type.buffer_size_at(__buffer, 0)
+            target_type.wrap!(self.__buffer.view(0, size))
         end
 
         # Creates a deep copy of this value.
         #
         # It is guaranteed that this value will be referring to a different
         # memory zone than +self+
-	def dup
-            self.class.from_buffer(__buffer)
-	end
+        def dup
+            self.class.wrap!(to_byte_array)
+        end
         alias clone dup
 
         # Returns a string whose content is a marshalled representation of the memory
         # hold by self
+        #
+        # @return [String]
         def to_byte_array
-            __buffer.dup
+            __buffer.to_str
         end
 
         def inspect
@@ -83,7 +86,7 @@ module ModelKit::Types
         # (potentially expensive) test
         def copy_to(target)
             if self.class != target.class
-                raise IncompatibleTypes, "cannot copy #{self} to #{target.class}"
+                raise InvalidCopy, "cannot copy #{self} to #{target.class}"
             end
             copy_to!(target)
         end

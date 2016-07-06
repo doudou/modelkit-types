@@ -7,17 +7,8 @@ module ModelKit::Types
             @int32_t = NumericType.new_submodel(size: 4)
         end
 
-        describe "#__offset_and_size_of" do
-            attr_reader :array
-            before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([1, 2, 3, 4].pack("l<*"))
-            end
-
-            it "returns the offset of the n-th element" do
-                assert_equal [0, 4], array.__offset_and_size_of(0)
-                assert_equal [12, 4], array.__offset_and_size_of(3)
-            end
+        def make_int32(value)
+            int32_t.from_ruby(value)
         end
 
         describe "#get" do
@@ -34,9 +25,18 @@ module ModelKit::Types
             it "caches the element" do
                 assert_same array.get(3), array.get(3)
             end
-            it "creates elements that point to the same backing buffer" do
-                array.get(3).from_ruby(400)
-                assert_equal [10, 20, 30, 400], array.__buffer.unpack("l<*")
+            describe "fixed size elements" do
+                it "creates elements that point to the same backing buffer" do
+                    assert array.__buffer.contains?(array.get(3).__buffer)
+                end
+            end
+            describe "variable size elements" do
+                before do
+                    flexmock(array).should_receive(:__element_fixed_buffer_size?).and_return(false)
+                end
+                it "give elements their own buffers" do
+                    refute array.__buffer.contains?(array.get(3).__buffer)
+                end
             end
         end
 
@@ -49,15 +49,13 @@ module ModelKit::Types
             end
 
             it "sets the value at the given index" do
-                raw = [10].pack("l<")
-                ten = int32_t.wrap(raw)
-                array.set(3, ten)
-                assert_equal raw, array.get(3).__buffer.to_str
+                array.set(3, make_int32(10))
+                assert_equal [10], array.get(3).__buffer.unpack("l<")
             end
             it "validates the compatibility of the source value" do
                 int64_t = NumericType.new_submodel(size: 8)
                 ten = int64_t.wrap([10].pack("Q<"))
-                assert_raises(IncompatibleTypes) do
+                assert_raises(InvalidCopy) do
                     array.set(3, ten)
                 end
             end
@@ -82,13 +80,30 @@ module ModelKit::Types
             before do
                 @array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
                 @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
+                @ten = make_int32(10)
             end
 
-            it "sets the value at the given index" do
+            it "sets the value on the element at the given index" do
                 raw = [10].pack("l<")
                 ten = int32_t.wrap(raw)
                 array.set!(3, ten)
                 assert_equal raw, array.get(3).__buffer.to_str
+            end
+            describe "fixed-size elements" do
+                it "commits it to the backing buffer" do
+                    array.set!(3, make_int32(10))
+                    assert_equal [10, 20, 30, 10], array.__buffer.unpack("l<*")
+                end
+            end
+            describe "variable-size elements" do
+                before do
+                    flexmock(array).should_receive(:__element_fixed_buffer_size?).and_return(false)
+                end
+                it "keeps it in the elements cache" do
+                    array.set!(3, make_int32(10))
+                    assert_equal [10, 20, 30, 40], array.__buffer.unpack("l<*")
+                    assert_equal [10], array.get(3).__buffer.unpack("l<*")
+                end
             end
             it "does not validate the compatibility of the source value" do
                 float32_t = NumericType.new_submodel(size: 4, integer: false)
@@ -99,7 +114,7 @@ module ModelKit::Types
             it "does validate that the source and target values have the same size" do
                 int64_t = NumericType.new_submodel(size: 8)
                 ten = int64_t.wrap([10].pack("Q<"))
-                assert_raises(IncompatibleTypes) do
+                assert_raises(InvalidCopy) do
                     array.set(3, ten)
                 end
             end

@@ -114,6 +114,7 @@ module ModelKit::Types
             end
 
             def ==(other)
+                return true if super
                 other.kind_of?(Class) &&
                     other.superclass == self.superclass &&
                     other.name == self.name &&

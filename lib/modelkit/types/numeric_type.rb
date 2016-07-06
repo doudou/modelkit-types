@@ -22,6 +22,16 @@ module ModelKit::Types
             __buffer.unpack(__pack_code).first
         end
 
+        # Create a numeric value from a ruby numeric
+        #
+        # @param [Numeric] value the value
+        # @return [NumericType]
+        def self.from_ruby(value)
+            v = new
+            v.from_ruby(value)
+            v
+        end
+
         # Updates the buffer with the given value
         #
         # Unlike {#from_ruby}, it does not apply any user-defined conversions

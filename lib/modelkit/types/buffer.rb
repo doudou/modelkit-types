@@ -18,15 +18,45 @@ module ModelKit::Types
             @size = size
         end
 
+        # Whether this buffer is a view of a bigger one if is gives us access to
+        # the whole {#backing_buffer}
+        def whole?
+            size == backing_buffer.size
+        end
+
+        def contains?(buffer)
+            buffer.backing_buffer.equal?(backing_buffer) &&
+                buffer.offset >= self.offset &&
+                buffer.offset + buffer.size <= self.offset + self.size
+        end
+
+        # Delete a range in the buffer
+        def slice!(offset, size)
+            if offset < 0
+                raise RangeError, "slice! offset is negative"
+            elsif offset > self.size
+                raise RangeError, "offset beyond the buffer size"
+            elsif offset + size > self.size
+                raise RangeError, "slice range crosses buffer end"
+            end
+            backing_buffer.slice!(self.offset + offset, size)
+            @size -= size
+        end
+
+        # Whether this buffer is of size 0
+        def empty?
+            size == 0
+        end
+
         # Create a different view on the same backing buffer
         #
         # The returned buffer object shares the same backing buffer, but
-        # "viewing" only the slice at the given offset and size
+        # "viewing" only the view at the given offset and size
         #
         # @return [Buffer]
         # @raise [RangeError]
-        def slice(offset, size = self.size - offset)
-            validate_slice(offset, size)
+        def view(offset, size = self.size - offset)
+            validate_view(offset, size)
             self.class.new(backing_buffer, self.offset + offset, size)
         end
 
@@ -48,8 +78,8 @@ module ModelKit::Types
         end
 
         # Validate that the given range is valid
-        def validate_slice(index, size)
-            if index >= self.size
+        def validate_view(index, size)
+            if index > self.size
                 raise RangeError, "index #{index} out of bounds (#{self.size})"
             elsif index + size > self.size
                 raise RangeError, "buffer range [#{index}, #{size}] crosses buffer boundary (#{self.size}]"
@@ -58,13 +88,13 @@ module ModelKit::Types
 
         # Returns the byte at the given index
         def [](index, size = 1)
-            validate_slice(index, size)
+            validate_view(index, size)
             backing_buffer[offset + index, size]
         end
 
         # Sets the byte at the given index
         def []=(index, size = 1, value)
-            validate_slice(index, size)
+            validate_view(index, size)
             backing_buffer[offset + index, size] = value
         end
 
