@@ -513,9 +513,8 @@ module ModelKit::Types
         # Create a new opaque object
         #
         # @return [Models::Type]
-        def create_opaque(name, _size = 0, size: nil)
-            size ||= _size
-            register(Type.new_submodel(typename: name, registry: self, opaque: true, size: size))
+        def create_opaque(name, size: nil, **options)
+            create_type(name, size: size, opaque: true, **options)
         end
 
         # Create a new opaque object on this registry
