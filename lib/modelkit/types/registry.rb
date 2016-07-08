@@ -616,7 +616,9 @@ module ModelKit::Types
 
             element_type = validate_type_argument(element_type)
             typename ||= "#{element_type.name}[#{length}]"
-            size     ||= element_type.size * length
+            if !size && element_type.size
+                size     = element_type.size * length
+            end
             ModelKit::Types.validate_typename(typename)
             array_t = ArrayType.new_submodel(deference: element_type, typename: typename, registry: self,
                                              length: length, size: size, **options)

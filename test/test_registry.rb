@@ -390,6 +390,11 @@ module ModelKit::Types
                 array_t = registry.create_array element_t, 20
                 assert_same element_t, array_t.deference
             end
+            it "does not set the size if the element has no size" do
+                element_t = registry.create_null '/nil_size'
+                array_t = registry.create_array element_t, 20
+                assert_nil array_t.size
+            end
             it "generates the type name automatically" do
                 array_t = registry.create_array element_t, 20
                 assert_equal "#{element_t.name}[20]", array_t.name
