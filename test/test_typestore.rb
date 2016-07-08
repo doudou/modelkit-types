@@ -1,7 +1,16 @@
 require 'modelkit/types/test'
 
 describe ModelKit::Types do
+    describe ".split_typename" do
+        it "returns a single-element array for the root namespace" do
+            assert_equal ["/"], ModelKit::Types.split_typename("/")
+        end
+    end
     describe ".typename_parts" do
+        it "returns an empty array for the root namespace" do
+            assert_equal [], ModelKit::Types.typename_parts('/')
+        end
+
         it "handles simple cases" do
             assert_equal %w{NS2 NS3 Test}, ModelKit::Types.typename_parts("/NS2/NS3/Test")
         end

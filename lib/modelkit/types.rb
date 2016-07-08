@@ -85,11 +85,14 @@ module ModelKit::Types
 
     # Splits a typename into its namespace and basename
     #
-    # @return [(String,String)] the type's basename and 
+    # @return [(String,String)] the type's basename and namespace
     def self.split_typename(name, separator: NAMESPACE_SEPARATOR, remove_leading: false)
         parts = typename_parts(name, separator: separator)
-        basename = parts.pop
+        if parts.empty?
+            return ['/']
+        end
 
+        basename = parts.pop
         ns = parts.join(separator)
         if ns.empty?
             if remove_leading
