@@ -166,7 +166,7 @@ module ModelKit::Types
     # Validates that the given name is a canonical ModelKit::Types type name
     def self.validate_typename(name, absolute: true)
         if !name.respond_to?(:to_str)
-            raise TypeError, "type names must be strings"
+            raise InvalidTypeNameError, "type names must be strings"
         end
 
         tokens = typename_tokenizer(name)
