@@ -609,11 +609,7 @@ module ModelKit::Types
         #
         # @example create a new array of 10 elements
         #   registry.create_array "/my/Container", 10
-        def create_array(element_type, length = 0, _size = nil, size: nil, typename: nil, **options)
-            # For backward compatibility with typelib
-            size ||= _size
-            size = nil if size == 0
-
+        def create_array(element_type, length = 0, size: nil, typename: nil, **options)
             element_type = validate_type_argument(element_type)
             typename ||= "#{element_type.name}[#{length}]"
             if !size && element_type.size
