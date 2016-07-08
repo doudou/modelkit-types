@@ -1,4 +1,4 @@
-require 'modelkit/types/test'
+require 'test_helper'
 
 describe ModelKit::Types do
     describe ".split_typename" do

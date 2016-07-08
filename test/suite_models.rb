@@ -1,7 +1,0 @@
-require './test/models/test_type'
-require './test/models/test_numeric_type'
-require './test/models/test_indirect_type'
-require './test/models/test_array_type'
-require './test/models/test_container_type'
-require './test/models/test_enum_type'
-require './test/models/test_compound_type'

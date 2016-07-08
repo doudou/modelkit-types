@@ -1,4 +1,4 @@
-require 'modelkit/types/test'
+require 'test_helper'
 require 'modelkit/types/cxx'
 require 'modelkit/types/cxx/gccxml_loader'
 

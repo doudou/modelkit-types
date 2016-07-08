@@ -1,4 +1,4 @@
-require 'modelkit/types/test'
+require 'test_helper'
 require 'modelkit/types/io/cxx_importer'
 require_relative './cxx_common_tests'
 require_relative './cxx_gccxml_common'
@@ -152,7 +152,7 @@ module ModelKit::Types
 
                 before do
                     CXX::GCCXMLLoader.make_own_logger 'GCCXMLLoader', Logger::FATAL
-                    if !find_in_path('gccxml')
+                    if !TTY::Which.exist?('gccxml')
                         skip("gccxml not installed")
                     end
                     setup_loader 'gccxml'

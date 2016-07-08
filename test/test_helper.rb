@@ -39,7 +39,7 @@ require 'minitest/spec'
 require 'flexmock/minitest'
 
 module ModelKit::Types
-    module SelfTest
+    module TestHelpers
         def setup
             @__warn_about_helper_method_clashes = ModelKit::Types.warn_about_helper_method_clashes?
             ModelKit::Types.warn_about_helper_method_clashes = false
@@ -53,27 +53,10 @@ module ModelKit::Types
             super
             ModelKit::Types.warn_about_helper_method_clashes = @__warn_about_helper_method_clashes
         end
-
-        def find_in_path(name)
-            if name.start_with?('/')
-                if File.file?(name)
-                    return name
-                end
-            else
-                ENV['PATH'].split(':').each do |p|
-                    if File.file?(full_path = File.join(p, name))
-                        return full_path
-                    end
-                end
-            end
-            nil
-        end
     end
 end
 
-module Minitest
-    class Test
-        include ModelKit::Types::SelfTest
-    end
+class Minitest::Test
+    include ModelKit::Types::TestHelpers
 end
 

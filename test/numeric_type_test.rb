@@ -1,4 +1,4 @@
-require 'modelkit/types/test'
+require 'test_helper'
 module ModelKit::Types
     describe NumericType do
         attr_reader :int_t

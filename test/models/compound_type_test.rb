@@ -1,4 +1,4 @@
-require 'modelkit/types/test'
+require 'test_helper'
 require 'pp'
 
 module ModelKit::Types

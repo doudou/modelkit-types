@@ -5,9 +5,9 @@ task :default
 
 Rake::TestTask.new(:test) do |t|
     t.libs << "lib"
-    t.libs << "."
+    t.libs << "test"
     t.ruby_opts << '-w'
-    t.test_files = FileList['test/suite.rb']
+    t.test_files = FileList['**/*_test.rb']
 end
 
 task :gem => :build

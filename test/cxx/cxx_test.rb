@@ -1,4 +1,4 @@
-require 'modelkit/types/test'
+require 'test_helper'
 require 'modelkit/types/cxx'
 
 module ModelKit::Types
