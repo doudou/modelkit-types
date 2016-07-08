@@ -27,6 +27,20 @@ module ModelKit::Types
             assert_equal 324553, value.to_ruby
         end
 
+        it "raises AbstractType if attempting to instanciate a numeric type without size" do
+            type = NumericType.new_submodel(size: nil)
+            assert_raises(AbstractType) do
+                type.new
+            end
+        end
+
+        it "raises AbstractType if attempting to instanciate a numeric type that does not have a pack code" do
+            type = NumericType.new_submodel(size: 5)
+            assert_raises(AbstractType) do
+                type.new
+            end
+        end
+
         describe "#to_simple_value" do
             attr_reader :float_t, :int_t
             before do

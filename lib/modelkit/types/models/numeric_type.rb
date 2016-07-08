@@ -17,7 +17,7 @@ module ModelKit::Types
                      [false, false] => '/float']
 
             def default_numeric_typename(size, integer, unsigned)
-                "#{DEFAULT_TYPENAMES[[integer,unsigned]]}#{size * 8}"
+                "#{DEFAULT_TYPENAMES[[integer,unsigned]]}#{size ? size * 8 : 'UNK'}"
             end
 
             def setup_submodel(submodel, registry: nil, size: 0, integer: true, unsigned: false, typename: default_numeric_typename(size, integer, unsigned), opaque: false, null: false, &block)

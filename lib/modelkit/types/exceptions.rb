@@ -73,4 +73,7 @@ module ModelKit::Types
 
     # Exception raised by {Type#cast} when attempting to cast to an invalid type
     class InvalidCast < RuntimeError; end
+
+    # Exception raised when an abstract type is getting instanciated
+    class AbstractType < RuntimeError; end
 end

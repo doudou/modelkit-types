@@ -13,6 +13,11 @@ module ModelKit::Types
         def initialize_subtype
             @__pack_code = self.class.pack_code
             @__size = self.class.size
+            if !__pack_code
+                raise AbstractType, "cannot create values of #{self.class}: pack code unknown"
+            elsif !__size
+                raise AbstractType, "cannot create values of #{self.class}: size"
+            end
         end
 
         # Convert the encoded value into a Ruby value
