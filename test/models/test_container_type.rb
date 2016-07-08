@@ -111,14 +111,6 @@ module ModelKit::Types
                     assert_same  target_registry.get('/Test'), target_element_t
                 end
             end
-
-            describe RandomAccessContainer do
-                it "is included in the submodel if random_access is true" do
-                    container_model = ModelKit::Types::ContainerType.new_submodel(typename: '/std/vector', random_access: true)
-                    assert(container_model <= RandomAccessContainer)
-
-                end
-            end
         end
     end
 end

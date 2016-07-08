@@ -90,9 +90,9 @@ module ModelKit::Types
             def update_compound_node(type, node)
                 type.each do |field|
                     field_node = node.add_element('field',
-                        'name' => field.name,
+                        'name'   => field.name,
                         'offset' => field.offset,
-                        'type' => field.type.name)
+                        'type'   => field.type.name)
                     add_metadata(field_node, field.metadata)
                 end
                 update_type_node(type, node)

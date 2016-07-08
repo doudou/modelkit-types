@@ -115,25 +115,91 @@ module ModelKit::Types
             end
         end
 
-        # describe "#import" do
-        #     it "raises ImportFailed if the file does not exist" do
-        #         assert_raises(ArgumentError) { registry.import("bla.c") }
-        #     end
-        #     it "raises the importer's exception if the importer fails" do
-        #         assert_raises(ArgumentError) { registry.import(testfile) }
-        #     end
-        #     it "passes the options to the importer" do
-        #         registry = Registry.new
-        #         testfile = File.join(SRCDIR, "test_cimport.h")
-        #         registry.import(testfile, nil, :include => [ File.join(SRCDIR, '..') ], :define => [ 'GOOD' ])
-        #     end
+        describe "container registration" do
+            it "creates and registers a new model" do
+                container_m = registry.create_container_model '/test'
+                assert_same container_m, registry.container_model_by_name('/test')
+                assert_equal ContainerType, container_m.superclass
+            end
+            it "registers a new model" do
+                container_m = ContainerType.new_submodel typename: '/container'
+                registry.register_container_model container_m
+                assert_same container_m, registry.container_model_by_name('/container')
+            end
+            it "raises DuplicateTypeNameError if a container with the same name already exists" do
+                container_m = ContainerType.new_submodel typename: '/container'
+                registry.register_container_model container_m
+                assert_raises(DuplicateTypeNameError) do
+                    registry.register_container_model container_m
+                end
+            end
+            it "enumerates the available containers" do
+                assert_equal [], registry.each_available_container_model.to_a
+                container_m = ContainerType.new_submodel typename: '/container'
+                registry.register_container_model container_m
+                assert_equal [container_m], registry.each_available_container_model.to_a
+            end
+        end
 
-        #     it "merges the result into the receiver is merge is true" do
-        #         testfile = File.join(SRCDIR, "test_cimport.h")
-        #         registry.import(testfile, nil, :rawflags => [ "-I#{File.join(SRCDIR, '..')}", "-DGOOD" ])
-        #         registry.import(testfile, nil, :merge => true, :rawflags => [ "-I#{File.join(SRCDIR, '..')}", "-DGOOD" ])
-        #     end
-        # end
+        describe "#register" do
+            it "registers a new type" do
+                type = Type.new_submodel(typename: '/test')
+                registry.register(type)
+                assert_same type, registry.get('/test')
+                assert_same registry, type.registry
+            end
+            it "raises InvalidTypeNameError if the type has no name" do
+                type = Type.new_submodel
+                assert_raises(InvalidTypeNameError) do
+                    registry.register(type)
+                end
+            end
+            it "raises InvalidTypeNameError if the type has an invalid name" do
+                type = Type.new_submodel(typename: 'invalid')
+                assert_raises(InvalidTypeNameError) do
+                    registry.register(type)
+                end
+            end
+            it "allows to register the type under a different name than its own" do
+                type = Type.new_submodel(typename: '/test')
+                registry.register(type, name: '/other')
+                assert_same type, registry.get('/other')
+                refute registry.include?('/test')
+            end
+            it "raises DuplicateTypeNameError if the type name is already in use" do
+                type = Type.new_submodel(typename: '/test')
+                registry.register(type)
+                assert_raises(DuplicateTypeNameError) do
+                    registry.register(type)
+                end
+            end
+            it "raises NotFromThisRegistryError if the type is already registered elsewhere" do
+                type = Type.new_submodel(typename: '/test')
+                Registry.new.register(type)
+                assert_raises(NotFromThisRegistryError) do
+                    registry.register(type)
+                end
+            end
+        end
+
+        describe "#add" do
+            it "ensures that the type is defined on self" do
+                type = Type.new_submodel(typename: '/test')
+                Registry.new.register(type)
+                flexmock(registry).should_receive(:merge).once.
+                    with(->(r) { [type] == r.each.to_a }).
+                    pass_thru
+                registry.add(type)
+                assert_equal type, registry.get('/test')
+            end
+            it "does nothing if the type is already in the registry" do
+                type = Type.new_submodel(typename: '/test')
+                registry.register(type)
+                flexmock(registry).should_receive(:merge).never
+                registry.add(type)
+                assert_equal type, registry.get('/test')
+            end
+        end
 
         describe "#resize" do
             attr_reader :compound_t, :array_t, :compound_array_t
@@ -184,6 +250,53 @@ module ModelKit::Types
                 assert_raises(InvalidSizeSpecifiedError) do
                     registry.resize(int_t => 128)
                 end
+            end
+        end
+
+        describe "#create_opaque" do
+            it "creates a type model with opaque set" do
+                type = registry.create_opaque '/opaque'
+                assert Type, type.superclass
+                assert type.opaque?
+                assert_same type, registry.get('/opaque')
+            end
+            it "passes extra options to the underlying type creation" do
+                flexmock(registry).should_receive(:create_type).
+                    with('/opaque', size: 10, opaque: true, extra: :options).
+                    once
+                registry.create_opaque '/opaque', size: 10, extra: :options
+            end
+        end
+
+        describe "#create_null" do
+            it "creates a type model with null set" do
+                type = registry.create_null '/null'
+                assert Type, type.superclass
+                assert type.null?
+                assert_same type, registry.get('/null')
+            end
+            it "passes extra options to the underlying type creation" do
+                flexmock(registry).should_receive(:create_type).
+                    with('/null', size: 10, null: true, extra: :options).
+                    once
+                registry.create_null '/null', size: 10, extra: :options
+            end
+        end
+
+        describe "#create_character" do
+            it "creates and registers a character type model" do
+                type = registry.create_null '/char'
+                assert_equal '/char', type.name
+                assert CharacterType, type.superclass
+                assert_same type, registry.get('/char')
+            end
+            it "passes extra options to the underlying type creation" do
+                char_t = CharacterType.new_submodel(typename: '/char')
+                flexmock(CharacterType).should_receive(:new_submodel).
+                    with(typename: '/char', registry: registry, size: 10, extra: :options).
+                    once.
+                    and_return(char_t)
+                registry.create_character '/char', size: 10, extra: :options
             end
         end
 
@@ -245,6 +358,15 @@ module ModelKit::Types
                     enum_t.VAL2
                 end
                 assert_equal({:VAL0 => 0, :VAL1 => -1, :VAL2 => 0}, t.symbol_to_value)
+            end
+
+            it "raises NoMethodError if trying to access an invalid method on the enum builder" do
+                assert_raises(NoMethodError) do
+                    registry.create_enum('/NewEnum') do |enum_t|
+                        enum_t.VAL0('10')
+                    end
+                end
+                refute registry.include?('/NewEnum')
             end
             it "refuses to use an existing name" do
                 registry.create_enum('/NewEnum') { |enum_t| enum_t.VAL0 }
@@ -319,27 +441,39 @@ module ModelKit::Types
 
                 it "sets the size of the compound to the last field plus size" do
                     compound_t = registry.create_compound('/NewCompound') do |t|
-                        t.add('field0', f0_t, offset: 20)
+                        t.add('field0', f0_t, offset: 0)
+                        t.add('field1', f0_t, offset: 20)
                     end
                     assert_equal(20 + f0_t.size, compound_t.size)
                 end
 
                 it "allows to override the size" do
                     compound_t = registry.create_compound('/NewCompound', size: 2000) do |t|
-                        t.add('field0', f0_t, offset: 20)
+                        t.add('field0', f0_t, offset: 0)
+                        t.add('field1', f0_t, offset: 20)
                     end
                     assert_equal(2000, compound_t.size)
+                end
+
+                it "raises NoMethodError if trying to call a method that does not exist on the builder" do
+                    assert_raises(NoMethodError) do
+                        registry.create_compound('/NewCompound', size: 2000) do |t|
+                            t.does_not_exist
+                        end
+                    end
+                    refute registry.include?('/NewCompound')
                 end
 
                 describe "the assignation syntax" do
                     it "calls #add with the current offset as offset" do
                         compound_t = registry.create_compound('/NewCompound') do |t|
-                            t.skip 10
-                            flexmock(t).should_receive('add').with('field0', f0_t).
-                                pass_thru
                             t.field0 = f0_t
+                            t.skip 10
+                            flexmock(t).should_receive('add').with('field1', f0_t).
+                                pass_thru
+                            t.field1 = f0_t
                         end
-                        assert_equal 10, compound_t.get('field0').offset
+                        assert_equal 10 + f0_t.size, compound_t.get('field1').offset
                     end
                 end
                 describe "the #add syntax" do
@@ -351,16 +485,29 @@ module ModelKit::Types
                     end
                     it "sets the offset to the current offset" do
                         compound_t = registry.create_compound('/NewCompound') do |t|
-                            t.skip 10
                             t.add('field0', f0_t)
+                            t.skip 10
+                            t.add('field1', f0_t)
                         end
-                        assert_equal 10, compound_t.get('field0').offset
+                        assert_equal 10 + f0_t.size, compound_t.get('field1').offset
                     end
                     it "allows to override the offset" do
                         compound_t = registry.create_compound('/NewCompound') do |t|
-                            t.add('field0', f0_t, offset: 20)
+                            t.add('field0', f0_t)
+                            t.skip 10
+                            t.add('field1', f0_t, offset: 2000)
                         end
-                        assert_equal 20, compound_t.get('field0').offset
+                        assert_equal 2000, compound_t.get('field1').offset
+                    end
+                    it "allows to override the skip" do
+                        compound_t = registry.create_compound('/NewCompound') do |t|
+                            t.add('field0', f0_t)
+                            t.add('field1', f0_t, skip: 10)
+                            t.add('field2', f0_t)
+                        end
+                        assert_equal 20, compound_t.get('field1').offset
+                        assert_equal 10, compound_t.get('field1').skip
+                        assert_equal 50, compound_t.get('field2').offset
                     end
                 end
             end
@@ -464,100 +611,132 @@ module ModelKit::Types
             end
         end
 
-        #def test_registry_iteration
-        #    reg = make_registry
+        describe "#minimal_without" do
+            attr_reader :registry, :test_t, :other_t, :test_compound_t, :other_compound_t
+            before do 
+                @registry = Registry.new
+                @test_t = registry.create_type '/Test'
+                @other_t = registry.create_type '/Other'
+                @test_compound_t = registry.create_compound '/TestCompound' do |c|
+                    c.add 'test', '/Test'
+                end
+                @other_compound_t = registry.create_compound '/OtherCompound' do |c|
+                    c.add 'test', '/Other'
+                end
+            end
 
-        #    values = Typelib.log_silent { reg.each.to_a }
-        #    refute_equal(0, values.size)
-        #    assert(values.include?(reg.get("/int")))
-        #    assert(values.include?(reg.get("/EContainer")))
+            it "copies everything that is not self-contained in the given set of types" do
+                target = registry.minimal_without([test_t, test_compound_t])
+                assert_equal [other_t, other_compound_t], target.each.sort_by(&:name)
+            end
+            it "does copy arguments if some other types depend on them" do
+                target = registry.minimal_without([test_t])
+                assert_equal [other_t, other_compound_t, test_t, test_compound_t], target.each.sort_by(&:name)
+            end
+            it "does copy dependencies of an excluded type" do
+                target = registry.minimal_without([test_compound_t])
+                assert_equal [other_t, other_compound_t, test_t], target.each.sort_by(&:name)
+            end
+            it "copies aliases to the copied types by default" do
+                registry.create_alias '/TestAlias', test_t
+                registry.create_alias '/OtherAlias', other_t
+                target = registry.minimal_without([test_t, test_compound_t])
+                assert_equal [['/Other', other_t], ['/OtherAlias', other_t], ['/OtherCompound', other_compound_t]], target.each(with_aliases: true).sort_by(&:first)
+            end
+            it "does not copy aliases if with_aliases is false" do
+                registry.create_alias '/TestAlias', test_t
+                registry.create_alias '/OtherAlias', other_t
+                target = registry.minimal_without([test_t, test_compound_t], with_aliases: false)
+                assert_equal [['/Other', other_t], ['/OtherCompound', other_compound_t]], target.each(with_aliases: true).sort_by(&:first)
+            end
+        end
 
-        #    values = reg.each(:with_aliases => true).to_a
-        #    refute_equal(0, values.size)
-        #    assert(values.include?(["/EContainer", reg.get("/EContainer")]))
+        describe "#export_to_ruby" do
+            it "sets up export on the given namespace module" do
+                registry.create_type '/Test'
+                root = Module.new
+                registry.export_to_ruby(root)
+                assert_equal registry.get('/Test'), root.Test
+            end
+        end
 
-        #    values = reg.each('/NS1').to_a
-        #    assert_equal(6, values.size, values.map(&:name))
-        #end
+        describe ".import" do
+            attr_reader :tlb_path, :expected_registry
+            before do
+                @tlb_path = Pathname.new(__dir__) + "io" + "cxx_import_tests" + "enums.tlb"
+                @expected_registry = Registry.from_xml(tlb_path.read)
+            end
+            it "creates a registry and imports into it" do
+                flexmock(Registry).new_instances.should_receive(:import).
+                    with(tlb_path, kind: 'auto').
+                    once.
+                    pass_thru
+                registry = Registry.import(tlb_path)
+                assert registry.same_types?(expected_registry)
+            end
+            it "passes extra options" do
+                flexmock(Registry).new_instances.should_receive(:import).
+                    with(tlb_path, kind: 'auto', extra: :options).
+                    once
+                Registry.import(tlb_path, extra: :options)
+            end
+        end
 
-        #def test_validate_xml
-        #    test = "malformed_xml"
-        #    assert_raises(ArgumentError) { Registry.from_xml(test) }
+        describe "#import" do
+            attr_reader :tlb_path, :registry, :expected_registry
+            before do
+                @tlb_path = Pathname.new(__dir__) + "io" + "cxx_import_tests" + "enums.tlb"
+                @expected_registry = Registry.from_xml(tlb_path.read)
+                @registry = Registry.new
+            end
+            it "imports into self" do
+                registry.import(tlb_path)
+                assert registry.same_types?(expected_registry)
+            end
+            it "raises ArgumentError if the file's extension is unknown" do
+                e = assert_raises(ArgumentError) do
+                    registry.import("#{tlb_path}.unknown", extra: :option)
+                end
+                assert_equal "cannot guess file type for #{tlb_path}.unknown: unknown extension '.unknown'", e.message
+            end
+            it "raises ArgumentError if the file's guessed type has no importer" do
+                flexmock(Registry).should_receive(:guess_type).
+                    and_return("file_type_without_importer")
 
-        #    test = "<typelib><invalid_element name=\"name\" size=\"0\" /></typelib>"
-        #    assert_raises(ArgumentError) { Registry.from_xml(test) }
+                e = assert_raises(ArgumentError) do
+                    registry.import(tlb_path, extra: :option)
+                end
+                assert_equal "no importer defined for #{tlb_path}, detected as file_type_without_importer", e.message
+            end
+        end
 
-        #    test = "<typelib><opaque name=\"name\" /></typelib>"
-        #    assert_raises(ArgumentError) { Registry.from_xml(test) }
+        describe "#export" do
+            attr_reader :tlb_path, :registry, :expected_registry
+            before do
+                @tlb_path = Pathname.new(__dir__) + "io" + "cxx_import_tests" + "enums.tlb"
+                @registry = Registry.from_xml(tlb_path.read)
+            end
+            it "exports self" do
+                xml = registry.export('tlb')
+                assert registry.same_types?(Registry.from_xml(xml))
+            end
+            it "raises ArgumentError if the exporter kind is unknown" do
+                e = assert_raises(ArgumentError) do
+                    registry.export("unknown")
+                end
+                assert_equal "no exporter defined for unknown", e.message
+            end
+        end
 
-        #    test = "<typelib><opaque name=\"invalid type name\" size=\"0\" /></typelib>"
-        #    assert_raises(ArgumentError) { Registry.from_xml(test) }
-        #end
-
-        #def test_merge_keeps_metadata
-        #    reg = Typelib::Registry.new
-        #    Typelib::Registry.add_standard_cxx_types(reg)
-        #    type = reg.create_compound '/Test' do |c|
-        #        c.add 'field', 'double'
-        #    end
-        #    type.metadata.set('k', 'v')
-        #    type.field_metadata['field'].set('k', 'v')
-        #    new_reg = Typelib::Registry.new
-        #    new_reg.merge(reg)
-        #    new_type = new_reg.get('/Test')
-        #    assert_equal [['k', ['v']]], new_type.metadata.each.to_a
-        #    assert_equal [['k', ['v']]], new_type.field_metadata['field'].each.to_a
-        #end
-
-        #def test_minimal_keeps_metadata
-        #    reg = Typelib::Registry.new
-        #    Typelib::Registry.add_standard_cxx_types(reg)
-        #    type = reg.create_compound '/Test' do |c|
-        #        c.add 'field', 'double'
-        #    end
-        #    type.metadata.set('k', 'v')
-        #    type.field_metadata['field'].set('k', 'v')
-        #    new_reg = reg.minimal('/Test')
-        #    new_type = new_reg.get('/Test')
-        #    assert_equal [['k', ['v']]], new_type.metadata.each.to_a
-        #    assert_equal [['k', ['v']]], new_type.field_metadata['field'].each.to_a
-        #end
-
-        #def test_create_opaque_raises_ArgumentError_if_the_name_is_already_used
-        #    reg = Typelib::Registry.new
-        #    reg.create_opaque '/Test', 10
-        #    assert_raises(ArgumentError) { reg.create_opaque '/Test', 10 }
-        #end
-
-        #def test_create_null_raises_ArgumentError_if_the_name_is_already_used
-        #    reg = Typelib::Registry.new
-        #    reg.create_null '/Test'
-        #    assert_raises(ArgumentError) { reg.create_null '/Test' }
-        #end
-
-        #def test_reverse_depends_resolves_recursively
-        #    reg = Typelib::Registry.new
-        #    Typelib::Registry.add_standard_cxx_types(reg)
-        #    compound_t = reg.create_compound '/C' do |c|
-        #        c.add 'field', 'double'
-        #    end
-        #    vector_t = reg.create_container '/std/vector', compound_t
-        #    array_t  = reg.create_array vector_t, 10
-        #    assert_equal [compound_t, array_t, vector_t].to_set,
-        #        reg.reverse_depends(compound_t).to_set
-        #end
-
-        #def test_remove_removes_the_types_and_its_dependencies
-        #    reg = Typelib::Registry.new
-        #    Typelib::Registry.add_standard_cxx_types(reg)
-        #    compound_t = reg.create_compound '/C' do |c|
-        #        c.add 'field', 'double'
-        #    end
-        #    vector_t = reg.create_container '/std/vector', compound_t
-        #    reg.create_array vector_t, 10
-        #    reg.remove(compound_t)
-        #    assert !reg.include?("/std/vector</C>")
-        #    assert !reg.include?("/std/vector</C>[10]")
-        #end
+        describe "#clear_aliases" do
+            it "removes aliases from the registry" do
+                registry = Registry.new
+                test_t = registry.create_type '/test'
+                registry.create_alias '/alias', test_t
+                registry.clear_aliases
+                assert_equal [['/test', test_t]], registry.each(with_aliases: true).to_a
+            end
+        end
     end
 end
+

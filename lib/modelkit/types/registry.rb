@@ -46,6 +46,11 @@ module ModelKit::Types
             types.size
         end
 
+        # Compare whether two registries contain the same types
+        def same_types?(other)
+            types == other.types
+        end
+
         def dup
             copy = Registry.new
             copy.merge(self)
@@ -61,14 +66,6 @@ module ModelKit::Types
                 xml = REXML::Document.new(xml)
             end
             ModelKit::Types::IO::XMLImporter.new.from_xml(xml, registry: new)
-        end
-
-        # Helper method to merge a registry marshalled in XML into this registry
-        #
-        # @param (see Registry.from_xml)
-        # @return 
-        def merge_xml(xml)
-            merge(from_xml(xml))
         end
 
         # Enumerate the types contained in this registry
@@ -233,7 +230,7 @@ module ModelKit::Types
 
         # Export this registry in the Ruby namespace. The base namespace under
         # which it should be done is given in +base_module+
-        def export_to_ruby(base_module, options = Hash.new, &block)
+        def export_to_ruby(base_module, &block)
             base_module.extend RegistryExport
             base_module.reset_registry_export(self, block)
         end
@@ -247,25 +244,22 @@ module ModelKit::Types
             if type = TYPE_BY_EXT[ext]
                 type
             else
-                raise UnknownFileTypeError, "Cannot guess file type for #{file}: unknown extension '#{ext}'"
+                raise UnknownFileTypeError, "cannot guess file type for #{file}: unknown extension '#{ext}'"
             end
         end
 
         # Create a registry and import into it
-        def self.import(*args , **options)
+        def self.import(file, kind: 'auto', **options)
             registry = Registry.new
-            registry.import(*args, **options)
+            registry.import(file, kind: 'auto', **options)
             registry
         end
 
         # Returns the handler that will be used to import that file.
         #
         # The return value is an object which responds to #import
-        def self.import_handler_for(file, kind = 'auto')
+        def self.import_handler_for(file, kind)
             file = File.expand_path(file)
-            if !kind || kind == 'auto'
-                kind    = Registry.guess_type(file)
-            end
             if handler = IMPORT_TYPE_HANDLERS[kind]
                 return handler
             end
@@ -278,10 +272,13 @@ module ModelKit::Types
         #   the file's extension
         def import(file, kind: 'auto', **options)
             file = File.expand_path(file)
+            if kind == 'auto'
+                kind = Registry.guess_type(file)
+            end
             if handler = Registry.import_handler_for(file, kind)
                 return handler.import(file, registry: self, **options)
             else
-                raise ArgumentError, "no importer defined for #{file} (#{kind})"
+                raise ArgumentError, "no importer defined for #{file}, detected as #{kind}"
             end
         end
 
@@ -404,9 +401,9 @@ module ModelKit::Types
             #   automatically computed in #build so as to follow the previous
             #   field.
             # @return [Field]
-            def add(field_name, field_type, offset: current_size)
-                field = type.add(field_name.to_s, field_type, offset: offset)
-                @current_size = [current_size, field.offset + field.type.size].max
+            def add(field_name, field_type, offset: current_size, skip: 0)
+                field = type.add(field_name.to_s, field_type, offset: offset, skip: skip)
+                @current_size = [current_size, field.offset + field.size].max
                 field
             end
 
@@ -520,8 +517,8 @@ module ModelKit::Types
         # Create a new opaque object on this registry
         #
         # @return [Models::Type]
-        def create_null(name)
-            register(Type.new_submodel(typename: name, registry: self, null: true))
+        def create_null(name, size: nil, **options)
+            create_type(name, size: size, null: true, **options)
         end
 
         # Create a plain type object on this registry

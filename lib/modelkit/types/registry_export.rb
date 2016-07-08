@@ -21,7 +21,7 @@ module ModelKit::Types
         end
 
         def disable_registry_export
-            reset_registry_export(ModelKit::Types::Registry.new, nil)
+            reset_registry_export(Registry.new, nil)
         end
 
         def initialize_registry_export_namespace(mod, name)
@@ -74,11 +74,11 @@ module ModelKit::Types
             return if !relaxed_naming
 
             # Try harder ... for weird naming conventions ... but that's costly
-            prefix = ModelKit::Types.split_typename(typename_prefix)
+            prefix = ModelKit::Types.typename_parts(typename_prefix)
             template_args = template_args_to_type_name(args)
             basename = "#{m}#{template_args}".snakecase
             registry.each(typename_prefix) do |type|
-                name = type.split_typename
+                name = type.typename_parts
                 next if name[0, prefix.size] != prefix
                 if name[prefix.size].snakecase == basename
                     return name[prefix.size]
@@ -114,21 +114,15 @@ module ModelKit::Types
                 return type
             elsif type = RegistryExport.find_type(relaxed_naming, typename_prefix, registry, m, *args)
                 exported_type =
-                    if type.convertion_to_ruby
-                        type.convertion_to_ruby[0] || type
+                    if filter_block
+                        filter_block.call(type)
                     else
                         type
                     end
-
-                if filter_block
-                    exported_type = filter_block.call(type, exported_type)
+                @__typestore_cache[[m, args]] = exported_type
+                if exported_type
+                    RegistryExport.setup_subnamespace(self, exported_type, type.basename)
                 end
-                exported_type = @__typestore_cache[[m, args]] =
-                    if exported_type.respond_to?(:convertion_to_ruby) && exported_type.convertion_to_ruby
-                        exported_type.convertion_to_ruby[0] || exported_type
-                    else exported_type
-                    end
-                RegistryExport.setup_subnamespace(self, exported_type, type.basename)
                 exported_type
             elsif basename = RegistryExport.find_namespace(relaxed_naming, typename_prefix, registry, m, *args)
                 ns = Namespace.new
@@ -150,8 +144,7 @@ module ModelKit::Types
             if type = resolve_call_from_exported_registry(true, name.to_s)
                 return type
             else
-                template_args = RegistryExport.template_args_to_type_name(args)
-                raise NotFound, "cannot find a type named #{typename_prefix}#{name}#{template_args}, or a type named like that after a CamelCase or snake_case conversion, in registry"
+                raise NotFound, "cannot find a type named #{name}, or a type named like that after a CamelCase or snake_case conversion, in #{self}"
             end
         end
     end

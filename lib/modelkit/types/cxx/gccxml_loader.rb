@@ -575,9 +575,9 @@ module ModelKit::Types
                 end
                 base_classes.each do |base_type, _|
                     type.metadata.add('base_classes', base_type.name)
-                    base_type.each_field do |name, _|
-                        base_type.get(name).metadata.get('source_file_line').each do |file_line|
-                            type.get(name).metadata.add('source_file_line', file_line)
+                    base_type.each do |field|
+                        field.metadata.get('source_file_line').each do |file_line|
+                            type.get(field.name).metadata.add('source_file_line', file_line)
                         end
                     end
                 end

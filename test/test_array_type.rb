@@ -2,21 +2,24 @@ require 'modelkit/types/test'
 
 module ModelKit::Types
     describe ArrayType do
-        attr_reader :int32_t
+        attr_reader :int32_t, :array_t
         before do
             @int32_t = NumericType.new_submodel(size: 4)
+            @array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
         end
 
         def make_int32(value)
             int32_t.from_ruby(value)
         end
 
-        describe "#get" do
-            attr_reader :array, :array_t
+        def make_array(*values)
+            array_t.from_buffer(values.pack("l<*"))
+        end
 
+        describe "#get" do
+            attr_reader :array
             before do
-                @array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
+                @array = make_array(10, 20, 30, 40)
             end
 
             it "returns the n-th element" do
@@ -41,11 +44,9 @@ module ModelKit::Types
         end
 
         describe "#set" do
-            attr_reader :array, :array_t
-
+            attr_reader :array
             before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
+                @array = make_array(10, 20, 30, 40)
             end
 
             it "sets the value at the given index" do
@@ -59,14 +60,23 @@ module ModelKit::Types
                     array.set(3, ten)
                 end
             end
+
+            describe "variable-size elements" do
+                before do
+                    flexmock(array).should_receive(:__element_fixed_buffer_size?).and_return(false)
+                end
+                it "keeps it in the elements cache" do
+                    array.set(3, make_int32(10))
+                    assert_equal [10, 20, 30, 40], array.__buffer.unpack("l<*")
+                    assert_equal [10], array.get(3).__buffer.unpack("l<*")
+                end
+            end
         end
 
         describe "#[]=" do
             attr_reader :array
-
             before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
+                @array = make_array(10, 20, 30, 40)
             end
             it "is an alias for set" do
                 flexmock(array).should_receive(:set).with(index = flexmock, value = flexmock).once
@@ -74,57 +84,10 @@ module ModelKit::Types
             end
         end
 
-        describe "#set!" do
-            attr_reader :array, :array_t
-
-            before do
-                @array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
-                @ten = make_int32(10)
-            end
-
-            it "sets the value on the element at the given index" do
-                raw = [10].pack("l<")
-                ten = int32_t.wrap(raw)
-                array.set!(3, ten)
-                assert_equal raw, array.get(3).__buffer.to_str
-            end
-            describe "fixed-size elements" do
-                it "commits it to the backing buffer" do
-                    array.set!(3, make_int32(10))
-                    assert_equal [10, 20, 30, 10], array.__buffer.unpack("l<*")
-                end
-            end
-            describe "variable-size elements" do
-                before do
-                    flexmock(array).should_receive(:__element_fixed_buffer_size?).and_return(false)
-                end
-                it "keeps it in the elements cache" do
-                    array.set!(3, make_int32(10))
-                    assert_equal [10, 20, 30, 40], array.__buffer.unpack("l<*")
-                    assert_equal [10], array.get(3).__buffer.unpack("l<*")
-                end
-            end
-            it "does not validate the compatibility of the source value" do
-                float32_t = NumericType.new_submodel(size: 4, integer: false)
-                ten = float32_t.wrap([10].pack("l<"))
-                array.set!(3, ten)
-                assert_equal 10, array.get(3).to_simple_value
-            end
-            it "does validate that the source and target values have the same size" do
-                int64_t = NumericType.new_submodel(size: 8)
-                ten = int64_t.wrap([10].pack("Q<"))
-                assert_raises(InvalidCopy) do
-                    array.set(3, ten)
-                end
-            end
-        end
-
         describe "#[]" do
             attr_reader :array
             before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
+                @array = make_array(10, 20, 30, 40)
             end
 
             it "returns the n-th element" do
@@ -177,8 +140,7 @@ module ModelKit::Types
         describe "#each" do
             attr_reader :array
             before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @array = array_t.from_buffer([10, 20, 30, 40].pack("l<*"))
+                @array = make_array(10, 20, 30, 40)
             end
             it "enumerates the elements" do
                 assert_equal [10, 20, 30, 40], array.map(&:to_simple_value)
@@ -198,18 +160,16 @@ module ModelKit::Types
         end
 
         describe "#to_simple_value" do
-            attr_reader :backing_buffer, :array
+            attr_reader :array
             before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @backing_buffer = [10, 20, 30, 40].pack("l<*")
-                @array = array_t.from_buffer(backing_buffer)
+                @array = make_array(10, 20, 30, 40)
             end
             describe "simple array packing" do
                 it "packs the array in a single string" do
-                    result = array.to_simple_value
+                    result = array.to_simple_value(pack_simple_arrays: true)
                     assert_equal Hash[pack_code: "l<",
                                       size: 4,
-                                      data: Base64.strict_encode64(backing_buffer)], result
+                                      data: Base64.strict_encode64([10, 20, 30, 40].pack("l<*"))], result
 
                 end
             end
@@ -223,11 +183,9 @@ module ModelKit::Types
         end
 
         describe "#pretty_print" do
-            attr_reader :backing_buffer, :array
+            attr_reader :array
             before do
-                array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
-                @backing_buffer = [10, 20, 30, 40].pack("l<*")
-                @array = array_t.from_buffer(backing_buffer)
+                @array = make_array(10, 20, 30, 40)
             end
 
             it "pretty prints" do
@@ -245,6 +203,29 @@ module ModelKit::Types
   [3] = 40
 ]
                 EOTEXT
+            end
+        end
+
+        describe "#apply_changes" do
+            attr_reader :array
+            before do
+                @array = make_array(10, 20, 30, 40)
+            end
+            describe "fixed size elements" do
+                # NOTE: for fixed-size elements, elements within the original
+                # buffer size are updated in-place, no need to commit them to
+                # the backing buffer
+            end
+            describe "variable sized elements" do
+                before do
+                    flexmock(array).should_receive(:__element_fixed_buffer_size?).and_return(false)
+                end
+                it "modifies changed elements" do
+                    array.set(1, make_int32(100))
+                    assert_equal [10, 20, 30, 40], array.__buffer.to_str.unpack("l<*")
+                    array.apply_changes
+                    assert_equal [10, 100, 30, 40], array.__buffer.to_str.unpack("l<*")
+                end
             end
         end
     end

@@ -56,23 +56,24 @@ module ModelKit::Types
             end
             describe "#basename" do
                 it "calls ModelKit::Types.basename to extract the type's basename" do
-                    flexmock(ModelKit::Types).should_receive(:basename).with("/NS1/Bla/Test", '/').
-                        and_return(ret = flexmock)
-                    assert_equal ret, ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").basename
+                    flexmock(ModelKit::Types).should_receive(:basename).with("/NS1/Bla/Test", separator: '/').
+                        once.pass_thru
+                    assert_equal "Test", ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").basename
                 end
             end
             describe "#namespace" do
                 it "calls ModelKit::Types.namespace to extract the type's namespace" do
-                    flexmock(ModelKit::Types).should_receive(:namespace).with("/NS1/Bla/Test", '/', false).
-                        and_return(ret = flexmock)
-                    assert_equal ret, ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").namespace
+                    flexmock(ModelKit::Types).should_receive(:namespace).with("/NS1/Bla/Test", separator: '/', remove_leading: false).
+                        once.pass_thru
+                    assert_equal "/NS1/Bla/", ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").namespace
                 end
             end
             describe "#split_typename" do
                 it "calls ModelKit::Types.split_typename to split the type's name" do
-                    flexmock(ModelKit::Types).should_receive(:split_typename).with("/NS1/Bla/Test", '/').
-                        and_return(ret = flexmock)
-                    assert_equal ret, ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").split_typename
+                    flexmock(ModelKit::Types).should_receive(:split_typename).with("/NS1/Bla/Test", separator: '/').
+                        once.pass_thru
+                    assert_equal ["/NS1/Bla/", "Test"],
+                        ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").split_typename
                 end
             end
             describe "#metadata" do

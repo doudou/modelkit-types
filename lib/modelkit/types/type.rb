@@ -115,7 +115,7 @@ module ModelKit::Types
         #   and its endianness.
         #
         # @return [Object]
-        def to_simple_value(options = Hash.new)
+        def to_simple_value(special_float_values: false, pack_simple_arrays: false)
             raise NotImplementedError, "there is no way to convert a value of type #{self.class} into a simple ruby value"
         end
 
@@ -127,8 +127,8 @@ module ModelKit::Types
         # documentation.
         # 
         # (see Type#to_simple_value)
-        def to_json_value(options = Hash.new)
-            to_simple_value(Hash[special_float_values: :nil].merge(options))
+        def to_json_value(special_float_values: :nil, pack_simple_arrays: true)
+            to_simple_value(special_float_values: special_float_values, pack_simple_arrays: true)
         end
     end
 end

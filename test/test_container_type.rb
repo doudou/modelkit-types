@@ -280,6 +280,12 @@ module ModelKit::Types
                     assert_same el1, container.get(1)
                     assert_equal [10, 20, 30], container.map(&:to_simple_value)
                 end
+                it "modifies changed elements" do
+                    container.set(1, make_int32(100))
+                    assert_equal [4, 10, 20, 30, 40], container.__buffer.to_str.unpack("Q>l<*")
+                    container.apply_changes
+                    assert_equal [4, 10, 100, 30, 40], container.__buffer.to_str.unpack("Q>l<*")
+                end
             end
         end
 

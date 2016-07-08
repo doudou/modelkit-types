@@ -1,4 +1,8 @@
 module ModelKit::Types
+    # Interpret a buffer that is a sequence of values of the same type
+    #
+    # The sequence is fixed-size. This class gives access to the elements, but
+    # no way to modify it. It is only meant to interpret a buffer.
     class ValueSequence
         # The buffer holding the sequence
         #
@@ -27,17 +31,6 @@ module ModelKit::Types
             @element_offsets[0] = 0
             @element_type = type
             @element_fixed_buffer_size = type.fixed_buffer_size?
-        end
-
-        def each
-            return enum_for(:each) if !block_given?
-
-            offset = 0
-            size.times do |element_i|
-                next_offset = next_element_offset(element_i, offset)
-                yield(element_at(element_i, offset, next_offset - offset))
-                offset = next_offset
-            end
         end
 
         def delete_at(index)
@@ -78,29 +71,6 @@ module ModelKit::Types
         def get(index)
             offset, size = offset_and_size_of(index)
             element_at(index, offset, size)
-        end
-
-        def [](index, range = nil)
-            if range
-                range = (index...(index + range))
-            elsif index.kind_of?(Range)
-                range = index
-            end
-
-            if range
-                # This uses a property of offset_of, that is that it caches the
-                # offsets of all the elements until the requested one
-                offset, size = offset_and_size_of(range.first)
-
-                range.map do |element_i|
-                    element = (elements[element_i] ||= element_type.wrap!(buffer.view(offset, size)))
-                    offset += size
-                    size = element_type.buffer_size_at(buffer, offset)
-                    element
-                end
-            else
-                get(index)
-            end
         end
     end
 end

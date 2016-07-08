@@ -45,6 +45,16 @@ module ModelKit::Types
             # @return [Metadata]
             attr_reader :metadata
 
+            # Creates a new value from the given ruby object
+            #
+            # E.g. compounds require a hash, arrays and containers an array and
+            # so on
+            def from_ruby(values)
+                v = new
+                v.from_ruby(values)
+                v
+            end
+
             # Returns the description of a type using only simple ruby objects
             # (Hash, Array, Numeric and String).
             #
@@ -216,23 +226,23 @@ module ModelKit::Types
             # given, the namespace components are separated by it, otherwise,
             # the default of ModelKit::Types::NAMESPACE_SEPARATOR is used. If nil is
             # used as new separator, no change is made either.
-            def namespace(separator = ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading = false)
-                ModelKit::Types.namespace(name, separator, remove_leading)
+            def namespace(separator: ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading: false)
+                ModelKit::Types.namespace(name, separator: separator, remove_leading: remove_leading)
             end
 
             # Returns the basename part of the type's name, i.e. the type name
             # without the namespace part.
             #
             # See also ModelKit::Types.basename
-            def basename(separator = ModelKit::Types::NAMESPACE_SEPARATOR)
-                ModelKit::Types.basename(name, separator)
+            def basename(separator: ModelKit::Types::NAMESPACE_SEPARATOR)
+                ModelKit::Types.basename(name, separator: separator)
             end
 
             # Returns the elements of this type name
             #
             # @return [Array<String>]
-            def split_typename(separator = ModelKit::Types::NAMESPACE_SEPARATOR)
-                ModelKit::Types.split_typename(name, separator)
+            def split_typename(separator: ModelKit::Types::NAMESPACE_SEPARATOR)
+                ModelKit::Types.split_typename(name, separator: separator)
             end
 
             # Returns the complete name for the type (both namespace and
@@ -245,8 +255,13 @@ module ModelKit::Types
             #   type_t.full_name('::')
             #
             # will return the C++ name for the given type
-            def full_name(separator = ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading = false)
-                namespace(separator, remove_leading) + basename(separator)
+            def full_name(separator: ModelKit::Types::NAMESPACE_SEPARATOR, remove_leading: false)
+                namespace(separator: separator, remove_leading: remove_leading) + basename(separator: separator)
+            end
+
+            # Splits the type's typename into its constituents
+            def typename_parts
+                ModelKit::Types.typename_parts(name)
             end
 
             def to_s; "#<#{superclass.name}: #{name}>" end

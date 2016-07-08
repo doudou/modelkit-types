@@ -35,7 +35,7 @@ module ModelKit::Types
                     end
                     cxx_loader
                 else
-                    CXX::GCCXMLLoader
+                    CXX::CastXMLLoader
                 end
             end
 

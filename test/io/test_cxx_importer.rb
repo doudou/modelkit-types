@@ -28,7 +28,39 @@ module ModelKit::Types
                 assert_equal loader, CXXImporter.loader
             end
             it "returns the GCC-XML loader by default" do
-                assert_equal CXX::GCCXMLLoader, CXXImporter.loader
+                assert_equal CXX::CastXMLLoader, CXXImporter.loader
+            end
+
+            describe ".import" do
+                attr_reader :cxx_path, :expected_registry
+                before do
+                    @cxx_path = Pathname.new(__dir__) + "cxx_import_tests" + "enums.hh"
+
+                    @expected_registry = CXX::Registry.new
+                    tlb = Registry.from_xml(cxx_path.sub_ext('.tlb').read)
+                    expected_registry.merge(tlb)
+                end
+                it "loads a C++ file using the default loader and returns the generated registry" do
+                    registry = CXXImporter.import(cxx_path.to_s)
+                    assert expected_registry.same_types?(registry)
+                end
+                it "can be given a registry" do
+                    registry = CXX::Registry.new
+                    CXXImporter.import(cxx_path.to_s, registry: registry)
+                    assert expected_registry.same_types?(registry)
+                end
+                it "can be given a loader" do
+                    loader = flexmock
+                    loader.should_receive(:import).once
+                    CXXImporter.import(cxx_path.to_s, cxx_importer: loader)
+                end
+                it "passes extra options to the loader" do
+                    registry = flexmock
+                    loader = flexmock
+                    loader.should_receive(:import).once.
+                        with(cxx_path.to_s, registry: registry, extra: :options)
+                    CXXImporter.import(cxx_path.to_s, registry: registry, cxx_importer: loader, extra: :options)
+                end
             end
 
             describe "in castxml mode" do

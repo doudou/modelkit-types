@@ -98,6 +98,27 @@ module ModelKit::Types
                 end
             end
         end
+
+        describe "#to_simple_value" do
+            it "raises NotImplementedError" do
+                value = ModelKit::Types::Type.new_submodel(size: 20).new
+                assert_raises(NotImplementedError) do
+                    value.to_simple_value
+                end
+            end
+        end
+
+        describe "#to_json_value" do
+            it "calls to_simple_value with different default arguments" do
+                value = ModelKit::Types::Type.new_submodel(size: 20).new
+                flexmock(value).should_receive(:to_simple_value).once.
+                    with(special_float_values: :nil, pack_simple_arrays: true).
+                    pass_thru
+                assert_raises(NotImplementedError) do
+                    value.to_json_value
+                end
+            end
+        end
     end
 end
 

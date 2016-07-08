@@ -13,4 +13,7 @@ require './test/test_numeric_type'
 require './test/test_array_type'
 require './test/test_enum_type'
 require './test/test_container_type'
+require './test/test_compound_type'
+
+require './test/test_registry_export'
 

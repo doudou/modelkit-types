@@ -18,15 +18,45 @@ module ModelKit::Types
             end
 
             describe "#add" do
+                it "raises if the first field is not at offset zero" do
+                    assert_raises(ArgumentError) do
+                        compound_t.add 'f0', field_t, offset: 10
+                    end
+                end
+                it "passes if the first field's offset is explicitely given as zero" do
+                    compound_t.add 'f0', field_t, offset: 0
+                end
                 it "adds a field to #fields" do
                     compound_t.add 'f0', field_t
-                    assert(field = compound_t.fields['f0'])
+                    assert(field = compound_t.get('f0'))
                     assert_equal 'f0', field.name
                     assert_same field_t, field.type
                 end
-                it "sets the fields' offset" do
-                    compound_t.add 'f0', field_t, offset: 10
-                    assert_equal 10, compound_t.fields['f0'].offset
+                it "stores the computed offset if not specified explicitely" do
+                    compound_t.add 'f0', field_t
+                    assert_equal 0, compound_t.get('f0').offset
+                    compound_t.add 'f1', field_t, offset: 15
+                    assert_equal 15, compound_t.get('f1').offset
+                    compound_t.add 'f2', field_t
+                    assert_equal 25, compound_t.get('f2').offset
+                end
+                it "sets the fields' skip based on the difference between the last and new offset" do
+                    compound_t.add 'f0', field_t
+                    assert_equal 0, compound_t.get('f0').skip
+                    compound_t.add 'f1', field_t, offset: 10
+                    assert_equal 0, compound_t.get('f1').skip
+                    compound_t.add 'f2', field_t, offset: 25
+                    assert_equal 5, compound_t.get('f1').skip
+                end
+                it "can set the fields skip explicitely" do
+                    compound_t.add 'f0', field_t
+                    assert_equal 0, compound_t.get('f0').skip
+                    compound_t.add 'f1', field_t, skip: 5
+                    assert_equal 5, compound_t.get('f1').skip
+                    assert_equal 10, compound_t.get('f1').offset
+                    compound_t.add 'f2', field_t, skip: 10
+                    assert_equal 25, compound_t.get('f2').offset
+                    assert_equal 10, compound_t.get('f2').skip
                 end
                 it "raises DuplicateFieldError if the field already exists" do
                     compound_t.add 'f0', field_t
@@ -87,19 +117,9 @@ module ModelKit::Types
                 end
             end
 
-            describe "#offset_of" do
-                it "returns the offset value of a field" do
-                    compound_t.add 'f0', field_t, offset: 10
-                    assert_equal 10, compound_t.offset_of('f0')
-                end
-                it "raises FieldNotFound if the field does not exist" do
-                    assert_raises(FieldNotFound) { compound_t.offset_of('f0') }
-                end
-            end
-
             describe "#[]" do
                 it "returns the type of the field" do
-                    field = compound_t.add('f0', field_t, offset: 10)
+                    field = compound_t.add('f0', field_t)
                     assert_same field_t, compound_t['f0']
                 end
                 it "raises FieldNotFound if the field does not exist" do
@@ -109,7 +129,7 @@ module ModelKit::Types
 
             describe "#get" do
                 it "returns the field object" do
-                    field = compound_t.add('f0', field_t, offset: 10)
+                    field = compound_t.add('f0', field_t)
                     assert_same field, compound_t.get('f0')
                 end
                 it "raises FieldNotFound if the field does not exist" do
@@ -119,7 +139,7 @@ module ModelKit::Types
 
             describe "#has_field?" do
                 it "returns true if the field exists" do
-                    compound_t.add('f0', field_t, offset: 10)
+                    compound_t.add('f0', field_t)
                     assert compound_t.has_field?('f0')
                 end
                 it "raises FieldNotFound if the field does not exist" do
@@ -129,17 +149,9 @@ module ModelKit::Types
 
             describe "#each" do
                 it "enumerates the fields by object" do
-                    f0 = compound_t.add('f0', field_t, offset: 10)
+                    f0 = compound_t.add('f0', field_t)
                     f1 = compound_t.add('f1', field_t, offset: 20)
                     assert_equal [f0, f1].to_set, compound_t.each.to_set
-                end
-            end
-
-            describe "#each_field" do
-                it "enumerates the fields by name and type" do
-                    compound_t.add('f0', (f0_t = ModelKit::Types::Type.new_submodel), offset: 10)
-                    compound_t.add('f1', (f1_t = ModelKit::Types::Type.new_submodel), offset: 20)
-                    assert_equal [['f0', f0_t], ['f1', f1_t]].to_set, compound_t.each_field.to_set
                 end
             end
 
@@ -186,13 +198,13 @@ module ModelKit::Types
 
             describe "#pretty_print" do
                 it "does not raise" do
-                    field = compound_t.add 'f', field_t, offset: 10
+                    field = compound_t.add 'f', field_t
                     field.metadata.set('doc', 'documentation string')
                     pp = PP.new('')
                     compound_t.pretty_print(pp, verbose: true)
                 end
                 it "does not raise" do
-                    field = compound_t.add 'f', field_t, offset: 10
+                    field = compound_t.add 'f', field_t
                     field.metadata.set('doc', 'documentation string')
                     pp = PP.new('')
                     compound_t.pretty_print(pp, verbose: false)
@@ -201,14 +213,14 @@ module ModelKit::Types
 
             describe "#direct_dependencies" do
                 it "lists the field types" do
-                    compound_t.add('f0', field_t, offset: 10)
+                    compound_t.add('f0', field_t)
                     assert_equal [field_t].to_set, compound_t.direct_dependencies
                 end
             end
 
             describe "marshalling and unmarshalling" do
                 it "marshals and unmarshals metadata" do
-                    f = compound_t.add('f0', field_t, offset: 10)
+                    f = compound_t.add('f0', field_t)
                     Registry.new.register(compound_t)
                     f.metadata.set('k0', 'v0')
                     new_registry = ModelKit::Types::Registry.from_xml(compound_t.to_xml)
@@ -233,7 +245,9 @@ module ModelKit::Types
                 end
                 it "raises if two fields with the same name have different offets" do
                     compound_t.add('f0', field_t, offset: 0)
-                    other_t.add('f0', field_t, offset: 10)
+                    compound_t.add('test', field_t, offset: 20)
+                    other_t.add('f0', field_t, offset: 0)
+                    other_t.add('test', field_t, offset: 25)
                     assert_raises(MismatchingFieldOffsetError) { other_t.validate_merge(compound_t) }
                 end
                 it "raises if self has a field that the argument does not" do
@@ -326,42 +340,6 @@ module ModelKit::Types
                 end
             end
 
-            describe "#==" do
-                attr_reader :c0, :c1, :field_t
-                before do
-                    @c0 = ModelKit::Types::CompoundType.new_submodel
-                    @c1 = ModelKit::Types::CompoundType.new_submodel
-                    @field_t = ModelKit::Types::Type.new_submodel
-                end
-
-                it "returns true for the same type" do
-                    c0.add 'f', field_t
-                    c1.add 'f', field_t
-                    assert_equal c0, c1
-                end
-                it "returns false if there is a missing field" do
-                    field_t = ModelKit::Types::Type.new_submodel
-                    c0.add 'f', field_t
-                    refute_equal c0, c1
-                end
-                it "returns false if there is a new field" do
-                    field_t = ModelKit::Types::Type.new_submodel
-                    c1.add 'f', field_t
-                    refute_equal c0, c1
-                end
-                it "returns false if the field offset differ" do
-                    c0.add 'f', field_t, offset: 0
-                    c1.add 'f', field_t, offset: 10
-                    refute_equal c0, c1
-                end
-                it "returns false if the field type differ" do
-                    c0.add 'f', field_t
-                    c1_field_t = ModelKit::Types::Type.new_submodel typename: 'differ'
-                    c1.add 'f', c1_field_t
-                    refute_equal c0, c1
-                end
-            end
-
             describe "#casts_to?" do
                 attr_reader :subject, :field_t
                 before do
@@ -381,18 +359,79 @@ module ModelKit::Types
                     assert subject.casts_to?(test_t)
                 end
 
-                it "returns false if given the type of its first field when the field is at a nonzero offset" do
-                    subject.add 'f', field_t, offset: 1
-                    test_t = flexmock
-                    flexmock(field_t).should_receive(:casts_to?).with(test_t).and_return(true)
-                    assert !subject.casts_to?(test_t)
-                end
-
                 it "returns false if given a type its first field cannot be cast to" do
                     subject.add 'f', field_t, offset: 0
                     test_t = flexmock
                     flexmock(field_t).should_receive(:casts_to?).with(test_t).and_return(false)
                     assert !subject.casts_to?(test_t)
+                end
+            end
+
+            describe "#==" do
+                attr_reader :field_t, :compound_t, :other_t
+                before do
+                    @field_t = ModelKit::Types::Type.new_submodel(typename: '/field_t', size: 10)
+                    @compound_t = ModelKit::Types::CompoundType.new_submodel(typename: '/compound_t', size: 10)
+                    @other_t = ModelKit::Types::CompoundType.new_submodel(typename: '/compound_t', size: 10)
+                end
+
+                it "returns true when comparing with itself" do
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', field_t, skip: 5
+                    compound_t.add 'f2', field_t
+                    assert(compound_t == compound_t)
+                end
+                it "returns false when compared with an arbitrary object" do
+                    refute(compound_t == Object.new)
+                end
+                it "returns true when comparing two empty compounds" do
+                    other_t = ModelKit::Types::CompoundType.new_submodel(typename: '/compound_t', size: 10)
+                    assert(compound_t == other_t)
+                end
+                it "returns false if the field placement is different" do
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', field_t, skip: 5
+                    compound_t.add 'f2', field_t
+                    other_t.add 'f0', field_t, skip: 2
+                    other_t.add 'f1', field_t, skip: 3
+                    other_t.add 'f2', field_t
+                    refute(compound_t == other_t)
+                end
+                it "returns false if argument has less fields" do
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', field_t, skip: 5
+                    compound_t.add 'f2', field_t
+                    other_t.add 'f0', field_t
+                    other_t.add 'f1', field_t, skip: 5
+                    refute(compound_t == other_t)
+                end
+                it "returns false if argument has more fields" do
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', field_t, skip: 5
+                    other_t.add 'f0', field_t
+                    other_t.add 'f1', field_t, skip: 5
+                    other_t.add 'f2', field_t
+                    refute(compound_t == other_t)
+                end
+                it "returns false if the field types are different" do
+                    other_field_t = ModelKit::Types::NumericType.new_submodel(typename: '/other_field_t', size: 10)
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', field_t, skip: 5
+                    compound_t.add 'f2', field_t
+                    other_t.add 'f0', field_t
+                    other_t.add 'f1', other_field_t, skip: 5
+                    other_t.add 'f2', field_t
+                    refute(compound_t == other_t)
+                end
+                it "returns false if the field names are different" do
+                    other_field_t = ModelKit::Types::NumericType.new_submodel(typename: '/other_field_t', size: 10)
+                    compound_t.add 'f0', field_t
+                    compound_t.add 'f1', field_t, skip: 5
+                    compound_t.add 'f2', field_t
+                    other_t.add 'f0', field_t
+                    other_t.add 'test', other_field_t, skip: 5
+                    other_t.add 'f2', field_t
+                    refute(compound_t == other_t)
                 end
             end
         end

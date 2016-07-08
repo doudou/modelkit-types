@@ -3,70 +3,15 @@ module ModelKit::Types
     #
     # See the ModelKit::Types module documentation for an overview about how types are
     # values are represented.
-    class ArrayType < IndirectType
+    class ArrayType < SequenceType
         extend Models::ArrayType
 
-        attr_reader :__elements
-        attr_reader :__element_access
-        attr_predicate :__element_fixed_buffer_size?
-
-        def initialize_subtype
-            super
-            @__elements = Array.new
-            @__element_fixed_buffer_size = self.class.deference.fixed_buffer_size?
+        def __make_content_header
+            ""
         end
 
         def reset_buffer(buffer)
-            super
-            @__element_access = ValueSequence.new(buffer, self.class.deference, self.class.length)
-        end
-
-        def each(&block)
-            __element_access.each(&block)
-        end
-
-        def get(index)
-            if e = @__elements[index]
-                e
-            else
-                e = __element_access.get(index)
-                @__elements[index] =
-                    if __element_fixed_buffer_size?
-                        e
-                    else
-                        e = e.dup
-                    end
-            end
-        end
-
-        def set(index, value)
-            value.copy_to(get(index))
-        end
-
-        def set!(index, value)
-            value.copy_to!(get(index))
-        end
-
-        def [](index, range = nil)
-            __element_access[index, range]
-        end
-
-        def []=(index, value)
-            set(index, value)
-        end
-
-        # (see Type#to_simple_value)
-        #
-        # Array types are returned as either an array of their converted
-        # elements, or the hash described for the :pack_simple_arrays option.
-        def to_simple_value(pack_simple_arrays: true, **options)
-            if pack_simple_arrays && self.class.deference.respond_to?(:pack_code)
-                Hash[pack_code: self.class.deference.pack_code,
-                     size: self.class.length,
-                     data: Base64.strict_encode64(__buffer.to_str)]
-            else
-                each.map { |v| v.to_simple_value(pack_simple_arrays: pack_simple_arrays, **options) }
-            end
+            super(buffer, self.class.length, 0)
         end
 
         def pretty_print(pp) # :nodoc:
@@ -84,7 +29,5 @@ module ModelKit::Types
             pp.breakable
             pp.text ']'
         end
-
-        include Enumerable
     end
 end
