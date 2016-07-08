@@ -5,7 +5,7 @@ rvm:
     - '2.1'
     - '2.2'
     - '2.3.1'
-    - jruby9k
+    - 'jruby-9.1.2.0'
 script:
     - bundle exec rake test
 before_install:
