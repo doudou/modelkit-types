@@ -6,8 +6,6 @@ rvm:
     - '2.2'
     - '2.3'
     - jruby9k
-env:
-    - MODELKIT_TYPES_CXX_LOADER: 'gccxml'
 script:
     - bundle exec rake test
 before_install:

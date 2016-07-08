@@ -11,24 +11,70 @@ module ModelKit::Types
                 ENV.delete('MODELKIT_TYPES_CXX_LOADER')
             end
 
+            it "autodetects 'castxml' if it is available" do
+                flexmock(TTY::Which).should_receive(:which).with('castxml').and_return('/usr/bin/castxml')
+                flexmock(TTY::Which).should_receive(:exist?).with('/usr/bin/castxml').and_return(true)
+                loader = CXXImporter.loader
+                assert_equal CXX::CastXMLLoader, loader
+                assert_equal '/usr/bin/castxml', loader.binary_path
+            end
+
+            it "autodetects 'gccxml' if castxml is not available and gccxml is" do
+                flexmock(TTY::Which).should_receive(:which).with('castxml').and_return(nil)
+                flexmock(TTY::Which).should_receive(:which).with('gccxml').and_return('/path/to/gccxml')
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/gccxml').and_return(true)
+                loader = CXXImporter.loader
+                assert_equal CXX::GCCXMLLoader, loader
+                assert_equal '/path/to/gccxml', loader.binary_path
+            end
+
             it "returns the importer that matches the MODELKIT_TYPES_CXX_LOADER envvar" do
                 ENV['MODELKIT_TYPES_CXX_LOADER'] = 'castxml'
-                assert_equal CXX::CastXMLLoader, CXXImporter.loader
-                ENV['MODELKIT_TYPES_CXX_LOADER'] = 'gccxml'
-                assert_equal CXX::GCCXMLLoader, CXXImporter.loader
+                flexmock(TTY::Which).should_receive(:which).with('castxml').and_return('/path/to/castxml')
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/castxml').and_return(true)
+                loader = CXXImporter.loader
+                assert_equal CXX::CastXMLLoader, loader
+                assert_equal '/path/to/castxml', loader.binary_path
             end
-            it "raises ArgumentError if the envvar does not match an known loader" do
-                ENV['MODELKIT_TYPES_CXX_LOADER'] = 'does_not_exist'
-                assert_raises(ArgumentError) do
+            it "raises ImporterNotFound if the binary inferred by MODELKIT_TYPES_CXX_LOADER cannot be found" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = 'castxml'
+                flexmock(TTY::Which).should_receive(:which).with('castxml').and_return(nil)
+                assert_raises(CXXImporter::ImporterNotFound) do
                     CXXImporter.loader
                 end
             end
+            it "selects the binary explicitely selected by MODELKIT_TYPES_CXX_LOADER" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = 'castxml:/path/to/castxml'
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/castxml').and_return(true)
+                loader = CXXImporter.loader
+                assert_equal CXX::CastXMLLoader, loader
+                assert_equal '/path/to/castxml', loader.binary_path
+            end
+
+            it "raises ImporterNotFound if the binary explicitely specified by MODELKIT_TYPES_CXX_LOADER cannot be found" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = 'castxml:/path/to/castxml'
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/castxml').and_return(false)
+                assert_raises(CXXImporter::ImporterNotFound) do
+                    CXXImporter.loader
+                end
+            end
+            it "raises ImporterNotFound MODELKIT_TYPES_CXX_LOADER does not match an known loader" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = 'does_not_exist'
+                assert_raises(CXXImporter::ImporterNotFound) do
+                    CXXImporter.loader
+                end
+            end
+            it "selects automatically the loader type if it matches the binary path" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = '/path/to/gccxml'
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/gccxml').and_return(true)
+                loader = CXXImporter.loader
+                assert_equal CXX::GCCXMLLoader, loader
+                assert_equal '/path/to/gccxml', loader.binary_path
+            end
+
             it "returns an explicitely set loader" do
                 CXXImporter.loader = loader = flexmock
                 assert_equal loader, CXXImporter.loader
-            end
-            it "returns the GCC-XML loader by default" do
-                assert_equal CXX::CastXMLLoader, CXXImporter.loader
             end
 
             describe ".import" do
@@ -67,8 +113,8 @@ module ModelKit::Types
                 include CXXCommonTests
 
                 before do
-                    CXX::GCCXMLLoader.make_own_logger 'GCCXMLLoader', Logger::FATAL
-                    if !find_in_path(CXX::GCCXMLLoader.castxml_binary_name)
+                    CXX::GCCXMLLoader.make_own_logger 'CastXMLLoader', Logger::FATAL
+                    if !TTY::Which.exist?('castxml')
                         skip("castxml not installed")
                     end
                     setup_loader 'castxml'

@@ -14,14 +14,10 @@ module ModelKit::Types
                 @importer_options ||= Hash.new
             end
 
-            def setup_loader(loader_name, name: loader_name, **options)
-                if loader = ModelKit::Types::IO::CXXImporter::CXX_LOADERS[loader_name]
-                    @loader = loader
-                    @loader_name = name
-                    importer_options.merge!(options)
-                else
-                    raise ArgumentError, "unknown loader #{loader_name}"
-                end
+            def setup_loader(loader_name, **options)
+                @loader = ModelKit::Types::IO::CXXImporter.select_loader_by_name(loader_name)
+                @loader_name = loader_name
+                importer_options.merge!(options)
             end
 
             def type_xml_without_metadata(type)

@@ -103,7 +103,7 @@ module ModelKit::Types
                 lines.shift
                 root_tag = lines.shift
                 if root_tag !~ /<GCC_XML/
-                    raise ImportError, "the provided XML input does not look like a GCCXML output (expected a root GCC_XML tag but got #{root_tag.chomp})"
+                    raise ImportError, "the provided XML input does not look like a GCCXML output (expected a root GCC_XML tag but got #{root_tag ? root_tag.chomp : 'none'})"
                 end
 
                 lines.each do |l|
@@ -942,82 +942,50 @@ module ModelKit::Types
             end
 
             class << self
-                # Set of options that should be passed to the gccxml binary
-                #
-                # it is usually a set of options required to workaround the
-                # limitations of gccxml, as e.g. passing -DEIGEN_DONT_VECTORIZE when
-                # importing the Eigen headers
-                #
-                # @return [Array]
-                attr_reader :gccxml_default_options
-                attr_reader :castxml_default_options
+                attr_accessor :binary_path
+                attr_accessor :default_options
             end
-            @gccxml_default_options = Shellwords.split(ENV['TYPELIB_GCCXML_DEFAULT_OPTIONS'] || '-DEIGEN_DONT_VECTORIZE')
-            @castxml_default_options = Shellwords.split(ENV['TYPELIB_CASTXML_DEFAULT_OPTIONS'] || '')
+            @binary_path = 'gccxml'
+            @default_options = Shellwords.split(ENV['TYPELIB_GCCXML_DEFAULT_OPTIONS'] || '-DEIGEN_DONT_VECTORIZE')
 
-            #figure out the correct gccxml binary name, debian has changed this name 
-            #to gccxml.real
-            def self.gcc_binary_name
-                if !`which gccxml.real > /dev/null 2>&1`.empty?
-                    return "gccxml.real"
-                end
-                return "gccxml"
-            end
+            class ImportProcessFailed < RuntimeError; end
 
-            def self.castxml_binary_name
-                ENV['CASTXML'] || 'castxml'
-            end
-
-            # Runs castxml on the provided file and with the given options, and
-            # return the Nokogiri::XML object representing the result
+            # Runs the importer binary on the provided file and with the given
+            # options, and return its output as a string
             #
-            # Raises RuntimeError if casrxml failed to run
-            def self.castxml(file, required_files: [file], rawflags: Array.new, define: Array.new, include_paths: Array.new)
-                cmdline = [castxml_binary_name, *castxml_default_options, "--castxml-gccxml", '-x', 'c++']
-                cmdline.concat(rawflags)
-                define.each do |str|
-                    cmdline << "-D#{str}"
-                end
-                include_paths.each do |str|
-                    cmdline << "-I#{str}"
-                end
-
-                required_files.map do |req_file|
-                    Tempfile.open('typelib_gccxml') do |io|
-                        if !system(*cmdline, '-o', io.path, req_file)
-                            raise ArgumentError, "castxml returned an error while parsing #{req_file} with call #{cmdline.join(' ')}"
-                        end
-                        io.open
-                        io.read
+            # Raises ImportProcessFailed if the importer's execution failed
+            def self.run_importer(file, *cmdline, binary_path: self.binary_path)
+                Tempfile.open "modelkit_gccxml" do |io|
+                    if !system(binary_path, *cmdline, "-fxml=#{io.path}", file)
+                        raise ImportProcessFailed, "#{binary_path} failed, see error messages above for more details"
                     end
+                    io.read
                 end
             end
+
             # Runs gccxml on the provided file and with the given options, and
             # return the Nokogiri::XML object representing the result
             #
             # Raises RuntimeError if gccxml failed to run
-            def self.gccxml(file, required_files: [file], rawflags: Array.new, define: Array.new, include_paths: Array.new)
-                cmdline = [gcc_binary_name, *gccxml_default_options]
-                cmdline.concat(rawflags)
-                define.each do |str|
-                    cmdline << "-D#{str}"
+            def self.run_preprocessor(file, *cmdline, binary_path: self.binary_path)
+                result = ::IO.popen([binary_path, '--preprocess', *cmdline]) do |io|
+                    io.read
                 end
-                include_paths.each do |str|
-                    cmdline << "-I#{str}"
+                if !$?.success?
+                    raise ArgumentError, "#{binary_path} failed, see error messages above for more details"
                 end
-
-                cmdline << file
-
-                Tempfile.open('typelib_gccxml') do |io|
-                    cmdline << "-fxml=#{io.path}"
-                    if !system(*cmdline)
-                        raise ArgumentError, "gccxml returned an error while parsing #{file} with call #{cmdline.join(' ')}"
-                    end
-                    [io.read]
-                end
+                result
             end
 
-            def self.import(file, registry: Registry.new, castxml: false, opaques: Set.new, required_files: [file], include_paths: Array.new, define: Array.new, rawflags: Array.new, **options)
+            def self.import(file,
+                    registry: Registry.new,
+                    opaques: Set.new,
+                    required_files: [file],
+                    include_paths: Array.new,
+                    define: Array.new,
+                    rawflags: Array.new,
+                    binary_path: self.binary_path, **options)
+
                 include_paths.concat(options.fetch(:include, Array.new).to_a)
                 required_files = required_files.map { |f| File.expand_path(f) }
 
@@ -1028,20 +996,26 @@ module ModelKit::Types
                     end
                 end
 
-                raw_xml = if castxml then castxml(file, required_files: required_files, rawflags: rawflags, define: define, include_paths: include_paths)
-                          else gccxml(file, required_files: required_files, rawflags: rawflags, define: define, include_paths: include_paths)
-                          end
+                cmdline = [
+                    *default_options,
+                    *rawflags,
+                    *define.map { |str| "-D#{str}" },
+                    *include_paths.map { |str| "-I#{str}" }
+                ]
+                raw_xml = run_importer(file, *cmdline)
 
-                raw_xml.each do |xml|
-                    converter = GCCXMLLoader.new
-                    converter.opaques = registry_opaques.dup | opaques.to_set
-                    gccxml_registry = converter.load(required_files, xml)
-                    registry.merge(gccxml_registry)
-                end
+                converter = GCCXMLLoader.new
+                converter.opaques = registry_opaques.dup | opaques.to_set
+                imported_registry = converter.load(required_files, raw_xml)
+                registry.merge(imported_registry)
                 registry
             end
 
-            def self.preprocess(files, castxml: false, include_paths: Array.new, define: Array.new, **options)
+            def self.preprocess(files,
+                    include_paths: Array.new,
+                    define: Array.new,
+                    binary_path: self.binary_path, **options)
+
                 if options[:include]
                     include_paths.concat(options[:include].to_a)
                 end
@@ -1054,21 +1028,8 @@ module ModelKit::Types
                     end
                     io.flush
 
-                    if castxml
-                        call = [castxml_binary_name, "--castxml-gccxml", "-E", *includes, *defines, *castxml_default_options, io.path] 
-                    else
-                        call = [gcc_binary_name, "--preprocess", *includes, *defines, *gccxml_default_options, io.path]
-                    end
-
-                    result = IO.popen(call) do |gccxml_io|
-                        gccxml_io.read
-                    end
-
-                    if !$?.success?
-                        raise ArgumentError, "failed to preprocess #{files.join(" ")} \"#{call[0..-1].join(" ")} /tmp/gcc-debug\""
-                    end
-
-                    result
+                    cmdline = [*default_options, *includes, *defines]
+                    run_preprocessor(io.path, *cmdline, binary_path: binary_path)
                 end
             end
         end
