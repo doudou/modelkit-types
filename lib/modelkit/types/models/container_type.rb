@@ -29,6 +29,21 @@ module ModelKit::Types
                 8
             end
 
+            # @api private
+            #
+            # Returns the marshalled size of this container at the given point
+            # in the buffer
+            def buffer_size_at(buffer, offset)
+                element_count = buffer[offset, 8].unpack("Q>").first
+                if deference.fixed_buffer_size?
+                    8 + element_count * deference.size
+                else
+                    access = ValueSequence.new(buffer.view(offset + 8), deference, element_count)
+                    offset, size = access.offset_and_size_of(element_count - 1)
+                    8 + offset + size
+                end
+            end
+
             # Whether this container has random-access capabilities
             def setup_submodel(submodel, deference: nil, registry: self.registry, typename: nil, size: 0, opaque: false, null: false)
                 super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)

@@ -16,6 +16,37 @@ module ModelKit::Types
             array_t.from_buffer(values.pack("l<*"))
         end
 
+        describe "#buffer_size_at" do
+            it "uses a shortcut for the fixed-size elements" do
+                buffer = array_t.from_ruby([10, 11, 12, 13]).__buffer
+                flexmock(int32_t).should_receive(:buffer_size_at).never
+                assert_equal 16, array_t.buffer_size_at(buffer, 0)
+            end
+            it "delegates to its element's type for variable-sized elements" do
+                registry = Registry.new
+                registry.register(int32_t)
+                vec_m = registry.create_container_model '/vec'
+                vec_int32 = registry.create_container vec_m, int32_t, size: 1
+                array_vec = registry.create_array vec_int32, 3
+
+                buffer = array_vec.from_ruby([[10, 11], [12], [13, 14, 15]]).__buffer
+                assert_equal 48, array_vec.buffer_size_at(buffer, 0)
+            end
+        end
+
+
+        it "initializes its internal buffer using #initial_buffer_size" do
+            registry = Registry.new
+            int32 = registry.create_numeric '/int32', size: 4, integer: true, unsigned: false
+            vec_m = registry.create_container_model '/vec'
+            vec_int32 = registry.create_container vec_m, int32
+            array_vec_int32 = registry.create_array vec_int32, 3
+            value = array_vec_int32.new
+            assert value[0].empty?
+            assert value[1].empty?
+            assert value[2].empty?
+        end
+
         describe "#from_ruby" do
             it "initializes the array from the values in the ruby array" do
                 array = array_t.new

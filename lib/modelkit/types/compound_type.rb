@@ -37,6 +37,31 @@ module ModelKit::Types
             end
         end
 
+        def apply_changes
+            return if self.class.fixed_buffer_size?
+
+            variable_sized_fields = Array.new
+            self.class.each do |field|
+                if !field.type.fixed_buffer_size? && (field_value = __field_values[field.name])
+                    variable_sized_fields << [field, field_value]
+                end
+            end
+
+            buffer = ""
+            current_offset = 0
+            variable_sized_fields.sort_by { |f, _| f.offset }.
+                each do |field, field_value|
+                    _field_type, orig_field_offset, orig_field_size = __field_type_offset_and_size[field.name]
+                    buffer.concat(__buffer[current_offset, orig_field_offset])
+                    buffer.concat(field_value.to_byte_array)
+                    buffer.concat("\x0" * field.skip)
+                    current_offset = orig_field_offset + orig_field_size + field.skip
+                end
+
+            buffer.concat(__buffer[current_offset, __buffer.size - current_offset])
+            reset_buffer(Buffer.new(buffer))
+        end
+
         # Returns the type, offset and size of a field in the marshalled data
         def __type_offset_and_size(name)
             if result = __field_type_offset_and_size[name]

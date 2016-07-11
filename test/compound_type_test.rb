@@ -2,9 +2,9 @@ require 'test_helper'
 
 module ModelKit::Types
     describe CompoundType do
-        attr_reader :int32_t, :double_t, :compound_t
+        attr_reader :registry, :int32_t, :double_t, :compound_t
         before do
-            registry = Registry.new
+            @registry = Registry.new
             @int32_t   = registry.create_numeric '/int32', size: 4, integer: true, unsigned: false
             @double_t  = registry.create_numeric '/double', size: 8, integer: false
             @compound_t = registry.create_compound '/Test' do |c|
@@ -32,6 +32,43 @@ module ModelKit::Types
             end
             value = compound_t.new
             assert value.get('a').empty?
+        end
+
+        describe "#buffer_size_at" do
+            it "shortcuts to its own size if fixed size" do
+                buffer = compound_t.from_ruby(a: 10, b: 20, c: 30).__buffer
+                flexmock(int32_t).should_receive(:buffer_size_at).never
+                assert_equal compound_t.size, buffer.size
+            end
+            it "computes the overall size if variable sized" do
+                vec_m = registry.create_container_model '/vec'
+                vec_int32  = registry.create_container vec_m, int32_t
+                compound_t = registry.create_compound '/VarTest' do |c|
+                    c.add 'a', int32_t
+                    c.add 'b', vec_int32, skip: 5
+                    c.add 'c', int32_t
+                end
+
+                buffer = Buffer.new(compound_t.from_ruby(a: 10, b: [11, 12], c: 13).to_byte_array)
+                assert_equal 29, compound_t.buffer_size_at(buffer, 0)
+            end
+        end
+
+        describe "#apply_changes" do
+            it "applies changes from variable types" do
+                vec_m = registry.create_container_model '/vec'
+                vec_int32  = registry.create_container vec_m, int32_t
+                compound_t = registry.create_compound '/VarTest' do |c|
+                    c.add 'a', int32_t
+                    c.add 'b', vec_int32, skip: 5
+                    c.add 'c', int32_t
+                end
+
+                value = compound_t.from_ruby(a: 10, b: [11, 12], c: 13)
+                assert_equal [10, 0, 13], value.__buffer.unpack("l<Q>xxxxxl<")
+                value.apply_changes
+                assert_equal [10, 2, 11, 12, 13], value.__buffer.unpack("l<Q>l<l<xxxxxl<")
+            end
         end
 
         describe "#__type_offset_and_size" do

@@ -33,6 +33,19 @@ module ModelKit::Types
             assert_equal 2, container_t.from_buffer([2].pack("Q>")).size
         end
 
+        describe "#buffer_size_at" do
+            it "accounts for the index" do
+                buffer = container_t.from_ruby([10, 11]).__buffer
+                assert_equal 16, container_t.buffer_size_at(buffer, 0)
+            end
+            it "delegates to its element's type for variable-sized elements" do
+                vec_vec_int32 = registry.create_container container_m, container_t
+                buffer = vec_vec_int32.from_ruby([[10, 11], [12]]).__buffer
+                assert_equal 16, container_t.buffer_size_at(buffer, 8)
+                assert_equal 12, container_t.buffer_size_at(buffer, 24)
+            end
+        end
+
         describe "#get" do
             attr_reader :raw, :container
             before do

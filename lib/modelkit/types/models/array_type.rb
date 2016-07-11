@@ -15,6 +15,20 @@ module ModelKit::Types
                 length * deference.initial_buffer_size
             end
 
+            # @api private
+            #
+            # Returns the marshalled size of this container at the given point
+            # in the buffer
+            def buffer_size_at(buffer, offset)
+                if deference.fixed_buffer_size?
+                    length * deference.size
+                else
+                    access = ValueSequence.new(buffer.view(offset), deference, length)
+                    offset, size = access.offset_and_size_of(length - 1)
+                    offset + size
+                end
+            end
+
             def ==(other)
                 super && length == other.length
             end

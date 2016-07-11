@@ -59,6 +59,17 @@ module ModelKit::Types
                 end
             end
 
+            def buffer_size_at(buffer, offset)
+                if fixed_buffer_size?
+                    return size
+                else
+                    each.inject(0) do |current_offset, field|
+                        current_offset + field.type.buffer_size_at(buffer, offset + current_offset) +
+                            field.skip
+                    end
+                end
+            end
+
             def ==(other)
                 return true if self.equal?(other)
                 return false if !super
