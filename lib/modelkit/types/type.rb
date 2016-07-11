@@ -41,6 +41,16 @@ module ModelKit::Types
         def apply_changes
         end
 
+        def ==(other)
+            if self.class != other.class
+                return false
+            end
+
+            apply_changes
+            other.apply_changes
+            __buffer == other.__buffer
+        end
+
         # Returns a new Type instance that contains the same value, but using a
         # different type object
         #

@@ -18,6 +18,10 @@ module ModelKit::Types
             @size = size
         end
 
+        def ==(other)
+            backing_buffer[offset, size] == other.backing_buffer[offset, size]
+        end
+
         # Whether this buffer is a view of a bigger one if is gives us access to
         # the whole {#backing_buffer}
         def whole?

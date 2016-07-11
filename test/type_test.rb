@@ -61,6 +61,54 @@ module ModelKit::Types
             end
         end
 
+        describe "#==" do
+            attr_reader :int32_t
+            before do
+                @int32_t = NumericType.new_submodel size: 4, integer: true, unsigned: false
+            end
+
+            it "is true if the two values are the same object" do
+                v = int32_t.from_ruby(10)
+                assert_equal v, v
+            end
+            it "is true if the two values are different objects of the same type and content" do
+                a = int32_t.from_ruby(10)
+                b = int32_t.from_ruby(10)
+                assert_equal a, b
+            end
+            it "is true if the two values are different objects of the equal type and content" do
+                a = int32_t.from_ruby(10)
+                other_int32_t = NumericType.new_submodel size: 4, integer: true, unsigned: false
+                b = other_int32_t.from_ruby(10)
+                assert_equal a, b
+            end
+            it "is false if the two values are of the same type but different content" do
+                a = int32_t.from_ruby(10)
+                b = int32_t.from_ruby(20)
+                refute_equal a, b
+            end
+            it "is false if the two values are different types even if they have the same content" do
+                a = int32_t.from_ruby(10)
+                float_t = NumericType.new_submodel size: 4, integer: false
+                b = float_t.from_buffer(a.to_byte_array)
+                refute_equal a, b
+            end
+            it "applies changes from variable-sized types before comparing" do
+                registry = Registry.new
+                registry.register(int32_t)
+                vec_m = registry.create_container_model '/vec'
+                vec_int32 = registry.create_container vec_m, int32_t
+                vec_vec_int32 = registry.create_container vec_m, vec_int32
+
+                a = vec_vec_int32.new
+                b = vec_vec_int32.from_ruby([[20]])
+                refute_equal a, b
+                a.push(vec_int32.from_ruby([10]))
+                b[0] = vec_int32.from_ruby([10])
+                assert_equal a, b
+            end
+        end
+
         describe "#copy_to" do
             it "copies the buffer content" do
                 type = Type.new_submodel(size: 2)
