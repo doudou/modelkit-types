@@ -59,14 +59,8 @@ module ModelKit::Types
         end
 
         def apply_changes_variable_size
-            new_size = __elements.size
-            old_size = __element_access.size
-            contents = __buffer.to_str
-
             new_contents = __make_content_header
-            element_size = __element_type.size
 
-            index  = 0
             @__elements.each_with_index do |el, i|
                 if el
                     new_contents.concat(el.to_byte_array)
