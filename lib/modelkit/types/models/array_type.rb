@@ -30,7 +30,7 @@ module ModelKit::Types
             end
 
             def ==(other)
-                super && length == other.length
+                super && (length == other.length)
             end
 
             def casts_to?(type)

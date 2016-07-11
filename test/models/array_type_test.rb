@@ -10,6 +10,34 @@ module ModelKit::Types
                 assert ModelKit::Types::ArrayType.metadata
             end
 
+            describe "#==" do
+                attr_reader :element_t
+                before do
+                    @element_t = ModelKit::Types::Type.new_submodel
+                end
+                it "returns true if the two arrays are identical" do
+                    a = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 10
+                    b = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 10
+                    assert_equal a, b
+                end
+                it "returns false if the two arrays have different lengths" do
+                    a = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 10
+                    b = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 20
+                    refute_equal a, b
+                end
+                it "delegates the equality tests to Type" do
+                    other_t = ModelKit::Types::Type.new_submodel size: 1
+                    a = ModelKit::Types::ArrayType.new_submodel deference: other_t, length: 10, size: 1
+                    b = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 10, size: 1
+                    refute_equal a, b
+                end
+                it "delegates the equality tests to IndirectType" do
+                    a = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 10, size: 1
+                    b = ModelKit::Types::ArrayType.new_submodel deference: element_t, length: 10, size: 2
+                    refute_equal a, b
+                end
+            end
+
             describe "#to_h" do
                 attr_reader :array_t, :element_t
                 before do

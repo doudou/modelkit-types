@@ -6,6 +6,10 @@ module ModelKit::Types
             # The type that is pointed-to by self
             attr_accessor :deference
 
+            def ==(other)
+                super && (deference == other.deference)
+            end
+
             def setup_submodel(submodel, deference: nil, registry: self.registry, typename: nil, size: 0, opaque: false, null: false)
                 submodel.deference = deference
                 super(submodel, registry: registry, typename: typename, size: size, opaque: opaque, null: null)

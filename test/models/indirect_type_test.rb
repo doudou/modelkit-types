@@ -62,6 +62,22 @@ module ModelKit::Types
                     assert_raises(MismatchingDeferencedTypeError) { i0.validate_merge(i1) }
                 end
             end
+
+            describe "#==" do
+                it "returns false if the two types are deferencing to a different type" do
+                    t0 = ModelKit::Types::Type.new_submodel size: 20
+                    t1 = ModelKit::Types::Type.new_submodel size: 10
+                    a = ModelKit::Types::IndirectType.new_submodel deference: t0
+                    b = ModelKit::Types::IndirectType.new_submodel deference: t1
+                    refute_equal a, b
+                end
+                it "returns true if the two types are dereferencing to the same type" do
+                    t0 = ModelKit::Types::Type.new_submodel size: 20
+                    a = ModelKit::Types::IndirectType.new_submodel deference: t0
+                    b = ModelKit::Types::IndirectType.new_submodel deference: t0
+                    assert_equal a, b
+                end
+            end
         end
     end
 end
