@@ -10,6 +10,26 @@ module ModelKit::Types
             ""
         end
 
+        # Resets this array to the values in a Ruby array
+        #
+        # If the Ruby array is smaller than self, the remainder will be
+        # default-initialized
+        #
+        # @param [Array] value an array whose elements can be converted to this
+        #   array's elements using {#deference} {#from_ruby}
+        # @raise RangeError if the array is bigger than self
+        def from_ruby(value)
+            if value.size > size
+                raise RangeError, "array provided too big (#{value.size} greater than #{size})"
+            end
+            buffer = ""
+            value.each do |v|
+                buffer.concat(__element_type.from_ruby(v).to_byte_array)
+            end
+            buffer.concat(__element_type.new.to_byte_array * (size - value.size))
+            reset_buffer(Buffer.new(buffer))
+        end
+
         def reset_buffer(buffer)
             super(buffer, self.class.length, 0)
         end

@@ -16,6 +16,25 @@ module ModelKit::Types
             array_t.from_buffer(values.pack("l<*"))
         end
 
+        describe "#from_ruby" do
+            it "initializes the array from the values in the ruby array" do
+                array = array_t.new
+                array.from_ruby([1, 2, 3, 4])
+                assert_equal [1, 2, 3, 4].pack("l<*"), array.to_byte_array
+            end
+            it "initializes only the elements provided" do
+                array = array_t.new
+                array.from_ruby([1, 2])
+                assert_equal [1, 2, 0, 0].pack("l<*"), array.to_byte_array
+            end
+            it "raises if too many elements are provided" do
+                array = array_t.new
+                assert_raises(RangeError) do
+                    array.from_ruby([1, 2, 3, 4, 5])
+                end
+            end
+        end
+
         describe "#get" do
             attr_reader :array
             before do
@@ -150,7 +169,7 @@ module ModelKit::Types
                 assert_same array_1, array.to_a[1]
             end
             it "leaves a coherent internal state if interrupted" do
-                array.each_with_index { |i| break if i == 3 }
+                array.each_with_index { |i| break if i.to_ruby == 3 }
                 assert_equal [10, 20, 30, 40], array.map(&:to_simple_value)
             end
             it "caches the elements it enumerates" do
