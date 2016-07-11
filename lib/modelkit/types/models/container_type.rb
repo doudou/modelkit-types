@@ -51,6 +51,12 @@ module ModelKit::Types
                 submodel.fixed_buffer_size = false
             end
 
+            # @api private
+            #
+            # Validate that this type and the argument are equivalent. This is
+            # used during registry merge
+            #
+            # @raise [InvalidMergeError]
             def validate_merge(type)
                 if container_model != type.container_model
                     raise MismatchingContainerModel, "#{self} and #{type} are not from the same container model"
@@ -58,6 +64,10 @@ module ModelKit::Types
                 super
             end
 
+            # Register a copy of this type in another registry
+            #
+            # @param (see IndirectType#copy_to)
+            # @return [ContainerType]
             def copy_to(registry, **options)
                 if !registry.has_container_model?(container_model.name)
                     registry.register_container_model(container_model)
