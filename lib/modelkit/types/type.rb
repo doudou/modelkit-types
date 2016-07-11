@@ -35,6 +35,12 @@ module ModelKit::Types
             @__buffer = buffer
         end
 
+        # @api private
+        #
+        # Apply value modifications to the underlying buffer
+        def apply_changes
+        end
+
         # Returns a new Type instance that contains the same value, but using a
         # different type object
         #
@@ -69,6 +75,7 @@ module ModelKit::Types
         #
         # @return [String]
         def to_byte_array
+            apply_changes
             __buffer.to_str
         end
 

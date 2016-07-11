@@ -82,7 +82,6 @@ module ModelKit::Types
         end
 
         def to_byte_array(data_only: false)
-            apply_changes
             super()
         end
 
