@@ -22,6 +22,18 @@ module ModelKit::Types
             double_t.from_buffer([v].pack("E"))
         end
 
+        it "initializes its internal buffer using #initial_buffer_size" do
+            registry = Registry.new
+            int32 = registry.create_numeric '/int32', size: 4, integer: true, unsigned: false
+            vec_m = registry.create_container_model '/vec'
+            vec_int32 = registry.create_container vec_m, int32, size: 1
+            compound_t = registry.create_compound '/test' do |c|
+                c.add 'a', vec_int32
+            end
+            value = compound_t.new
+            assert value.get('a').empty?
+        end
+
         describe "#__type_offset_and_size" do
             attr_reader :compound
             before do
@@ -44,6 +56,14 @@ module ModelKit::Types
                 compound.reset_buffer(compound.__buffer)
                 flexmock(compound.__field_offsets).should_receive(:[]).at_least.once.pass_thru
                 assert_equal [int32_t, 17, 4], compound.__type_offset_and_size('c')
+            end
+            it "uses the type reported size" do
+                int32_t.size = 1
+                flexmock(int32_t).should_receive(:buffer_size_at).
+                    with(compound.__buffer, 0).once.
+                    and_return(4)
+                assert_equal [int32_t, 0, 4], compound.__type_offset_and_size('a')
+                assert_equal [double_t, 4, 8], compound.__type_offset_and_size('b')
             end
         end
 

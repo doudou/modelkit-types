@@ -19,6 +19,16 @@ module ModelKit::Types
                 supermodel
             end
 
+            # @api private
+            #
+            # The size of a buffer when a new value is created with {#new}
+            #
+            # For containers, it is 8 bytes, that is the size of the element
+            # containing the number of elements in the container
+            def initial_buffer_size
+                8
+            end
+
             # Whether this container has random-access capabilities
             def setup_submodel(submodel, deference: nil, registry: self.registry, typename: nil, size: 0, opaque: false, null: false)
                 super(submodel, deference: deference, registry: registry, typename: typename, size: size, opaque: opaque, null: null)

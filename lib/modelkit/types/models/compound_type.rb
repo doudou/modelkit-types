@@ -50,7 +50,13 @@ module ModelKit::Types
                 obj.name = "ModelKit::Types::CompoundType"
             end
 
-            def equivalent_fields?(other)
+            def initial_buffer_size
+                if @initial_buffer_size
+                    @initial_buffer_size
+                end
+                @initial_buffer_size = each.inject(0) do |s, field|
+                    s + field.type.initial_buffer_size + field.skip
+                end
             end
 
             def ==(other)
@@ -95,6 +101,7 @@ module ModelKit::Types
                 submodel.instance_variable_set(:@fields_by_index, Array.new)
                 submodel.instance_variable_set(:@fields_by_name, Hash.new)
                 submodel.instance_variable_set(:@next_offset, 0)
+                submodel.instance_variable_set(:@initial_buffer_size, nil)
                 super
             end
 

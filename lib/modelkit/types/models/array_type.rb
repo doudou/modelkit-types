@@ -11,6 +11,10 @@ module ModelKit::Types
                 obj.name = "ModelKit::Types::ArrayType"
             end
 
+            def initial_buffer_size
+                length * deference.initial_buffer_size
+            end
+
             def ==(other)
                 super && length == other.length
             end

@@ -2,9 +2,9 @@ require 'test_helper'
 
 module ModelKit::Types
     describe ContainerType do
-        attr_reader :int32_t, :container_m, :container_t, :ten
+        attr_reader :registry, :int32_t, :container_m, :container_t, :ten
         before do
-            registry = Registry.new
+            @registry = Registry.new
             @int32_t = registry.create_numeric '/int32', size: 4, integer: true, unsigned: false
             @ten = make_int32(10)
             @container_m = registry.create_container_model '/std/vector'
@@ -21,6 +21,11 @@ module ModelKit::Types
         end
 
         it "newly creates a zero-sized container" do
+            assert container_t.new.empty?
+        end
+
+        it "does not care about the container's declared size" do
+            container_t = registry.create_container container_m, int32_t, typename: '/weird_size', size: 1
             assert container_t.new.empty?
         end
 

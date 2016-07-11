@@ -55,6 +55,14 @@ module ModelKit::Types
                 v
             end
 
+            # The size of the buffer when a new value is created by {#new}
+            #
+            # It is usually the same than {#size}, except for variable-size
+            # containers
+            def initial_buffer_size
+                size
+            end
+
             # Returns the description of a type using only simple ruby objects
             # (Hash, Array, Numeric and String).
             #

@@ -13,7 +13,7 @@ module ModelKit::Types
 
         def initialize
             initialize_subtype
-            reset_buffer(Buffer.new("\x0" * self.class.size))
+            reset_buffer(Buffer.new("\x0" * self.class.initial_buffer_size))
         end
 
         # Initialization method in which subtypes should do the type-specific
