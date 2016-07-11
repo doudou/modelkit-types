@@ -223,5 +223,34 @@ module ModelKit::Types
                 EOTEXT
             end
         end
+
+        describe "#from_ruby" do
+            it "initializes the fields from the hash values" do
+                compound = compound_t.from_ruby('a' => 1, 'b' => 0.1, 'c' => 2)
+                assert_equal 1, compound.get('a').to_ruby
+                assert_equal 0.1, compound.get('b').to_ruby
+                assert_equal 2, compound.get('c').to_ruby
+            end
+            it "accepts symbols as keys" do
+                compound = compound_t.from_ruby(a: 1, b: 0.1, c: 2)
+                assert_equal 1, compound.get('a').to_ruby
+                assert_equal 0.1, compound.get('b').to_ruby
+                assert_equal 2, compound.get('c').to_ruby
+            end
+            it "initializes the unspecified fields to empty" do
+                compound = compound_t.from_ruby(a: 1, b: 0.1)
+                assert_equal 1, compound.get('a').to_ruby
+                assert_equal 0.1, compound.get('b').to_ruby
+                assert_equal 0, compound.get('c').to_ruby
+            end
+        end
+
+        describe "#to_ruby" do
+            it "converts to a hash with string keys" do
+                compound = compound_t.from_ruby(a: 1, b: 0.1, c: 2)
+                assert_equal Hash['a' => 1, 'b' => 0.1, 'c' => 2],
+                    compound.to_ruby
+            end
+        end
     end
 end

@@ -30,6 +30,10 @@ module ModelKit::Types
             reset_buffer(Buffer.new(buffer))
         end
 
+        def to_ruby
+            map(&:to_ruby)
+        end
+
         def reset_buffer(buffer)
             super(buffer, self.class.length, 0)
         end

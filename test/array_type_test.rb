@@ -66,6 +66,13 @@ module ModelKit::Types
             end
         end
 
+        describe "#to_ruby" do
+            it "converts to an array with its elements converted themselves" do
+                assert_equal [1, 2, 3, 0],
+                    array_t.from_ruby([1, 2, 3]).to_ruby
+            end
+        end
+
         describe "#get" do
             attr_reader :array
             before do

@@ -32,8 +32,8 @@ module ModelKit::Types
 
         # Sets this value's contents from a hash
         def from_ruby(value)
-            value.each do |name, value|
-                get(name).from_ruby(value)
+            value.each do |field_name, field_value|
+                get(field_name.to_s).from_ruby(field_value)
             end
         end
 
@@ -147,6 +147,13 @@ module ModelKit::Types
         # Sets the value of a field
         def []=(name, value)
             set(name, value)
+        end
+
+        # Converts this value into a plain Ruby representation
+        def to_ruby
+            result = Hash.new
+            each_field { |name, v| result[name.to_s] = v.to_ruby }
+            result
         end
 
         # (see Type#to_simple_value)

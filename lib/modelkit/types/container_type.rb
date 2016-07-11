@@ -26,6 +26,18 @@ module ModelKit::Types
             end
         end
 
+        def to_ruby
+            map(&:to_ruby)
+        end
+
+        def from_ruby(value)
+            buffer = [value.size].pack("Q>")
+            value.each do |v|
+                buffer.concat(__element_type.from_ruby(v).to_byte_array)
+            end
+            reset_buffer(Buffer.new(buffer))
+        end
+
         # Remove all elements from this container
         def clear
             __elements.clear

@@ -341,5 +341,20 @@ module ModelKit::Types
                 assert_equal [10, 20, 30, 40, 0], container.map(&:to_ruby)
             end
         end
+
+        describe "#from_ruby" do
+            it "initializes the container from the values in the ruby array" do
+                container = container_t.new
+                container.from_ruby([1, 2, 3, 4])
+                assert_equal [4, 1, 2, 3, 4].pack("Q>l<*"), container.to_byte_array
+            end
+        end
+
+        describe "#to_ruby" do
+            it "converts to an container with its elements converted themselves" do
+                assert_equal [1, 2, 3],
+                    container_t.from_ruby([1, 2, 3]).to_ruby
+            end
+        end
     end
 end
