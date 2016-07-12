@@ -90,7 +90,12 @@ module ModelKit::Types
         end
 
         def to_ruby
-            if __element_type.respond_to?(:pack_code)
+            if __element_type <= CharacterType
+                if __elements.size != __element_access.size
+                    apply_changes
+                end
+                __element_access.buffer.to_str
+            elsif __element_type.respond_to?(:pack_code)
                 if __elements.size != __element_access.size
                     apply_changes
                 end

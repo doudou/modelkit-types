@@ -351,6 +351,27 @@ module ModelKit::Types
         end
 
         describe "#to_ruby" do
+            describe "character elements" do
+                attr_reader :char_t, :vec_char_t, :vec_char
+                before do
+                    @char_t = registry.create_character '/char', size: 1
+                    @vec_char_t = registry.create_container container_m, char_t
+                    @vec_char = vec_char_t.from_buffer([4].pack("Q<") + "abcd")
+                end
+                def make_char(char)
+                    char_t.from_buffer(char)
+                end
+
+                it "returns a string" do
+                    assert_equal "abcd", vec_char.to_ruby
+                end
+                it "applies size modifications" do
+                    vec_char.push make_char('e')
+                    assert_equal "abcde", vec_char.to_ruby
+                    vec_char.resize(2)
+                    assert_equal "ab", vec_char.to_ruby
+                end
+            end
             describe "elements with pack_code" do
                 it "converts to an array with its elements converted themselves" do
                     assert_equal [1, 2, 3],
