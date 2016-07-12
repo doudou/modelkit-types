@@ -14,6 +14,12 @@ module ModelKit::Types
             value
         end
 
+        it "aliases #inspect to #to_s" do
+            value = make_int32(10)
+            flexmock(value).should_receive(:to_s).once.and_return(ret = flexmock)
+            assert_equal ret, value.inspect
+        end
+
         describe ".from_buffer" do
             it "calls wrap with a copy of the buffer" do
                 buffer = "    "

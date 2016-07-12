@@ -40,9 +40,8 @@ module ModelKit::Types
             end
             it "delegates to its element's type for variable-sized elements" do
                 vec_vec_int32 = registry.create_container container_m, container_t
-                buffer = vec_vec_int32.from_ruby([[10, 11], [12]]).__buffer
-                assert_equal 16, container_t.buffer_size_at(buffer, 8)
-                assert_equal 12, container_t.buffer_size_at(buffer, 24)
+                buffer = "garbage" + vec_vec_int32.from_ruby([[10, 11], [12]]).to_byte_array.to_types_buffer + "garbage"
+                assert_equal 36, vec_vec_int32.buffer_size_at(buffer.to_types_buffer, 7)
             end
         end
 

@@ -318,20 +318,6 @@ module ModelKit::Types
             end
         end
 
-        # Resizes the given type to the given size, while updating the rest of
-        # the registry to keep it consistent
-        #
-        # In practice, it means it modifies the compound field offsets and
-        # sizes, and modifies the array sizes so that it matches the new sizes.
-        #
-        # +type+ must either be a type class or a type name, and to_size the new
-        # size for it.
-        #
-        # See #resize to resize multiple types in one call.
-        def resize_type(type, to_size)
-            resize(type => to_size)
-        end
-
         # Resize a set of types, while updating the rest of the registry to keep
         # it consistent
         #

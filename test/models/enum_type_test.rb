@@ -114,11 +114,11 @@ module ModelKit::Types
                 end
             end
             describe "#pretty_print" do
-                it "pretty-prints itself without values if verbose is false" do
+                it "pretty-prints itself" do
                     enum_t.add :TEST, 10
                     enum_t.add :TEST1, 20
                     result = PP.singleline_pp(enum_t, "")
-                    assert_equal "Test { TEST, TEST1 }", result
+                    assert_equal "Test { TEST = 10, TEST1 = 20 }", result
                 end
                 it "does proper multi-line formatting" do
                     enum_t.add :TEST, 10
@@ -126,8 +126,8 @@ module ModelKit::Types
                     result = PP.pp(enum_t, "", 10)
                     assert_equal <<-EOTEXT, result
 Test {
-  TEST,
-  TEST1
+  TEST = 10,
+  TEST1 = 20
 }
                     EOTEXT
                 end

@@ -514,6 +514,15 @@ module ModelKit::Types
                         assert_equal 10, compound_t.get('field1').skip
                         assert_equal 50, compound_t.get('field2').offset
                     end
+                    it "overrides if following offsets do not match the expectations" do
+                        registry.create_compound('/NewCompound') do |t|
+                            t.add('field0', f0_t)
+                            t.add('field1', f0_t, offset: 100, skip: 10)
+                            assert_raises(ArgumentError) do
+                                t.add('field2', f0_t, offset: 120)
+                            end
+                        end
+                    end
                 end
             end
         end

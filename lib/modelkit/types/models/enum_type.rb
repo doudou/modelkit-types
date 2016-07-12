@@ -114,17 +114,13 @@ module ModelKit::Types
                 info
             end
 
-            def pretty_print(pp, verbose: false) # :nodoc:
+            def pretty_print(pp) # :nodoc:
                 super
                 pp.text ' {'
                 pp.nest(2) do
                     pp.breakable
                     pp.seplist(symbol_to_value) do |keydef|
-                        if verbose
-                            pp.text "#{keydef[0]} = #{keydef[1]}"
-                        else
-                            pp.text keydef[0].to_s
-                        end
+                        pp.text "#{keydef[0]} = #{keydef[1]}"
                     end
                 end
                 pp.breakable

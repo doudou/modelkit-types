@@ -76,6 +76,18 @@ module ModelKit::Types
                         ModelKit::Types::Type.new_submodel(typename: "/NS1/Bla/Test").split_typename
                 end
             end
+            describe "#full_name" do
+                it "allows to change the namespace separator" do
+                    type = ModelKit::Types::Type.new_submodel(typename: '/a/type</with_template>')
+                    assert_equal '::a::type<::with_template>',
+                        type.full_name(separator: '::')
+                end
+                it "allows to remove the leading namespace separator" do
+                    type = ModelKit::Types::Type.new_submodel(typename: '/a/type</with_template>')
+                    assert_equal 'a::type<::with_template>',
+                        type.full_name(separator: '::', remove_leading: true)
+                end
+            end
             describe "#metadata" do
                 it "always returns the same MetaData object" do
                     t = ModelKit::Types::Type.new_submodel

@@ -116,6 +116,9 @@ describe ModelKit::Types do
     end
 
     describe ".validate_typename" do
+        it "raises TypeError if the argument contains invalid characters" do
+            assert_raises(ModelKit::Types::InvalidTypeNameError) { ModelKit::Types.validate_typename(':', absolute: false) }
+        end
         it "raises TypeError if the argument is not a string" do
             assert_raises(ModelKit::Types::InvalidTypeNameError) { ModelKit::Types.validate_typename(nil) }
         end
