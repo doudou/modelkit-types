@@ -7,9 +7,6 @@ module ModelKit::Types
         extend Models::ContainerType
 
         def reset_buffer(buffer)
-            if buffer.empty?
-                buffer = ([0].pack("Q<")).to_types_buffer
-            end
             element_count = buffer[0, 8].unpack("Q<").first
             super(buffer, element_count, 8)
         end
