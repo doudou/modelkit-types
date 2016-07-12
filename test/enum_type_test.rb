@@ -11,6 +11,23 @@ module ModelKit::Types
             end
         end
 
+        it "raises AbstractType if attempting to instanciate a type without size" do
+            type = EnumType.new_submodel(size: nil)
+            e = assert_raises(AbstractType) do
+                type.new
+            end
+            assert_match /no size specified/, e.message
+        end
+
+        it "raises AbstractType if attempting to instanciate a type that does not have a pack code" do
+            type = EnumType.new_submodel(size: 5)
+            e = assert_raises(AbstractType) do
+                type.new
+            end
+            assert_match /pack code unknown/, e.message
+        end
+
+
         describe "#from_ruby" do
             it "initializes with the value that matches the given symbol" do
                 enum = enum_t.new

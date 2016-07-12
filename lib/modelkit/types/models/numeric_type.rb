@@ -104,16 +104,11 @@ module ModelKit::Types
             #
             # The endianness is the one of the local OS
             def compute_pack_code(size: self.size, integer: self.integer?, unsigned: self.unsigned?)
-                pack_code =
-                    if integer
-                        INTEGER_PACK_CODES[[size, unsigned, ModelKit::Types.big_endian?]]
-                    else
-                        FLOAT_PACK_CODES[[size, ModelKit::Types.big_endian?]]
-                    end
-                if !pack_code
-                    raise AbstractType, "cannot marshal/unmarshal #{integer ? 'integer' : 'float'} types of size #{size}"
+                if integer
+                    INTEGER_PACK_CODES[[size, unsigned, ModelKit::Types.big_endian?]]
+                else
+                    FLOAT_PACK_CODES[[size, ModelKit::Types.big_endian?]]
                 end
-                pack_code
             end
 
             def self.extend_object(obj)

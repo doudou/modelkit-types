@@ -29,16 +29,18 @@ module ModelKit::Types
 
         it "raises AbstractType if attempting to instanciate a numeric type without size" do
             type = NumericType.new_submodel(size: nil)
-            assert_raises(AbstractType) do
+            e = assert_raises(AbstractType) do
                 type.new
             end
+            assert_match /no size specified/, e.message
         end
 
         it "raises AbstractType if attempting to instanciate a numeric type that does not have a pack code" do
             type = NumericType.new_submodel(size: 5)
-            assert_raises(AbstractType) do
+            e = assert_raises(AbstractType) do
                 type.new
             end
+            assert_match /pack code unknown/, e.message
         end
 
         describe "#to_simple_value" do

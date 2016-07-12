@@ -52,7 +52,7 @@ module ModelKit::Types
 
             def initial_buffer_size
                 if @initial_buffer_size
-                    @initial_buffer_size
+                    return @initial_buffer_size
                 end
                 @initial_buffer_size = each.inject(0) do |s, field|
                     s + field.type.initial_buffer_size + field.skip

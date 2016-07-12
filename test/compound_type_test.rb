@@ -34,6 +34,19 @@ module ModelKit::Types
             assert value.get('a').empty?
         end
 
+        it "computes #initial_buffer_size only once" do
+            registry = Registry.new
+            int32 = registry.create_numeric '/int32', size: 4, integer: true, unsigned: false
+            vec_m = registry.create_container_model '/vec'
+            vec_int32 = registry.create_container vec_m, int32, size: 1
+            compound_t = registry.create_compound '/test' do |c|
+                c.add 'a', vec_int32
+            end
+            flexmock(vec_int32).should_receive(:initial_buffer_size).once.pass_thru
+            result = compound_t.initial_buffer_size
+            assert_equal result, compound_t.initial_buffer_size
+        end
+
         describe "#buffer_size_at" do
             it "shortcuts to its own size if fixed size" do
                 buffer = compound_t.from_ruby(a: 10, b: 20, c: 30).__buffer

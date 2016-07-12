@@ -16,6 +16,11 @@ module ModelKit::Types
         def initialize_subtype
             @__size = self.class.size
             @__pack_code = NumericType.compute_pack_code(size: __size, integer: true, unsigned: false)
+            if !__size
+                raise AbstractType, "cannot create values of #{self.class}: no size specified"
+            elsif !__pack_code
+                raise AbstractType, "cannot create values of #{self.class}: pack code unknown"
+            end
             @__value_to_symbol = self.class.value_to_symbol
             @__symbol_to_value = self.class.symbol_to_value
         end
