@@ -112,7 +112,7 @@ module ModelKit::Types
                     expected_registry.merge(tlb)
                 end
                 after do
-                    CXXImporter.loader.timeout = 600
+                    CXXImporter.loader.timeout = 60
                 end
                 it "loads a C++ file using the default loader and returns the generated registry" do
                     registry = CXXImporter.import(cxx_path.to_s)
@@ -169,7 +169,7 @@ module ModelKit::Types
                     @cxx_path = Pathname.new(__dir__) + "cxx_import_tests" + "enums.hh"
                 end
                 after do
-                    CXXImporter.loader.timeout = 600
+                    CXXImporter.loader.timeout = 60
                 end
 
                 # Can't figure out how to check that the output is valid

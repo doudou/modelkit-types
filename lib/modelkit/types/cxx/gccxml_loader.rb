@@ -1002,7 +1002,7 @@ module ModelKit::Types
             #
             # Raises RuntimeError if gccxml failed to run
             def self.run_preprocessor(file, *cmdline, binary_path: self.binary_path)
-                run_subprocess(binary_path, '--preprocess', *cmdline)
+                run_subprocess(binary_path, '--preprocess', *cmdline, file)
             end
 
             def self.import(file,
