@@ -16,7 +16,7 @@ module ModelKit::Types
         end
 
         def make_container(*values)
-            raw = [values.size, *values].pack("Q>l<*")
+            raw = [values.size, *values].pack("Q<l<*")
             container = container_t.from_buffer(raw)
         end
 
@@ -30,7 +30,7 @@ module ModelKit::Types
         end
 
         it "infers the size from the buffered data" do
-            assert_equal 2, container_t.from_buffer([2].pack("Q>")).size
+            assert_equal 2, container_t.from_buffer([2].pack("Q<")).size
         end
 
         describe "#buffer_size_at" do
@@ -107,7 +107,7 @@ module ModelKit::Types
             describe "fixed-size elements" do
                 it "commits the value to the original backing buffer if within the container's original size" do
                     container.set(3, ten)
-                    assert_equal [4, 10, 20, 30, 10], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [4, 10, 20, 30, 10], container.__buffer.to_str.unpack("Q<l<*")
                 end
                 it "copies it to the existing cached element if outside the backing buffer" do
                     container.push(int32_t.from_buffer([100].pack("l<")))
@@ -123,7 +123,7 @@ module ModelKit::Types
                 end
                 it "stores a copy of the provided argument" do
                     container.set(3, ten)
-                    assert_equal [4, 10, 20, 30, 40].pack("Q>l<*"), container.__buffer.to_str
+                    assert_equal [4, 10, 20, 30, 40].pack("Q<l<*"), container.__buffer.to_str
                     assert container.get(3).__buffer.whole?
                     refute_same ten.__buffer.backing_buffer, container.get(3).__buffer.backing_buffer
                 end
@@ -243,7 +243,7 @@ module ModelKit::Types
                 it "appends new elements to the buffer" do
                     container.push(make_int32(50))
                     container.apply_changes
-                    assert_equal [5, 10, 20, 30, 40, 50], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [5, 10, 20, 30, 40, 50], container.__buffer.to_str.unpack("Q<l<*")
                 end
                 it "resets the cached element buffers after an append" do
                     el1 = container.get(1)
@@ -257,7 +257,7 @@ module ModelKit::Types
                 it "removes trailing elements" do
                     container.resize(3)
                     container.apply_changes
-                    assert_equal [3, 10, 20, 30], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [3, 10, 20, 30], container.__buffer.to_str.unpack("Q<l<*")
                 end
                 it "resets the cached element buffers after a removal" do
                     el1 = container.get(1)
@@ -276,7 +276,7 @@ module ModelKit::Types
                 it "appends new elements to the buffer" do
                     container.push(make_int32(50))
                     container.apply_changes
-                    assert_equal [5, 10, 20, 30, 40, 50], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [5, 10, 20, 30, 40, 50], container.__buffer.to_str.unpack("Q<l<*")
                 end
                 it "resets the cached element buffers after an append" do
                     el1 = container.get(1)
@@ -289,7 +289,7 @@ module ModelKit::Types
                 it "removes trailing elements" do
                     container.resize(3)
                     container.apply_changes
-                    assert_equal [3, 10, 20, 30], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [3, 10, 20, 30], container.__buffer.to_str.unpack("Q<l<*")
                 end
                 it "resets the cached element buffers after a removal" do
                     el1 = container.get(1)
@@ -300,9 +300,9 @@ module ModelKit::Types
                 end
                 it "modifies changed elements" do
                     container.set(1, make_int32(100))
-                    assert_equal [4, 10, 20, 30, 40], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [4, 10, 20, 30, 40], container.__buffer.to_str.unpack("Q<l<*")
                     container.apply_changes
-                    assert_equal [4, 10, 100, 30, 40], container.__buffer.to_str.unpack("Q>l<*")
+                    assert_equal [4, 10, 100, 30, 40], container.__buffer.to_str.unpack("Q<l<*")
                 end
             end
         end
@@ -346,7 +346,7 @@ module ModelKit::Types
             it "initializes the container from the values in the ruby array" do
                 container = container_t.new
                 container.from_ruby([1, 2, 3, 4])
-                assert_equal [4, 1, 2, 3, 4].pack("Q>l<*"), container.to_byte_array
+                assert_equal [4, 1, 2, 3, 4].pack("Q<l<*"), container.to_byte_array
             end
         end
 

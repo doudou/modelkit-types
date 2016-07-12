@@ -34,7 +34,7 @@ module ModelKit::Types
             # Returns the marshalled size of this container at the given point
             # in the buffer
             def buffer_size_at(buffer, offset)
-                element_count = buffer[offset, 8].unpack("Q>").first
+                element_count = buffer[offset, 8].unpack("Q<").first
                 if deference.fixed_buffer_size?
                     8 + element_count * deference.size
                 else

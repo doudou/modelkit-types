@@ -65,9 +65,9 @@ module ModelKit::Types
                 end
 
                 value = compound_t.from_ruby(a: 10, b: [11, 12], c: 13)
-                assert_equal [10, 0, 13], value.__buffer.unpack("l<Q>xxxxxl<")
+                assert_equal [10, 0, 13], value.__buffer.unpack("l<Q<xxxxxl<")
                 value.apply_changes
-                assert_equal [10, 2, 11, 12, 13], value.__buffer.unpack("l<Q>l<l<xxxxxl<")
+                assert_equal [10, 2, 11, 12, 13], value.__buffer.unpack("l<Q<l<l<xxxxxl<")
             end
         end
 

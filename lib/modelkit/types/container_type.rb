@@ -8,14 +8,14 @@ module ModelKit::Types
 
         def reset_buffer(buffer)
             if buffer.empty?
-                buffer = ([0].pack("Q>")).to_types_buffer
+                buffer = ([0].pack("Q<")).to_types_buffer
             end
-            element_count = buffer[0, 8].unpack("Q>").first
+            element_count = buffer[0, 8].unpack("Q<").first
             super(buffer, element_count, 8)
         end
 
         def __make_content_header
-            [size].pack("Q>")
+            [size].pack("Q<")
         end
 
         def to_byte_array(data_only: false)
@@ -31,7 +31,7 @@ module ModelKit::Types
         end
 
         def from_ruby(value)
-            buffer = [value.size].pack("Q>")
+            buffer = [value.size].pack("Q<")
             value.each do |v|
                 buffer.concat(__element_type.from_ruby(v).to_byte_array)
             end
