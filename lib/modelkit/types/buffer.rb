@@ -13,6 +13,7 @@ module ModelKit::Types
         attr_reader :size
 
         def initialize(backing_buffer, offset = 0, size = backing_buffer.size)
+            backing_buffer.force_encoding 'ASCII-8BIT'
             @backing_buffer = backing_buffer
             @offset = offset
             @size = size
