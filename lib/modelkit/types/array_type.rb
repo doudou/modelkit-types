@@ -27,7 +27,11 @@ module ModelKit::Types
                 buffer.concat(__element_type.from_ruby(v).to_byte_array)
             end
             buffer.concat(__element_type.new.to_byte_array * (size - value.size))
-            reset_buffer(Buffer.new(buffer))
+            if __element_fixed_buffer_size?
+                __buffer[0, __buffer.size] = buffer
+            else
+                reset_buffer(Buffer.new(buffer))
+            end
         end
 
         def reset_buffer(buffer)

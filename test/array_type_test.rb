@@ -4,8 +4,8 @@ module ModelKit::Types
     describe ArrayType do
         attr_reader :int32_t, :array_t
         before do
-            @int32_t = NumericType.new_submodel(size: 4)
-            @array_t = ArrayType.new_submodel(deference: int32_t, length: 4)
+            @int32_t = NumericType.new_submodel(typename: '/int32', size: 4)
+            @array_t = ArrayType.new_submodel(typename: '/int32[4]', deference: int32_t, length: 4)
         end
 
         def make_int32(value)
@@ -63,6 +63,16 @@ module ModelKit::Types
                 assert_raises(RangeError) do
                     array.from_ruby([1, 2, 3, 4, 5])
                 end
+            end
+            it "updates the underlying buffer if the elements are fixed-size" do
+                registry = Registry.new
+                registry.register(array_t)
+                compound_t = registry.create_compound '/C' do |c|
+                    c.add 'a', array_t
+                end
+                compound = compound_t.new
+                compound.get('a').from_ruby([1, 2, 3, 4])
+                assert_equal [1, 2, 3, 4].pack("l<*"), compound.to_byte_array
             end
         end
 
