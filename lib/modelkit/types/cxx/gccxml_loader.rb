@@ -950,7 +950,6 @@ module ModelKit::Types
             @timeout = 600
             @default_options = Shellwords.split(ENV['TYPELIB_GCCXML_DEFAULT_OPTIONS'] || '-DEIGEN_DONT_VECTORIZE')
 
-            class ImportProcessFailed < RuntimeError; end
             # @api private
             #
             # Run a subprocess with timeout
