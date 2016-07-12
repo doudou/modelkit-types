@@ -136,7 +136,7 @@ module ModelKit::Types
                     CXXImporter.import(cxx_path.to_s, registry: registry, cxx_importer: loader, extra: :options)
                 end
                 it "raises ImportFailedError if the importer binary blocks for more than the specified timeout" do
-                    Tempfile.open do |io|
+                    Tempfile.open 'modelkit-types' do |io|
                         io.write "#! /bin/sh\nsleep 10"
                         io.close
 
@@ -150,7 +150,7 @@ module ModelKit::Types
                     end
                 end
                 it "raises ImportFailedError if the importer binary finished with a non-zero status" do
-                    Tempfile.open do |io|
+                    Tempfile.open 'modelkit-types' do |io|
                         io.write "#! /bin/sh\nexit 1"
                         io.close
 
@@ -179,7 +179,7 @@ module ModelKit::Types
                     CXXImporter.preprocess([cxx_path.to_s])
                 end
                 it "raises ImportFailedError if the importer binary finished with a non-zero status" do
-                    Tempfile.open do |io|
+                    Tempfile.open 'modelkit-types' do |io|
                         io.write "#! /bin/sh\nexit 1"
                         io.close
 
@@ -191,7 +191,7 @@ module ModelKit::Types
                     end
                 end
                 it "raises ImportFailedError if the importer binary blocks for more than the specified timeout" do
-                    Tempfile.open do |io|
+                    Tempfile.open 'modelkit-types' do |io|
                         io.write "#! /bin/sh\nsleep 10"
                         io.close
 
