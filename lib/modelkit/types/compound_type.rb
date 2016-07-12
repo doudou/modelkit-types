@@ -25,7 +25,7 @@ module ModelKit::Types
             super
             @__field_offsets = Array.new(__fields.size + 1)
             @__field_offsets[0]  = 0
-            @__field_offsets[-1] = self.class.initial_buffer_size
+            @__field_offsets[-1] = buffer.size
             @__field_type_offset_and_size = Hash.new
             @__field_values = Hash.new
         end

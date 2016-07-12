@@ -74,7 +74,7 @@ module ModelKit::Types
         describe "#__type_offset_and_size" do
             attr_reader :compound
             before do
-                @compound = compound_t.from_buffer([10, 0.1, 10].pack("l<El<"))
+                @compound = compound_t.from_buffer([10, 0.1, 10].pack("l<Exxxxxl<"))
             end
             it "returns a field's type offset and size" do
                 assert_equal [int32_t, 0, 4], compound.__type_offset_and_size('a')
