@@ -27,7 +27,7 @@ module ModelKit::Types
                             update_compound(builder, element, registry)
                         end
                     when "enum"
-                        type = registry.create_enum(typename, **type_options(element)) do |builder|
+                        type = registry.create_enum(typename, **type_options(element, default_size: 4)) do |builder|
                             update_enum(builder, element)
                         end
                     when "container"
@@ -43,9 +43,9 @@ module ModelKit::Types
                     when "type"
                         type = registry.create_type(typename, **type_options(element))
                     when 'opaque'
-                        type = registry.create_type(typename, **type_options(element, opaque: true))
+                        type = registry.create_type(typename, **type_options(element, overrides: Hash[opaque: true]))
                     when 'null'
-                        type = registry.create_type(typename, **type_options(element, null: true))
+                        type = registry.create_type(typename, **type_options(element, overrides: Hash[null: true]))
                     when 'character'
                         type = registry.create_character(typename, **type_options(element))
                     when "alias"
@@ -60,8 +60,8 @@ module ModelKit::Types
                 registry
             end
 
-            def type_options(node, **overrides)
-                Hash[size: Integer(node.attributes['size'] || '0'),
+            def type_options(node, default_size: 0, overrides: Hash[])
+                Hash[size: Integer(node.attributes['size'] || default_size),
                      opaque: node.attributes['opaque'] == '1',
                      null: node.attributes['null'] == '1'].merge(overrides)
             end
