@@ -319,4 +319,5 @@ require 'modelkit/types/registry'
 require 'modelkit/types/registry_export'
 require 'modelkit/types/io/xml_exporter'
 require 'modelkit/types/io/xml_importer'
+require 'modelkit/types/io/csv'
 

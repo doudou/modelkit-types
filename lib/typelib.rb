@@ -1,110 +1,118 @@
-# Backward-compatible wrapping of the ModelKit::Types API to mimick the Typelib API
 require 'modelkit/types'
 require 'modelkit/types/cxx'
-require 'modelkit/types/io/idl_exporter'
-module Typelib
-    NotFound = ModelKit::Types::NotFound
 
-    Type = ModelKit::Types::Type
+module ModelKit::Types
     class Type
-        def self.dependencies
-            direct_dependencies
+        def to_csv
+            ModelKit::Types::IO::CSV.export(self)
+        end
+
+        def from_buffer_direct(buffer)
+            reset_buffer(buffer.to_types_buffer)
         end
     end
 
-    ArrayType = ModelKit::Types::ArrayType
-    NumericType = ModelKit::Types::NumericType
-    ContainerType = ModelKit::Types::ContainerType
-    class ContainerType
-        def self.container_kind
-            container_model.name
+    class ArrayType
+        def raw_get(i)
+            get(i)
+        end
+
+        def raw_each(&block)
+            each(&block)
         end
     end
 
-    CompoundType = ModelKit::Types::CompoundType
     class CompoundType
-        def self.field_metadata
-            each.inject(Hash.new) do |h, field|
-                h[field.name] = field.metadata; h
+        def raw_get(i)
+            get(i)
+        end
+    end
+
+    class ContainerType
+        def raw_get(i)
+            get(i)
+        end
+
+        def raw_each(&block)
+            each(&block)
+        end
+    end
+
+    module Models
+        module Type
+            def to_csv(prefix = "")
+                ModelKit::Types::IO::CSV.flatten_type(self).map { |desc| "#{prefix}#{desc}" }.join(",")
+            end
+        end
+
+        module CompoundType
+            def each_field
+                each do |field|
+                    yield(field.name, field.type)
+                end
+            end
+        end
+
+        module EnumType
+            def keys
+                symbol_to_value
             end
         end
     end
+end
 
-    IndirectType = ModelKit::Types::IndirectType
-    EnumType = ModelKit::Types::EnumType
-    class EnumType
-        def self.keys
-            symbol_to_value.keys
-        end
+module Typelib
+    def self.load_type_plugins=(flag)
     end
-    OpaqueType = ModelKit::Types::Type
 
-    Registry = ModelKit::Types::Registry
-    class Registry
-        def merge_xml(string)
-            xml = REXML::Document.new(string)
-            merge(ModelKit::Types::IO::XMLImporter.new.from_xml(xml))
+    class Registry < ModelKit::Types::Registry
+        def initialize
+            super
+            register_container_model ModelKit::Types::CXX::StdVector
+            register_container_model ModelKit::Types::CXX::BasicString
+        end
+
+        def create_numeric(name, size = nil, kind = nil, **options)
+            if !options.empty?
+                super(name, **options)
+            elsif kind == :sint
+                super(name, size: size, integer: true, unsigned: false)
+            elsif kind == :uint
+                super(name, size: size, integer: true, unsigned: true)
+            elsif kind == :float
+                super(name, size: size, integer: false)
+            else
+                raise ArgumentError, "expected numeric category to be one of :sint, :uint or :float"
+            end
         end
 
         def to_xml
-            ModelKit::Types::IO::XMLExporter.new.to_xml(self).to_s
-        end
-
-        def alias(new_name, old_type)
-            create_alias(new_name, old_type)
+            ModelKit::Types::IO::XMLExporter.export(self)
         end
     end
 
-    def self.specialize_model(*args, **options, &block)
-        ModelKit::Types.specialize_model(*args, **options, &block)
+    Type = ModelKit::Types::Type
+    NumericType = ModelKit::Types::NumericType
+    ArrayType = ModelKit::Types::ArrayType
+    EnumType = ModelKit::Types::EnumType
+    IndirectType = ModelKit::Types::IndirectType
+    ContainerType = ModelKit::Types::ContainerType
+    CompoundType = ModelKit::Types::CompoundType
+
+    def self.copy(target, source)
+        source.copy_to(target)
     end
 
-    def self.specialize(*args, **options, &block)
-        ModelKit::Types.specialize(*args, **options, &block)
-    end
-
-    def self.convert_to_ruby(*args, **options, &block)
-        ModelKit::Types.convert_to_ruby(*args, **options, &block)
-    end
-
-    def self.convert_from_ruby(*args, **options, &block)
-        ModelKit::Types.convert_from_ruby(*args, **options, &block)
-    end
-
-    CXXRegistry = ModelKit::Types::CXX::Registry
-
-    CXX = ModelKit::Types::CXX
-
-    def self.namespace(name)
-        ModelKit::Types.namespace(name)
-    end
-
-    def self.basename(name)
-        ModelKit::Types.basename(name)
-    end
-
-    def self.split_typename(name)
-        ModelKit::Types.typename_parts(name)
-    end
-
-    def self.load_type_plugins?
-        ModelKit::Types.warn "load_type_plugins? is deprecated, you have to call Typelib.load_plugins explicitely now"
-        false
-    end
-
-    def self.load_type_plugins=(flag)
-        ModelKit::Types.warn "load_type_plugins= is deprecated, you have to call Typelib.load_plugins explicitely now"
-    end
-
-    def self.load_typelib_plugins
-        ModelKit::Types.load_plugins
-    end
-
-    module CXX
-        def self.preprocess(toplevel_files, kind, options)
-            require 'modelkit/types/io/cxx_importer'
-            ModelKit::Types::IO::CXXImporter.preprocess(toplevel_files, options)
+    def self.from_ruby(value, type)
+        if value.class == type
+            value
+        else
+            type.from_ruby(value)
         end
+    end
+
+    def self.to_ruby(value)
+        value.to_ruby
     end
 end
 
