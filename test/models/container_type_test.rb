@@ -86,8 +86,6 @@ module ModelKit::Types
 
                 it "can be copied to a different registry" do
                     target_registry = Registry.new
-                    target_element_t = target_registry.create_type '/Test'
-                    target_container_m = target_registry.create_container_model '/std/vector'
                     target_container_t = container_t.copy_to(target_registry)
 
                     refute_same  container_t, target_container_t
@@ -96,7 +94,6 @@ module ModelKit::Types
                 end
                 it "registers a missing container model" do
                     target_registry = Registry.new
-                    target_element_t = target_registry.create_type '/Test'
                     target_container_t = container_t.copy_to(target_registry)
                     target_container_m = target_container_t.container_model
                     assert_same  container_m, target_container_m

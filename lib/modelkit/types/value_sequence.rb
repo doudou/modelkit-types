@@ -41,7 +41,7 @@ module ModelKit::Types
             @elements[index..-1].each { |e| e.__buffer.shift(-size) if e }
             @element_offsets.delete_at(index)
             @element_offsets[index..-1] =
-                @element_offsets[index..-1].map { |offset| (offset - size) if offset }
+                @element_offsets[index..-1].map { |off| (off - size) if off }
         end
 
         def next_element_offset(index, offset)

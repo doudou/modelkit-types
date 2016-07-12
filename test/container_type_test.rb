@@ -17,7 +17,7 @@ module ModelKit::Types
 
         def make_container(*values)
             raw = [values.size, *values].pack("Q<l<*")
-            container = container_t.from_buffer(raw)
+            container_t.from_buffer(raw)
         end
 
         it "newly creates a zero-sized container" do

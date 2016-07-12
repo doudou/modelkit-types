@@ -119,7 +119,7 @@ module ModelKit::Types
 
             describe "#[]" do
                 it "returns the type of the field" do
-                    field = compound_t.add('f0', field_t)
+                    compound_t.add('f0', field_t)
                     assert_same field_t, compound_t['f0']
                 end
                 it "raises FieldNotFound if the field does not exist" do

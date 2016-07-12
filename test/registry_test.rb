@@ -602,14 +602,12 @@ module ModelKit::Types
             end
 
             it "copies the aliases to the type if with_aliases is set" do
-                target_registry = nil
                 subject.create_alias '/alias', type
                 result = subject.minimal(type, with_aliases: true)
                 assert_equal '/test', result.get('/alias').name
             end
 
             it "does not copy the aliases to the type if with_aliases is false" do
-                target_registry = nil
                 subject.create_alias '/alias', type
                 result = subject.minimal(type, with_aliases: false)
                 assert !result.include?('/alias')

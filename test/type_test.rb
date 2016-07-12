@@ -112,7 +112,7 @@ module ModelKit::Types
         describe "#copy_to" do
             it "copies the buffer content" do
                 type = Type.new_submodel(size: 2)
-                buffer = Buffer.new(raw = "012345".dup, 2, 2)
+                buffer = Buffer.new("012345".dup, 2, 2)
                 value = type.wrap!(buffer)
                 target_buffer = Buffer.new(target_raw = "abcdef".dup, 2, 2)
                 target = type.wrap(target_buffer)

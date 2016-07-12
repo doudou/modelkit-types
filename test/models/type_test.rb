@@ -18,7 +18,7 @@ module ModelKit::Types
                     assert_same subject.new_submodel.registry, subject.registry
                 end
                 it "overrides the parent's registry" do
-                    subject.registry = reg = Registry.new
+                    subject.registry = Registry.new
                     registry = Registry.new
                     assert_same registry, subject.new_submodel(registry: registry).registry
                 end

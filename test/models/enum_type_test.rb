@@ -103,7 +103,7 @@ module ModelKit::Types
             describe "#copy_to" do
                 it "copies the symbol-to-value mappings to the new type" do
                     registry = Registry.new
-                    enum_t = registry.create_enum '/Test' do |e|
+                    registry.create_enum '/Test' do |e|
                         e.add :TEST, 10
                         e.add :TEST1, 20
                     end
