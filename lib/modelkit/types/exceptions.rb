@@ -12,6 +12,10 @@ module ModelKit::Types
     # Exceptions raised when a failure happened during import
     class ImportError < RuntimeError; end
 
+    # Exception raised if the underlying import process returned a nonzero
+    # status
+    class ImportProcessFailed < ImportError; end
+
     # Base class for all errors related to trying to merge registries that
     # cannot be merged together
     class InvalidMergeError < ArgumentError; end

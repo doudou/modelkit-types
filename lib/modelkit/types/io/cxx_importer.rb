@@ -72,7 +72,7 @@ module ModelKit::Types
                     elsif gccxml_path = TTY::Which.which('gccxml')
                         cxx_loader_spec = "gccxml:#{gccxml_path}"
                     else
-                        raise ArgumentError, "cannot find a suitable C++ importer (tried to find castxml and gccxml). Set MODELKIT_TYPES_CXX_LOADER to the full path to a suitable binary. Alternatively, use the loader_name:/path/to/binary if the binary name does not match the expected 'castxml' or 'gccxml' (e.g. export MODELKIT_TYPES_CXX_IMPORTER=gccxml:/usr/bin/a_compatible_importer)"
+                        raise ImporterNotFound, "cannot find a suitable C++ importer (tried to find castxml and gccxml). Set MODELKIT_TYPES_CXX_LOADER to the full path to a suitable binary. Alternatively, use the loader_name:/path/to/binary if the binary name does not match the expected 'castxml' or 'gccxml' (e.g. export MODELKIT_TYPES_CXX_IMPORTER=gccxml:/usr/bin/a_compatible_importer)"
                     end
                 end
 

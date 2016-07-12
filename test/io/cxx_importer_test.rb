@@ -28,6 +28,14 @@ module ModelKit::Types
                 assert_equal '/path/to/gccxml', loader.binary_path
             end
 
+            it "raises ImporterNotFound if neither gccxml nor castxml can be found" do
+                flexmock(TTY::Which).should_receive(:which).with('castxml').and_return(nil)
+                flexmock(TTY::Which).should_receive(:which).with('gccxml').and_return(nil)
+                assert_raises(CXXImporter::ImporterNotFound) do
+                    CXXImporter.loader
+                end
+            end
+
             it "returns the importer that matches the MODELKIT_TYPES_CXX_LOADER envvar" do
                 ENV['MODELKIT_TYPES_CXX_LOADER'] = 'castxml'
                 flexmock(TTY::Which).should_receive(:which).with('castxml').and_return('/path/to/castxml')
@@ -72,6 +80,23 @@ module ModelKit::Types
                 assert_equal '/path/to/gccxml', loader.binary_path
             end
 
+            it "raises ImporterNotFound if only a binary path is provided and it does not exist" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = '/path/to/gccxml'
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/gccxml').and_return(false)
+                assert_raises(CXXImporter::ImporterNotFound) do
+                    CXXImporter.loader
+                end
+            end
+
+            it "raises ImporterNotFound if more than one importer name match the provided path" do
+                ENV['MODELKIT_TYPES_CXX_LOADER'] = '/path/to/gccxml/castxml'
+                flexmock(TTY::Which).should_receive(:exist?).with('/path/to/gccxml/castxml').and_return(false)
+                e = assert_raises(CXXImporter::ImporterNotFound) do
+                    CXXImporter.loader
+                end
+                assert_match /more than one/, e.message
+            end
+
             it "returns an explicitely set loader" do
                 CXXImporter.loader = loader = flexmock
                 assert_equal loader, CXXImporter.loader
@@ -106,6 +131,44 @@ module ModelKit::Types
                     loader.should_receive(:import).once.
                         with(cxx_path.to_s, registry: registry, extra: :options)
                     CXXImporter.import(cxx_path.to_s, registry: registry, cxx_importer: loader, extra: :options)
+                end
+                it "raises ImportFailedError if the importer binary finished with a non-zero status" do
+                    Tempfile.open do |io|
+                        io.write "#! /bin/sh\nexit 1"
+                        io.close
+
+                        FileUtils.chmod 0755, io.path
+                        CXXImporter.loader.binary_path = io.path
+                        assert_raises ImportProcessFailed do
+                            CXXImporter.import(cxx_path.to_s)
+                        end
+                    end
+                end
+            end
+
+            describe "preprocess" do
+                attr_reader :cxx_path, :expected_registry
+                before do
+                    @cxx_path = Pathname.new(__dir__) + "cxx_import_tests" + "enums.hh"
+                end
+
+                # Can't figure out how to check that the output is valid
+                # preprocessed C++ ... check that it at least does not fail,
+                # that is that we build a valid command line
+                it "passes valid arguments to the underlying C++-to-XML binary" do
+                    CXXImporter.preprocess([cxx_path.to_s])
+                end
+                it "raises ImportFailedError if the importer binary finished with a non-zero status" do
+                    Tempfile.open do |io|
+                        io.write "#! /bin/sh\nexit 1"
+                        io.close
+
+                        FileUtils.chmod 0755, io.path
+                        CXXImporter.loader.binary_path = io.path
+                        assert_raises ImportProcessFailed do
+                            CXXImporter.preprocess([cxx_path.to_s])
+                        end
+                    end
                 end
             end
 

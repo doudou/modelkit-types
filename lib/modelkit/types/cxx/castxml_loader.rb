@@ -25,11 +25,11 @@ module ModelKit::Types
             #
             # Raises RuntimeError if casrxml failed to run
             def self.run_preprocessor(file, *cmdline, binary_path: self.binary_path)
-                result = ::IO.popen(binary_path, '--castxml-gccxml', '-E', *cmdline) do |io|
+                result = ::IO.popen([binary_path, '--castxml-gccxml', '-E', *cmdline, file]) do |io|
                     io.read
                 end
-                if !$!.success?
-                    raise ArgumentError, "#{binary_path} failed, see error messages above for more details"
+                if !$?.success?
+                    raise ImportProcessFailed, "#{binary_path} failed, see error messages above for more details"
                 end
                 result
             end
