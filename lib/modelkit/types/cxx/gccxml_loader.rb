@@ -943,12 +943,49 @@ module ModelKit::Types
 
             class << self
                 attr_accessor :binary_path
+                attr_accessor :timeout
                 attr_accessor :default_options
             end
             @binary_path = 'gccxml'
+            @timeout = 600
             @default_options = Shellwords.split(ENV['TYPELIB_GCCXML_DEFAULT_OPTIONS'] || '-DEIGEN_DONT_VECTORIZE')
 
             class ImportProcessFailed < RuntimeError; end
+            # @api private
+            #
+            # Run a subprocess with timeout
+            def self.run_subprocess(*cmdline, timeout: self.timeout)
+                out_r, out_w = ::IO.pipe
+                pid = Process.spawn(*cmdline, out: out_w)
+                out_w.close
+
+                result = ""
+                while true
+                    begin
+                        if output = out_r.read_nonblock(10000)
+                            result.concat(output)
+                        else
+                            break
+                        end
+                    rescue EOFError
+                        break
+                    rescue ::IO::WaitReadable
+                        if !select([out_r], nil, nil, timeout)
+                            Process.kill 'KILL', pid
+                            Process.waitpid pid
+                            raise ImportProcessFailed, "#{binary_path} did not output anything within #{timeout} seconds"
+                        end
+                    end
+                end
+                _, status = Process.waitpid2 pid
+                if !status.success?
+                    raise ImportProcessFailed, "#{binary_path} failed, see error messages above for more details"
+                end
+                result
+            ensure
+                out_w.close if !out_w.closed?
+                out_r.close
+            end
 
             # Runs the importer binary on the provided file and with the given
             # options, and return its output as a string
@@ -956,9 +993,7 @@ module ModelKit::Types
             # Raises ImportProcessFailed if the importer's execution failed
             def self.run_importer(file, *cmdline, binary_path: self.binary_path)
                 Tempfile.open "modelkit_gccxml" do |io|
-                    if !system(binary_path, *cmdline, "-fxml=#{io.path}", file)
-                        raise ImportProcessFailed, "#{binary_path} failed, see error messages above for more details"
-                    end
+                    run_subprocess(binary_path, *cmdline, "-fxml=#{io.path}", file)
                     io.read
                 end
             end
@@ -968,13 +1003,7 @@ module ModelKit::Types
             #
             # Raises RuntimeError if gccxml failed to run
             def self.run_preprocessor(file, *cmdline, binary_path: self.binary_path)
-                result = ::IO.popen([binary_path, '--preprocess', *cmdline]) do |io|
-                    io.read
-                end
-                if !$?.success?
-                    raise ArgumentError, "#{binary_path} failed, see error messages above for more details"
-                end
-                result
+                run_subprocess(binary_path, '--preprocess', *cmdline)
             end
 
             def self.import(file,

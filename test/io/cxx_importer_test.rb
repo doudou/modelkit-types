@@ -111,6 +111,9 @@ module ModelKit::Types
                     tlb = Registry.from_xml(cxx_path.sub_ext('.tlb').read)
                     expected_registry.merge(tlb)
                 end
+                after do
+                    CXXImporter.loader.timeout = 600
+                end
                 it "loads a C++ file using the default loader and returns the generated registry" do
                     registry = CXXImporter.import(cxx_path.to_s)
                     assert expected_registry.same_types?(registry)
@@ -132,6 +135,20 @@ module ModelKit::Types
                         with(cxx_path.to_s, registry: registry, extra: :options)
                     CXXImporter.import(cxx_path.to_s, registry: registry, cxx_importer: loader, extra: :options)
                 end
+                it "raises ImportFailedError if the importer binary blocks for more than the specified timeout" do
+                    Tempfile.open do |io|
+                        io.write "#! /bin/sh\nsleep 10"
+                        io.close
+
+                        FileUtils.chmod 0755, io.path
+                        CXXImporter.loader.timeout = 0.1
+                        CXXImporter.loader.binary_path = io.path
+                        e = assert_raises ImportProcessFailed do
+                            CXXImporter.import(cxx_path.to_s)
+                        end
+                        assert_match /did not output anything within 0.1 seconds/, e.message
+                    end
+                end
                 it "raises ImportFailedError if the importer binary finished with a non-zero status" do
                     Tempfile.open do |io|
                         io.write "#! /bin/sh\nexit 1"
@@ -151,6 +168,9 @@ module ModelKit::Types
                 before do
                     @cxx_path = Pathname.new(__dir__) + "cxx_import_tests" + "enums.hh"
                 end
+                after do
+                    CXXImporter.loader.timeout = 600
+                end
 
                 # Can't figure out how to check that the output is valid
                 # preprocessed C++ ... check that it at least does not fail,
@@ -168,6 +188,20 @@ module ModelKit::Types
                         assert_raises ImportProcessFailed do
                             CXXImporter.preprocess([cxx_path.to_s])
                         end
+                    end
+                end
+                it "raises ImportFailedError if the importer binary blocks for more than the specified timeout" do
+                    Tempfile.open do |io|
+                        io.write "#! /bin/sh\nsleep 10"
+                        io.close
+
+                        FileUtils.chmod 0755, io.path
+                        CXXImporter.loader.timeout = 0.1
+                        CXXImporter.loader.binary_path = io.path
+                        e = assert_raises ImportProcessFailed do
+                            CXXImporter.preprocess([cxx_path.to_s])
+                        end
+                        assert_match /did not output anything within 0.1 seconds/, e.message
                     end
                 end
             end

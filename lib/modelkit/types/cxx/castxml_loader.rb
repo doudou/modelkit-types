@@ -10,28 +10,16 @@ module ModelKit::Types
             # return the output as a string
             #
             # Raises RuntimeError if casrxml failed to run
-            def self.run_importer(file, *cmdline, binary_path: self.binary_path)
-                result = ::IO.popen([binary_path, *cmdline, "--castxml-gccxml", '-x', 'c++', '-o', '-', file]) do |io|
-                    io.read
-                end
-                if !$?.success?
-                    raise ImportProcessFailed, "#{binary_path} failed, see error messages above for more details"
-                end
-                result
+            def self.run_importer(file, *cmdline, binary_path: self.binary_path, timeout: self.timeout)
+                run_subprocess(binary_path, *cmdline, "--castxml-gccxml", '-x', 'c++', '-o', '-', file, timeout: timeout)
             end
 
             # Runs castxml on the provided file and with the given options, and
             # return the output as a string
             #
             # Raises RuntimeError if casrxml failed to run
-            def self.run_preprocessor(file, *cmdline, binary_path: self.binary_path)
-                result = ::IO.popen([binary_path, '--castxml-gccxml', '-E', *cmdline, file]) do |io|
-                    io.read
-                end
-                if !$?.success?
-                    raise ImportProcessFailed, "#{binary_path} failed, see error messages above for more details"
-                end
-                result
+            def self.run_preprocessor(file, *cmdline, binary_path: self.binary_path, timeout: self.timeout)
+                run_subprocess(binary_path, '--castxml-gccxml', '-E', *cmdline, file, timeout: timeout)
             end
         end
     end
