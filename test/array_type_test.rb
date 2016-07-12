@@ -67,9 +67,29 @@ module ModelKit::Types
         end
 
         describe "#to_ruby" do
-            it "converts to an array with its elements converted themselves" do
-                assert_equal [1, 2, 3, 0],
-                    array_t.from_ruby([1, 2, 3]).to_ruby
+            describe "elements with pack_code" do
+                it "converts to an array with its elements converted themselves" do
+                    assert_equal [1, 2, 3, 0],
+                        array_t.from_ruby([1, 2, 3]).to_ruby
+                end
+                it "does not cause the elements to be accessed" do
+                    array = array_t.from_ruby([1, 2, 3])
+                    flexmock(array).should_receive(:get).never
+                    array.to_ruby
+                end
+            end
+            describe "elements without pack code" do
+                it "converts to an array with its elements converted themselves" do
+                    registry = Registry.new
+                    registry.register(int32_t)
+                    compound_t = registry.create_compound '/C' do |c|
+                        c.add 'a', int32_t
+                    end
+                    array_t = registry.create_array compound_t, 3
+
+                    assert_equal [Hash['a' => 1], Hash['a' => 2], Hash['a' => 0]],
+                        array_t.from_buffer([1, 2, 0].pack("l<*")).to_ruby
+                end
             end
         end
 

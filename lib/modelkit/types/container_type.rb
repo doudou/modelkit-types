@@ -26,10 +26,6 @@ module ModelKit::Types
             end
         end
 
-        def to_ruby
-            map(&:to_ruby)
-        end
-
         def from_ruby(value)
             buffer = [value.size].pack("Q<")
             value.each do |v|

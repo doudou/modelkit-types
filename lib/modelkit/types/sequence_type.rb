@@ -89,6 +89,17 @@ module ModelKit::Types
             __elements.size
         end
 
+        def to_ruby
+            if __element_type.respond_to?(:pack_code)
+                if __elements.size != __element_access.size
+                    apply_changes
+                end
+                __element_access.buffer.unpack("#{__element_type.pack_code}*")
+            else
+                map(&:to_ruby)
+            end
+        end
+
         # True if this container is empty
         def empty?
             __elements.empty?
